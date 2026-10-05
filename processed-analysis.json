@@ -1,8 +1,9 @@
 {
   "mode": "shloka",
   "input": {
+    "script": "Devanagari",
     "devanagari": "वागर्थाविव संपृक्तौ वागर्थप्रतिपत्तये ।\nजगतः पितरौ वन्दे पार्वतीपरमेश्वरौ ॥",
-    "iast": "vāgarthāviva saṃpṛktau vāgarthapratipattaye \njagataḥ pitarau vande pārvatīparameśvarau"
+    "iast": "vāgarthāviva saṃpṛktau vāgarthapratipattaye\njagataḥ pitarau vande pārvatīparameśvarau"
   },
   "padaccheda": {
     "dharmamitra": "vāc | arthau | iva | saṃpṛktau | vāc | artha | pratipattaye | jagantaḥ | pitarau | vande | pārvatī | parameśvarau",
@@ -313,5 +314,20 @@
         ]
       }
     }
-  ]
+  ],
+  "chandas": {
+    "vrtta": null,
+    "candidates": [
+      "madalekhā",
+      "śuddhavirāṭ"
+    ],
+    "pada_count": 4,
+    "classified_pada_count": 2,
+    "aksharas_per_pada": [
+      8,
+      8,
+      8,
+      8
+    ]
+  }
 }

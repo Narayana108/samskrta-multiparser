@@ -2,7 +2,7 @@
 
 Pins the vidyut data directory before anything imports ``app`` (which resolves
 ``DATA_DIR`` at import time) and puts the project root on ``sys.path`` so the
-test modules can import ``app`` and ``normalize`` directly. No test may touch
+test modules can import ``app`` and ``postprocess_analysis`` directly. No test may touch
 the network: the Dharmamitra engine is a remote API and is never exercised here.
 """
 

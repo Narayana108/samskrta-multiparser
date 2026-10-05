@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Normalize raw multi-engine Sanskrit analysis output into a readable form.
+"""Post-process raw multi-engine Sanskrit analysis output into a readable form.
 
-Reads:  output-verbose.json (raw engine outputs)
-Writes: output.json
+Reads:  multi-engine-analysis.json (raw engine outputs from app.py)
+Writes: processed-analysis.json
 
 Output structure::
 
     {
       "mode": "shloka",
-      "input": {"devanagari": "...", "iast": "..."},
+      "input": {"script": "Iast", "devanagari": "...", "iast": "..."},
       "padaccheda": {                       # flat word sequence per engine
         "dharmamitra": "vāc | arthau | iva | ...",
         "sanskrit_parser": "vāgarthās | viva | ..."
@@ -30,6 +30,13 @@ Output structure::
           ]
         }
       ],
+      "chandas": {                          # vidyut's verse-level meter summary
+        "vrtta": null,                      # named only when every pāda agrees
+        "candidates": ["sragdharā"],        # vṛtta names vidyut did suggest
+        "pada_count": 4,
+        "classified_pada_count": 3,
+        "aksharas_per_pada": [21, 21, 21, 21]
+      },                                    # only when vidyut produced results
       "engine_errors": {                    # only when an engine failed
         "dharmamitra": "Dharmamitra API request timed out"
       }
@@ -316,14 +323,14 @@ def build_padaccheda(padas: List[Dict[str, Any]]) -> Dict[str, Optional[str]]:
     }
 
 
-def normalize_raw(raw: Dict[str, Any]) -> Dict[str, Any]:
-    """Normalize raw engine output into the readable padaccheda/padas form.
+def postprocess(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Condense raw engine output into the readable padaccheda/padas form.
 
     Args:
-        raw: Raw multi-engine analysis output (output-verbose.json content)
+        raw: Raw multi-engine analysis output (multi-engine-analysis.json content)
 
     Returns:
-        Normalized dict with mode, input, padaccheda and padas; plus
+        Processed dict with mode, input, padaccheda and padas; plus
         engine_errors when an engine reported a failure instead of results.
 
     Raises:
@@ -337,9 +344,14 @@ def normalize_raw(raw: Dict[str, Any]) -> Dict[str, Any]:
     engines = raw.get("engine_outputs") or {}
     sp_output = engines.get("sanskrit_parser") or {}
     dm_output = engines.get("dharmamitra") or {}
+    vidyut_output = engines.get("vidyut") or {}
 
     engine_errors: Dict[str, str] = {}
-    for name, out in (("sanskrit_parser", sp_output), ("dharmamitra", dm_output)):
+    for name, out in (
+        ("sanskrit_parser", sp_output),
+        ("dharmamitra", dm_output),
+        ("vidyut", vidyut_output),
+    ):
         if isinstance(out, dict) and out.get("error"):
             engine_errors[name] = str(out["error"])
 
@@ -352,28 +364,34 @@ def normalize_raw(raw: Dict[str, Any]) -> Dict[str, Any]:
 
     padas = build_padas(input_words, sp_decomp, sp_morph, dm_groups, bool(dm_tokens))
 
-    normalized: Dict[str, Any] = {
+    processed: Dict[str, Any] = {
         "mode": raw.get("mode"),
         "input": inp,
         "padaccheda": build_padaccheda(padas),
         "padas": padas,
     }
+
+    # vidyut's verse-level meter summary passes through as it is; the raw output
+    # keeps the per-pāda detail under engine_outputs.vidyut.meter.
+    if isinstance(vidyut_output.get("chandas"), dict):
+        processed["chandas"] = vidyut_output["chandas"]
+
     if engine_errors:
-        normalized["engine_errors"] = engine_errors
-    return normalized
+        processed["engine_errors"] = engine_errors
+    return processed
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Normalize raw multi-engine Sanskrit analysis output"
+        description="Post-process raw multi-engine Sanskrit analysis output"
     )
     parser.add_argument(
-        "-i", "--input", default="output-verbose.json",
-        help="Input JSON file (default: output-verbose.json)",
+        "-i", "--input", default="multi-engine-analysis.json",
+        help="Input JSON file (default: multi-engine-analysis.json)",
     )
     parser.add_argument(
-        "-o", "--output", default="output.json",
-        help="Output JSON file (default: output.json; '-' writes to stdout only)",
+        "-o", "--output", default="processed-analysis.json",
+        help="Output JSON file (default: processed-analysis.json; '-' writes to stdout only)",
     )
     args = parser.parse_args()
 
@@ -393,12 +411,12 @@ def main() -> int:
         return 1
 
     try:
-        normalized = normalize_raw(raw)
+        processed = postprocess(raw)
     except ValueError as exc:
         print(f"Error: {exc} (is '{args.input}' a raw app.py output?)", file=sys.stderr)
         return 1
 
-    json_str = json.dumps(normalized, indent=2, ensure_ascii=False)
+    json_str = json.dumps(processed, indent=2, ensure_ascii=False)
 
     if args.output == "-":
         print(json_str)
@@ -406,10 +424,10 @@ def main() -> int:
         Path(args.output).write_text(json_str, encoding="utf-8")
 
     raw_size = len(raw_text.encode("utf-8"))
-    norm_size = len(json_str.encode("utf-8"))
-    reduction = (1 - norm_size / raw_size) * 100 if raw_size else 0.0
+    processed_size = len(json_str.encode("utf-8"))
+    reduction = (1 - processed_size / raw_size) * 100 if raw_size else 0.0
     print(
-        f"\nRaw: {raw_size:,} bytes → normalized: {norm_size:,} bytes ({reduction:.1f}% smaller)",
+        f"\nRaw: {raw_size:,} bytes → processed: {processed_size:,} bytes ({reduction:.1f}% smaller)",
         file=sys.stderr,
     )
     return 0

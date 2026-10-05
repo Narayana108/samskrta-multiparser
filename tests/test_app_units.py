@@ -1,12 +1,13 @@
 """Offline unit tests for the pure helpers in ``app.py``.
 
-Nothing here opens a socket or drives the CLI: the Dharmamitra HTTP path is never
-imported, the kosha-backed cases read only the local vidyut data directory pinned
-by ``tests/conftest.py``, and every assertion compares literal values (sets are
-sorted before comparison where order is unspecified).
+Nothing here opens a socket. ``app.main()`` is driven only with every engine
+stubbed out, the kosha-backed cases read just the local vidyut data directory
+pinned by ``tests/conftest.py``, and every assertion compares literal values
+(sets are sorted before comparison where order is unspecified).
 """
 
 import io
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -22,15 +23,26 @@ import app
 
 
 def test_preprocess_strips_dandas_and_trims():
-    assert app.preprocess_devanagari("  श्रीरामः।  ") == "श्रीरामः"
-    # Dandas vanish without inserting a space; surrounding blanks are trimmed.
-    assert app.preprocess_devanagari("अ। ब॥\n\n") == "अ ब"
+    assert app.preprocess_input("  श्रीरामः।  ") == "श्रीरामः"
+    # A danda becomes whitespace, so the words on either side stay separate.
+    assert app.preprocess_input("अ। ब॥\n\n") == "अ ब"
 
 
-def test_preprocess_is_idempotent_and_keeps_other_punctuation():
-    once = app.preprocess_devanagari("नमो|भगवते॥ [line]")
-    assert once == "नमो|भगवते [line]"
-    assert app.preprocess_devanagari(once) == once
+def test_preprocess_is_idempotent():
+    once = app.preprocess_input("नमो|भगवते॥ [line]")
+    # Pipes, dandas and brackets all collapse to single spaces; a second pass
+    # changes nothing.
+    assert once == "नमो भगवते line"
+    assert app.preprocess_input(once) == once
+
+
+@pytest.mark.parametrize(
+    "typed",
+    ["vāc-artha", "vāc artha.", "vāc  artha,", "vāc/artha", "vāc\\artha", "vāc artha"],
+)
+def test_preprocess_makes_roman_separators_equivalent(typed):
+    # However the two words are separated, the engines must see the same text.
+    assert app.preprocess_input(typed) == "vāc artha"
 
 
 def test_read_input_strips_trailing_whitespace(tmp_path):
@@ -149,59 +161,74 @@ def test_split_anustubh_line_at_akshara_midpoint():
     ]
 
 
-def test_split_attaches_trailing_punctuation_to_first_half():
-    line = "vAgarTAviva saMpfktO . vAgarTapratipattaye"
-    assert app._split_into_padas(line) == [
-        "vAgarTAviva saMpfktO .",
-        "vAgarTapratipattaye",
-    ]
-
-
 def test_split_preserves_every_token():
-    line = "vAgarTAviva saMpfktO vAgarTapratipattaye .."
+    # Here the midpoint coincides with a word boundary, so no token is broken.
+    line = "vAgarTAviva saMpfktO vAgarTapratipattaye"
     halves = app._split_into_padas(line)
-    assert halves == ["vAgarTAviva saMpfktO", "vAgarTapratipattaye .."]
+    assert halves == ["vAgarTAviva saMpfktO", "vAgarTapratipattaye"]
     assert " ".join(halves).split() == line.split()
 
 
 def test_split_cut_follows_aksharas_not_characters():
-    # 7 + 8 | 3 aksharas: a character-count proxy would cut inside the long
-    # second token, the akshara midpoint cuts after it.
-    line = "dUrUpavaktrAmhasA sahasrakIrNanAshanaH paramaM"
+    # Raghuvaṃśa 1.2 first line: 1 + 5 + 2 | 1 + 5 + 2 aksharas. The boundary at
+    # exactly half (8) falls after three tokens; a character count would cut
+    # inside the long second token instead.
+    line = "kva sUryaprabhavo vaMSaH kva cAlpaviSayA matiH"
     assert app._split_into_padas(line) == [
-        "dUrUpavaktrAmhasA sahasrakIrNanAshanaH",
-        "paramaM",
+        "kva sUryaprabhavo vaMSaH",
+        "kva cAlpaviSayA matiH",
     ]
 
 
-def test_split_cut_lands_after_four_of_six_tokens():
-    # 1 + 3 + 2 + 3 | 4 + 1 aksharas (total 14, half 7).
-    line = "te jagatyAM guNA jAgarTI bhAvayanti ca"
+def test_split_cut_lands_after_three_of_four_tokens():
+    # Raghuvaṃśa 1.1 second line: 3 + 3 + 2 | 8 aksharas (total 16, half 8).
+    line = "jagataH pitarO vande pArvatIparameSvarO"
     assert app._split_into_padas(line) == [
-        "te jagatyAM guNA jAgarTI",
-        "bhAvayanti ca",
+        "jagataH pitarO vande",
+        "pArvatIparameSvarO",
     ]
+
+
+def test_split_cuts_inside_a_token_when_sandhi_joins_the_padas():
+    # Raghuvaṃśa 1.2 second line: तितीर्षुर्दुस्तरं मोहाद् | उडुपेनास्मि सागरम् is
+    # written with sandhi, so no word boundary sits at akshara 8. The cut goes
+    # through mohāduḍupena and both halves still measure eight aksharas.
+    line = "titIrzurdustaraM mohAduqupenAsmi sAgaram"
+    halves = app._split_into_padas(line)
+    assert halves == ["titIrzurdustaraM mohA", "duqupenAsmi sAgaram"]
+    assert [sum(app._count_aksharas(t) for t in h.split()) for h in halves] == [8, 8]
+
+
+@pytest.mark.parametrize(
+    ("line", "reason"),
+    [
+        ("", "nothing to split"),
+        ("gacChati deva", "two tokens"),
+        ("dUrUpavaktrAmhasA sahasrakIrNanAshanaH", "two tokens, 15 aksharas"),
+        ("dUrUpavaktrAmhasA devaH jAgarTI", "three tokens, exactly 12 aksharas"),
+        ("te jagatyAM guNA jAgarTI bhAvayanti", "five tokens, odd total of 13"),
+    ],
+)
+def test_split_passes_through_lines_that_cannot_be_halved(line, reason):
+    assert app._split_into_padas(line) == [line], reason
 
 
 @pytest.mark.parametrize(
     "line",
     [
-        "",  # nothing to split
-        "..",  # punctuation only: no meaningful token at all
-        "gacChati deva",  # two meaningful tokens
-        "dUrUpavaktrAmhasA sahasrakIrNanAshanaH .",  # two meaningful, 15 aksharas
-        "dUrUpavaktrAmhasA devaH jAgarTI",  # three meaningful, exactly 12 aksharas
+        "dUrUpavaktrAmhasA sahasrakIrNanAshanaH paramaM",  # 18 aksharas
+        "te jagatyAM guNA jAgarTI bhAvayanti ca",  # 14 aksharas
+        "sa ca dUrUpavaktrAmhasAkIrNanAshanaH",  # 14 aksharas
     ],
 )
-def test_split_passes_through_lines_that_are_too_short(line):
-    assert app._split_into_padas(line) == [line]
-
-
-def test_split_drops_empty_second_half():
-    # 1 + 1 + 12 aksharas: only the last token crosses the midpoint, so there is
-    # nothing left for a second half and no empty string is emitted.
-    line = "sa ca dUrUpavaktrAmhasAkIrNanAshanaH"
-    assert app._split_into_padas(line) == [line]
+def test_split_halves_even_lines_without_losing_characters(line):
+    halves = app._split_into_padas(line)
+    total = sum(app._count_aksharas(t) for t in line.split())
+    assert len(halves) == 2
+    counts = [sum(app._count_aksharas(t) for t in half.split()) for half in halves]
+    assert counts == [total // 2, total // 2]
+    # A mid-token cut neither drops nor duplicates a character.
+    assert "".join(halves).replace(" ", "") == line.replace(" ", "")
 
 
 # ---------------------------------------------------------------------------
@@ -441,3 +468,190 @@ def test_enrich_dharmamitra_lemmas_fills_in_lemma_and_type(kosha):
     # Unattested forms and formless tokens are left untouched.
     assert by_form["xyzzy"] == {"form": "xyzzy"}
     assert {} in results["tokens"]
+
+
+# ---------------------------------------------------------------------------
+# Input files and script detection (tests/data, never the repo's input.txt)
+# ---------------------------------------------------------------------------
+
+INPUT_DIR = Path(__file__).resolve().parent / "data"
+VERSES = ["raghuvamsha-1.1", "raghuvamsha-1.2", "abhijnaana_shakuntala-1.1"]
+
+
+def _input(verse: str, suffix: str = ".txt") -> str:
+    return (INPUT_DIR / f"{verse}{suffix}").read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("verse", VERSES)
+def test_devanagari_inputs_are_detected_and_left_untouched(verse):
+    raw = _input(verse)
+    script, devanagari = app.to_devanagari(raw)
+    assert script == "Devanagari"
+    # input.devanagari must keep exactly the bytes the user supplied.
+    assert devanagari == raw
+
+
+@pytest.mark.parametrize("verse", VERSES)
+def test_iast_inputs_canonicalize_to_the_same_text(verse):
+    script, devanagari = app.to_devanagari(_input(verse, ".iast.txt"))
+    assert script == "Iast"
+    # lipi maps the IAST '.'/'..' danda spellings back to ।/॥, so the two files
+    # describe one and the same text.
+    assert devanagari == _input(verse)
+    assert app.preprocess_input(devanagari) == app.preprocess_input(app.to_devanagari(_input(verse))[1])
+
+
+@pytest.mark.parametrize("verse", VERSES)
+def test_preprocessed_verses_carry_no_separators(verse):
+    import string
+
+    cleaned = app.preprocess_input(app.to_devanagari(_input(verse))[1])
+    assert not any(char in cleaned for char in string.punctuation + "।॥")
+    # Line structure survives: no empty, padded or doubled-space lines remain.
+    assert all(line and line == " ".join(line.split()) for line in cleaned.split("\n"))
+
+
+def test_preprocess_cleans_devanagari_and_roman_input_alike():
+    assert app.preprocess_input("वागर्थौ | इव ॥") == "वागर्थौ इव"
+    assert app.preprocess_input("vāc-arthau, iva.") == "vāc arthau iva"
+
+
+@pytest.mark.parametrize(
+    ("verse", "totals"),
+    [
+        ("raghuvamsha-1.1", [16, 16]),
+        ("raghuvamsha-1.2", [16, 16]),
+        # Four 21-akshara pādas: no even-meter split exists for this verse.
+        ("abhijnaana_shakuntala-1.1", [21, 21, 21, 21]),
+    ],
+)
+def test_verse_line_totals_and_pada_splitting(verse, totals):
+    from vidyut.lipi import transliterate, Scheme
+
+    cleaned = app.preprocess_input(app.to_devanagari(_input(verse))[1])
+    slp1_lines = [
+        transliterate(line, Scheme.Devanagari, Scheme.Slp1)
+        for line in cleaned.split("\n")
+        if line.strip()
+    ]
+    assert len(slp1_lines) == len(totals)
+    assert [
+        sum(app._count_aksharas(token) for token in line.split()) for line in slp1_lines
+    ] == totals
+
+    for line, total in zip(slp1_lines, totals):
+        halves = app._split_into_padas(line)
+        if total % 2 == 0:
+            # Even-meter lines split into two akshara-equal halves.
+            assert len(halves) == 2
+            counts = [sum(app._count_aksharas(t) for t in part.split()) for part in halves]
+            assert counts == [total // 2, total // 2]
+        else:
+            # Odd pādas go to vidyut whole rather than being cut at a false boundary.
+            assert halves == [line]
+
+
+# ---------------------------------------------------------------------------
+# Verse-level chanda summary (vidyut classifications, no vidyut call)
+# ---------------------------------------------------------------------------
+
+def _pada(meter=None, aksharas=8):
+    return {"iast": "x", "meter": meter, "akshara_count": aksharas, "weight_pattern": ""}
+
+
+def test_chandas_summary_names_a_meter_only_when_every_pada_agrees():
+    lines = [{"line_iast": "a b", "padas": [_pada("anuṣṭubh"), _pada("anuṣṭubh")]}]
+    assert app._summarize_chandas(lines) == {
+        "vrtta": "anuṣṭubh",
+        "candidates": ["anuṣṭubh"],
+        "pada_count": 2,
+        "classified_pada_count": 2,
+        "aksharas_per_pada": [8, 8],
+    }
+
+
+def test_chandas_summary_lists_candidates_when_padas_disagree():
+    # Raghuvaṃśa 1.1 as vidyut's own catalogue sees it: two pādas match lookalike
+    # vṛttas, two match nothing at all — the verse gets no name but keeps both
+    # suggestions and the honest 8·8·8·8 shape.
+    lines = [{"line_iast": "l", "padas": [_pada("madalekhā"), _pada("śuddhavirāṭ"), _pada(), _pada()]}]
+    summary = app._summarize_chandas(lines)
+    assert summary["vrtta"] is None
+    assert summary["candidates"] == ["madalekhā", "śuddhavirāṭ"]
+    assert summary["pada_count"] == 4
+    assert summary["classified_pada_count"] == 2
+    assert summary["aksharas_per_pada"] == [8, 8, 8, 8]
+
+
+def test_chandas_summary_of_no_classified_padas():
+    assert app._summarize_chandas([]) == {
+        "vrtta": None,
+        "candidates": [],
+        "pada_count": 0,
+        "classified_pada_count": 0,
+        "aksharas_per_pada": [],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Engine failure policy: local engines are fatal, Dharmamitra is not
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def cli(tmp_path, monkeypatch):
+    """Run ``app.main()`` offline on a tiny file with the given engine stubs."""
+    def run(**engines):
+        for name, impl in engines.items():
+            monkeypatch.setattr(app, name, impl)
+        src = tmp_path / "in.txt"
+        src.write_text("agnim īḷe", encoding="utf-8")
+        out = tmp_path / "out.json"
+        monkeypatch.setattr(
+            sys, "argv", ["app.py", "shloka", "-i", str(src), "-o", str(out)]
+        )
+        return app.main(), json.loads(out.read_text(encoding="utf-8"))
+    return run
+
+
+def test_run_exits_1_when_vidyut_reports_unavailable(cli, capsys):
+    code, doc = cli(
+        run_sanskrit_parser=lambda *a: {"word_decompositions": {}},
+        run_dharmamitra=lambda *a: {"tokens": []},
+        run_vidyut=lambda *a: {"error": "Vidyut data directory not found"},
+    )
+    assert code == 1
+    err = capsys.readouterr().err
+    assert "Error: vidyut: Vidyut data directory not found" in err
+    assert doc["engine_outputs"]["vidyut"] == {"error": "Vidyut data directory not found"}
+
+
+def test_run_exits_1_when_sanskrit_parser_cannot_be_used(cli, capsys):
+    def missing(*a):
+        raise RuntimeError("sanskrit_parser is not installed")
+
+    code, doc = cli(
+        run_sanskrit_parser=missing,
+        run_dharmamitra=lambda *a: {"tokens": []},
+        run_vidyut=lambda *a: {"kosha": [], "prakriya": {}, "meter": [], "chandas": {}},
+    )
+    assert code == 1
+    err = capsys.readouterr().err
+    assert "Error: sanskrit_parser: unavailable: sanskrit_parser is not installed" in err
+    assert doc["engine_outputs"]["sanskrit_parser"]["error"].startswith("unavailable:")
+
+
+def test_run_exits_0_when_only_dharmamitra_is_down(cli, capsys):
+    def offline(*a):
+        raise OSError("connection refused")
+
+    code, doc = cli(
+        run_sanskrit_parser=lambda *a: {"word_decompositions": {}},
+        run_dharmamitra=offline,
+        run_vidyut=lambda *a: {"kosha": [], "prakriya": {}, "meter": [], "chandas": {}},
+    )
+    assert code == 0
+    err = capsys.readouterr().err
+    assert "Warning: dharmamitra: Dharmamitra engine failed: connection refused" in err
+    assert doc["engine_outputs"]["dharmamitra"] == {
+        "error": "Dharmamitra engine failed: connection refused"
+    }

@@ -2,21 +2,22 @@
 """samskrta-multi-parser-raw — Unified multi-engine Sanskrit analyzer.
 
 Runs three independent engines (sanskrit_parser, Dharmamitra API, vidyut)
-on the same Devanagari input and produces structured JSON results under
+on the same input — Devanagari or any romanization vidyut lipi detects (IAST,
+SLP1, Harvard-Kyoto, ITRANS) — and produces structured JSON results under
 distinct top-level keys in a single output file.
 
 Architecture:
     app.py (CLI entry point)
-    ├── preprocess_devanagari()     # Strip classical punctuation (।, ॥)
+    ├── to_devanagari()             # Detect input script, canonicalize to Devanagari
+    ├── preprocess_input()          # Replace separators with spaces, collapse whitespace
     ├── devanagari_to_iast()        # Convert Devanagari → IAST
-    ├── read_input()                # Read from file or stdin
     ├── run_sanskrit_parser()       # Local: sandhi + morphology + vakya
     ├── run_dharmamitra()           # Remote: API-based lemma tags
     ├── run_vidyut()                # Local: kosha + prakriya + meter + sandhi
     └── main()                      # Orchestrates all engines, writes JSON
 
-normalize.py is a separate CLI pass that condenses this raw output into the
-compact comparison file; it imports nothing from this module.
+postprocess_analysis.py is a separate CLI pass that condenses this raw output into
+the compact comparison file; it imports nothing from this module.
 
 Engine capabilities:
     - sanskrit_parser: Sandhi splitting, morphological tags, vakya (sentence) parsing
@@ -31,22 +32,25 @@ Usage:
 
 Output:
     - stdout by default (or FILE with -o): raw JSON for all three engines,
-      conventionally saved as output-verbose.json
-    - normalize.py condenses that into the compact output.json (see README.md)
+      conventionally saved as multi-engine-analysis.json
+    - postprocess_analysis.py condenses that into processed-analysis.json (see README.md)
 
-Error isolation:
-    Each engine runs independently. If one fails, its key contains {"error": "..."}
-    and execution continues for the remaining engines.
+Error policy:
+    Dharmamitra is a remote service and therefore optional: when it cannot be
+    reached the run continues, its key holds {"error": "..."} and stderr gets a
+    warning. sanskrit_parser and vidyut are local dependencies — if either cannot
+    run at all, the same error shape is recorded but the process exits 1.
 """
 
 import argparse
 import json
 import os
 import signal
+import string
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 # Suppress sanskrit_parser debug logging
 import logging
@@ -83,19 +87,66 @@ DATA_DIR = os.environ.get(
 # ---------------------------------------------------------------------------
 # Preprocessing
 # ---------------------------------------------------------------------------
-# Functions to clean and convert Devanagari input before processing.
+# Functions that clean input of any script and convert it to Devanagari.
 
-def preprocess_devanagari(text: str) -> str:
-    """Clean Devanagari text: remove classical punctuation (।, ॥).
-    
+# Word and verse separators people type in either script: the dandas (। ॥), the
+# ASCII pipes and dots romanized input uses for them, hyphens such as the one in
+# 'vāc-artha', commas, slashes. Sanskrit text needs no ASCII punctuation at all,
+# so every one of these becomes whitespace.
+_SEPARATORS = str.maketrans({char: " " for char in string.punctuation + "।॥"})
+
+
+def preprocess_input(text: str) -> str:
+    """Clean raw input: replace separators with spaces, collapse whitespace.
+
+    Applies to any script — Devanagari after `to_devanagari`, or a romanization
+    handed to it directly. Every separator in `_SEPARATORS` becomes a space and
+    runs of whitespace inside a line collapse to one, so 'vāc-artha', 'vāc artha.'
+    and 'vāc  artha' analyze identically. Line structure is preserved: only the
+    padding around each line is trimmed.
+
     Args:
-        text: Raw Devanagari text with possible classical punctuation
-    
+        text: Raw input text
+
     Returns:
-        Cleaned text with punctuation stripped and whitespace trimmed
+        Cleaned text, ready for the engines
     """
-    cleaned = text.replace("।", "").replace("॥", "").strip()
-    return cleaned
+    cleaned = text.translate(_SEPARATORS)
+    return "\n".join(" ".join(line.split()) for line in cleaned.split("\n")).strip()
+
+
+def detect_script(text: str) -> str:
+    """Return the name of the script vidyut lipi detects for `text`.
+
+    Args:
+        text: Raw input text in any script or romanization lipi supports
+
+    Returns:
+        Scheme name, e.g. 'Devanagari', 'Iast', 'Slp1', 'HarvardKyoto'
+    """
+    from vidyut.lipi import detect
+    return detect(text).name
+
+
+def to_devanagari(text: str) -> Tuple[str, str]:
+    """Canonicalize input of any lipi-supported script to Devanagari.
+
+    Devanagari input is returned unchanged so `input.devanagari` keeps exactly the
+    bytes the user supplied. Romanizations (IAST, SLP1, Harvard-Kyoto, ITRANS, ...)
+    are converted with lipi's own detection; its IAST scheme also maps '.' and '..'
+    back to dandas, so verse punctuation survives canonicalization.
+
+    Args:
+        text: Raw input text
+
+    Returns:
+        (detected script name, Devanagari text)
+    """
+    from vidyut.lipi import detect, transliterate, Scheme
+    scheme = detect(text)
+    if scheme.name == "Devanagari":
+        return scheme.name, text
+    return scheme.name, transliterate(text, scheme, Scheme.Devanagari)
 
 
 def devanagari_to_iast(devanagari_text: str) -> str:
@@ -561,7 +612,7 @@ def run_dharmamitra(iast_text: str, iast_lines: List[str]) -> Dict[str, Any]:
     }
 
     # One retry: the API is occasionally briefly unreachable and a single blip
-    # otherwise costs the whole engine's contribution to output.json.
+    # otherwise costs that engine's whole contribution to the analysis.
     response = None
     for attempt in range(2):
         try:
@@ -929,6 +980,10 @@ def _format_prakriya_steps(prakriya) -> List[Dict[str, Any]]:
 # f = ṛ, x = ḷ), so an akshara is exactly one character from this set.
 _VOWELS = set("aAiIuUfFxXoOeE")
 
+# Marks that close an akshara without adding a vowel of their own: anusvāra,
+# visarga, virāma and the Vedic accents vidyut writes in SLP1.
+_AKSHARA_MARKS = set("MH~\\'")
+
 
 def _count_aksharas(slp1_token: str) -> int:
     """Count syllabic nuclei (aksharas) in an SLP1 token.
@@ -943,51 +998,53 @@ def _count_aksharas(slp1_token: str) -> int:
 def _split_into_padas(slp1_line: str) -> List[str]:
     """Split a SLP1 verse line into halves at the akshara midpoint.
 
-    vidyut's Chandas classifier works per half-verse, so an anuṣṭubh line of
-    four padas must be cut where its cumulative akshara count reaches half the
-    line total; a character-count proxy misplaces that cut. Punctuation-only
-    tokens stay attached to the half they follow.
+    vidyut's Chandas classifier works per pāda, so an anuṣṭubh line of four
+    padas must be cut where its cumulative akshara count reaches exactly half the
+    line total; a character-count proxy misplaces that cut. The scan walks vowel
+    code points rather than tokens because sandhi routinely joins words across a
+    pāda boundary (मोहाद् + उडुपेन written मोहादुडुपेन), so the midpoint can fall
+    inside a token — harmless here, since these halves feed only the classifier.
+    A line whose total is odd (the 21-akshara pādas of Abhijñānaśākuntalam 1.1) or
+    too short to be a pair of pādas is returned whole instead of being cut at the
+    nearest boundary, which would hand vidyut half-verses no meter has. The line
+    arrives free of verse punctuation: `preprocess_input` removed it already.
 
     Args:
         slp1_line: SLP1-encoded line of text
 
     Returns:
-        List of SLP1 halves (single element when the line is too short to split)
+        List of SLP1 halves (single element when the line cannot be split)
     """
     tokens = slp1_line.split()
-    if not tokens:
+    if len(tokens) < 3:
         return [slp1_line]
 
-    meaningful = [t for t in tokens if t.strip(".")]
-    if len(meaningful) < 3:
+    total = sum(_count_aksharas(t) for t in tokens)
+    if total <= 12 or total % 2:
         return [slp1_line]
 
-    total = sum(_count_aksharas(t) for t in meaningful)
-    if total <= 12:
-        return [slp1_line]
-
-    half = total / 2
+    half = total // 2
     cumulative = 0
-    split_idx = len(meaningful)
-    for i, token in enumerate(meaningful):
-        cumulative += _count_aksharas(token)
-        if cumulative >= half:
-            split_idx = i + 1
-            break
+    boundary = None
+    for index, char in enumerate(slp1_line):
+        if char in _VOWELS:
+            cumulative += 1
+            if cumulative == half:
+                # An SLP1 vowel closes its akshara; the next character starts the
+                # consonants of the following one.
+                boundary = index + 1
+                break
+    if boundary is None:
+        return [slp1_line]
 
-    first_tokens: List[str] = []
-    seen_meaningful = 0
-    for token in tokens:
-        if not token.strip("."):
-            first_tokens.append(token)
-            continue
-        if seen_meaningful >= split_idx:
-            break
-        first_tokens.append(token)
-        seen_meaningful += 1
+    cut = boundary
+    while cut < len(slp1_line) and slp1_line[cut] in _AKSHARA_MARKS:
+        cut += 1
 
-    halves = [' '.join(first_tokens), ' '.join(tokens[len(first_tokens):])]
-    return [h for h in halves if h]
+    halves = [slp1_line[:cut].strip(), slp1_line[cut:].strip()]
+    if not all(halves):
+        return [slp1_line]
+    return halves
 
 
 def _get_kosha_info(kosha, word: str) -> Optional[Dict[str, Any]]:
@@ -1152,7 +1209,8 @@ def run_vidyut(devanagari_text: str) -> Dict[str, Any]:
         devanagari_text: Cleaned Devanagari text
 
     Returns:
-        Dict with kosha, prakriya, and meter sections
+        Dict with kosha, prakriya, meter (per-pāda detail) and chandas
+        (verse-level summary) sections
     """
     from vidyut.lipi import transliterate, Scheme
     from vidyut.kosha import Kosha
@@ -1176,36 +1234,25 @@ def run_vidyut(devanagari_text: str) -> Dict[str, Any]:
     # Convert Devanagari input to SLP1 for processing
     slp1_text = transliterate(devanagari_text, Scheme.Devanagari, Scheme.Slp1)
 
-    # Tokenize by whitespace, stripping line-ending punctuation
-    tokens = []
-    for line in slp1_text.strip().split("\n"):
-        line = line.strip()
-        if not line:
-            continue
-        raw_tokens = line.split()
-        for raw in raw_tokens:
-            punct = ""
-            stripped = raw
-            # preprocess_devanagari already removed the dandas, so at most an
-            # ASCII period can still be trailing here.
-            while stripped and stripped[-1] == ".":
-                punct = "." + punct
-                stripped = stripped[:-1]
-            if stripped:
-                tokens.append((stripped, punct))
+    # Tokenize by whitespace; preprocess_input already removed every separator,
+    # so a token is exactly what sits between two spaces.
+    tokens = [
+        token
+        for line in slp1_text.strip().split("\n")
+        for token in line.split()
+    ]
 
     all_dhatus = set()
     all_pratipadikas = set()
     words = []
 
-    for slp1_token, punct in tokens:
+    for slp1_token in tokens:
         iast = _slp1_to_iast_vidyut(slp1_token)
 
         entries = kosha_lookup(kosha, slp1_token)
 
         word_entry = {
             "iast": iast,
-            "punctuation": punct,
             "is_compound": False,
         }
 
@@ -1401,6 +1448,34 @@ def run_vidyut(devanagari_text: str) -> Dict[str, Any]:
             "pratipadikas": pratipadikas_prakriya,
         },
         "meter": meter_results,
+        "chandas": _summarize_chandas(meter_results),
+    }
+
+
+def _summarize_chandas(meter_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Summarize vidyut's per-pāda classifications for the whole verse.
+
+    vidyut classifies one pāda at a time against data-0.4.0/chandas/meters.tsv —
+    145 vṛttas, none of them the classical anuṣṭubh/śloka pattern — so the verse
+    only gets a name when every pāda classifies to the same one. Otherwise `vrtta`
+    stays None and vidyut's own suggestions are listed in `candidates`, next to the
+    akshara counts that show the verse's actual shape (8·8·8·8 for an anuṣṭubh).
+
+    Args:
+        meter_results: per-line pāda classifications built by run_vidyut
+
+    Returns:
+        Verse-level dict with vrtta, candidates and pada statistics
+    """
+    padas = [pada for line in meter_results for pada in line["padas"]]
+    names = [pada["meter"] for pada in padas if pada["meter"]]
+    agreed = names[0] if padas and len(names) == len(padas) and len(set(names)) == 1 else None
+    return {
+        "vrtta": agreed,
+        "candidates": sorted(set(names)),
+        "pada_count": len(padas),
+        "classified_pada_count": len(names),
+        "aksharas_per_pada": [pada["akshara_count"] for pada in padas],
     }
 
 
@@ -1409,6 +1484,36 @@ def run_vidyut(devanagari_text: str) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Orchestrates all three engines and writes the final JSON output.
 
+def _log_engine_failure(name: str, detail: str, fatal: bool) -> None:
+    """Print one engine failure line to stderr.
+
+    Args:
+        name: Engine key used in engine_outputs
+        detail: Human-readable cause
+        fatal: True prints 'Error' for the local dependencies (sanskrit_parser,
+            vidyut), whose absence makes the run exit non-zero; False prints
+            'Warning' for Dharmamitra, a remote service whose loss only costs its
+            own section of the output.
+    """
+    print(f"{'Error' if fatal else 'Warning'}: {name}: {detail}", file=sys.stderr)
+
+
+def _run_local_engine(run: Callable[[], Dict[str, Any]]) -> Dict[str, Any]:
+    """Run a local engine and normalize any failure to the shared error shape.
+
+    A raised exception and an engine returning its own {"error": ...} object —
+    vidyut does that when its data directory is missing — both mean the
+    dependency could not do its job, so the caller logs it and fails the run.
+    """
+    try:
+        results = run()
+    except Exception as exc:
+        return {"error": f"unavailable: {exc}"}
+    if isinstance(results, dict) and results.get("error"):
+        return {"error": str(results["error"])}
+    return results
+
+
 def main() -> int:
     """Main entry point.
     
@@ -1416,7 +1521,9 @@ def main() -> int:
     and writes the combined JSON output.
     
     Returns:
-        0 on success, 1 on error
+        0 on success; 1 when a local engine (sanskrit_parser or vidyut) could not
+        run, or when the output file could not be written. A missing Dharmamitra
+        service only logs a warning and still returns 0.
     """
     parser = argparse.ArgumentParser(
         description="samskrta-multi-parser-raw — Unified multi-engine Sanskrit analyzer"
@@ -1429,7 +1536,7 @@ def main() -> int:
     parser.add_argument(
         "-i", "--input",
         default=None,
-        help="Path to input file (use '-' for stdin); falls back to input.txt",
+        help="Path to input file in Devanagari or a romanization (use '-' for stdin); falls back to input.txt",
     )
     parser.add_argument(
         "-o", "--output",
@@ -1454,9 +1561,11 @@ def main() -> int:
         elif args.mode == "pada" and Path("pada_input.txt").exists():
             input_file = "pada_input.txt"
 
-    # Read input
+    # Read input and canonicalize its script: every engine downstream receives
+    # Devanagari (sanskrit_parser/vidyut) or IAST (Dharmamitra), regardless of
+    # what the user typed.
     try:
-        devanagari_text = read_input(input_file)
+        raw_text = read_input(input_file)
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
@@ -1464,15 +1573,18 @@ def main() -> int:
         print(f"Error reading input: {e}", file=sys.stderr)
         return 1
 
+    source_script, devanagari_text = to_devanagari(raw_text)
+
     # Preprocess
-    cleaned = preprocess_devanagari(devanagari_text)
-    lines = [preprocess_devanagari(line) for line in cleaned.split("\n") if line.strip()]
+    cleaned = preprocess_input(devanagari_text)
+    lines = [preprocess_input(line) for line in cleaned.split("\n") if line.strip()]
     iast_text = devanagari_to_iast(cleaned)
     iast_lines = [devanagari_to_iast(line) for line in lines]
 
     # Build output structure
     output = {
         "input": {
+            "script": source_script,
             "devanagari": devanagari_text,
             "iast": iast_text,
         },
@@ -1480,25 +1592,37 @@ def main() -> int:
         "engine_outputs": {},
     }
 
-    # Run sanskrit_parser engine
-    try:
-        output["engine_outputs"]["sanskrit_parser"] = _convert_devanagari_to_iast(run_sanskrit_parser(cleaned, args.mode))
-    except Exception as exc:
-        output["engine_outputs"]["sanskrit_parser"] = {"error": f"sanskrit_parser unavailable: {exc}"}
+    # sanskrit_parser and vidyut are local dependencies: if either cannot run at
+    # all the comparison is meaningless, so the process must exit non-zero even
+    # though the remaining engines still contribute their sections.
+    failed_local_engines: List[str] = []
 
-    # Run Dharmamitra engine
+    sp_results = _run_local_engine(
+        lambda: _convert_devanagari_to_iast(run_sanskrit_parser(cleaned, args.mode))
+    )
+    if sp_results.get("error"):
+        failed_local_engines.append("sanskrit_parser")
+        _log_engine_failure("sanskrit_parser", sp_results["error"], fatal=True)
+    output["engine_outputs"]["sanskrit_parser"] = sp_results
+
+    # Run Dharmamitra engine; an unreachable API is a logged warning, not a failed run.
     dharmamitra_results = {}
     try:
         dharmamitra_results = run_dharmamitra(iast_text, iast_lines)
-        output["engine_outputs"]["dharmamitra"] = dharmamitra_results
     except Exception as exc:
-        output["engine_outputs"]["dharmamitra"] = {"error": f"Dharmamitra engine failed: {exc}"}
+        dharmamitra_results = {"error": f"Dharmamitra engine failed: {exc}"}
+    if dharmamitra_results.get("error"):
+        _log_engine_failure("dharmamitra", str(dharmamitra_results["error"]), fatal=False)
+    output["engine_outputs"]["dharmamitra"] = dharmamitra_results
 
     # Run vidyut engine (Devanagari input; converts to SLP1 internally)
-    try:
-        output["engine_outputs"]["vidyut"] = _convert_devanagari_to_iast(run_vidyut(cleaned))
-    except Exception as exc:
-        output["engine_outputs"]["vidyut"] = {"error": f"vidyut engine failed: {exc}"}
+    vidyut_results = _run_local_engine(
+        lambda: _convert_devanagari_to_iast(run_vidyut(cleaned))
+    )
+    if vidyut_results.get("error"):
+        failed_local_engines.append("vidyut")
+        _log_engine_failure("vidyut", vidyut_results["error"], fatal=True)
+    output["engine_outputs"]["vidyut"] = vidyut_results
 
     # Enrich Dharmamitra tokens with lemmas from the vidyut kosha
     if dharmamitra_results.get("tokens"):
@@ -1518,6 +1642,14 @@ def main() -> int:
         except OSError as exc:
             print(f"Error writing output: {exc}", file=sys.stderr)
             return 1
+
+    if failed_local_engines:
+        print(
+            f"Run incomplete: {' and '.join(failed_local_engines)} "
+            "could not run; see the error entries in the output.",
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 

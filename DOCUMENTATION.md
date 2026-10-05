@@ -6,23 +6,27 @@ quirks that forced specific workarounds, and what to watch when maintaining it.
 
 ## 1. Architecture
 
-Two independent command-line passes over the same Devanagari input:
+Two independent command-line passes over the same text, which may be written in
+Devanagari or any romanization vidyut lipi detects (IAST, SLP1, Harvard-Kyoto,
+ITRANS):
 
 ```
-Devanagari text
+any-script text
+      │  detect_script() → name; to_devanagari() → Devanagari; preprocess_input() → separators as spaces
+      ▼
+ app.py ──────────────────────────────► multi-engine-analysis.json   (raw pass)
+ │   ├── run_sanskrit_parser()   local  (fatal when unavailable)
+ │   ├── run_dharmamitra()       remote HTTP, + kosha lemma enrichment (tolerated)
+ │   └── run_vidyut()            local  (fatal when unavailable; emits chandas)
       │
- app.py ──────────────────────────────► output-verbose.json   (raw pass)
- │   ├── run_sanskrit_parser()   local
- │   ├── run_dharmamitra()       remote HTTP (+ kosha lemma enrichment)
- │   └── run_vidyut()            local
-      │
- normalize.py ───────────────────────► output.json            (reading pass)
+ postprocess_analysis.py ─────────────► processed-analysis.json      (reading pass)
 ```
 
-`app.py` never imports `normalize.py`; `normalize.py` consumes the raw JSON and
-touches only two engines (`sanskrit_parser`, `dharmamitra`) plus `input`. The
-split exists because the raw dumps are ~90 KB of engine-specific noise while the
-normalized reading is ~7 KB; keeping both makes parser disagreements auditable.
+`app.py` never imports `postprocess_analysis.py`. The reading pass compares the two
+splitting engines (`sanskrit_parser`, `dharmamitra`) word by word and copies vidyut's
+verse-level `chandas` summary across; everything else vidyut produces stays in the raw
+document. The split exists because the raw dumps are ~90 KB of engine-specific noise
+while the processed reading is ~7 KB; keeping both makes parser disagreements auditable.
 
 ### Error isolation
 
@@ -36,12 +40,19 @@ Every engine call is wrapped so a failure becomes data, never a crash:
 | Vidyut data missing | `{"error": "Vidyut data directory not found"}` |
 | Vidyut library init failure | `{"error": "Vidyut initialization failed: <exc>"}` |
 
-Two consequences worth knowing:
+Three consequences worth knowing:
 
-- **`engine_errors` in `output.json`.** `normalize_raw` scans the engine dicts for
-  an `error` key and emits `"engine_errors": {engine: message}` only when at least
-  one engine failed. Without it, a crashed engine is indistinguishable from a text
-  that genuinely produced no analysis.
+- **Exit codes, not just error objects.** A Dharmamitra failure is tolerated — one
+  `Warning:` line on stderr and exit code 0, because the remote API is outside our
+  control and only its section degrades. When a *local* engine cannot run at all the
+  run fails: `_run_local_engine` normalizes both shapes an engine can fail in (a raised
+  exception, and vidyut's habit of *returning* `{"error": "Vidyut data directory not found"}`)
+  into one error object, prints `Error: <engine>: …`, and `main()` exits 1 after writing
+  the document. A run that silently loses an engine is worse than a failing one.
+- **`engine_errors` in `processed-analysis.json`.** `postprocess()` scans all three
+  engine dicts for an `error` key and emits `"engine_errors": {engine: message}` only
+  when at least one engine failed. Without it, a crashed engine is indistinguishable
+  from a text that genuinely produced no analysis.
 - **The vakya watchdog.** sanskrit_parser's vakya (dependency) parsing can spin on
   long pādas, so each parse runs under `signal.alarm(VAKYA_TIMEOUT_SECS)` (5 s). A
   timeout records `"vakya_error"` on that split instead of a graph. The alarm is
@@ -55,12 +66,37 @@ bare `except Exception: pass` blocks in the vidyut prakriya and sandhi paths.
 ## 2. Transliteration pipeline
 
 Three scripts are in play; every conversion is explicit about which one it uses.
+Input may arrive in any of them — `detect_script()` asks vidyut lipi which, and the
+answer is recorded verbatim as `input.script` (`"Devanagari"`, `"Iast"`, `"Slp1"`, …).
 
 | Script | Used by | Notes |
 |---|---|---|
-| Devanagari | user input, `input.devanagari` | the only place Devanagari survives into any output |
+| Devanagari | canonical internal form, `input.devanagari` | every script is transliterated to it before analysis; the only place Devanagari survives into any output |
 | SLP1 | vidyut (kosha, sandhi, prakriya, chandas), sanskrit_parser internals | one code point per vowel: `A`=ā, `E`=ai, `O`=au, `f`=ṛ, `x`=ḷ |
 | IAST | all emitted text, Dharmamitra request/response | Unicode with combining diacritics — **not** ASCII |
+
+Input normalization happens once, in this order:
+
+- `detect_script(text)` — lipi's detector; returns the scheme name as a string. Note
+  that `detect(iast_text) is Scheme.Iast` is False (the function hands back a member
+  whose `.name` you compare), and an ASCII-only string such as `"agnim ile"` detects
+  as `"Devanagari"`, which is harmless because transliterating it to Devanagari is a
+  no-op round trip.
+- `to_devanagari(text)` — Devanagari input passes through byte-identically; anything
+  else goes through `lipi.transliterate(text, scheme, Scheme.Devanagari)`. lipi does
+  **not** transliterate literal separators: a `|` typed inside IAST text stays a `|`.
+- `preprocess_input(devanagari)` — every character of `string.punctuation` plus the
+  dandas `।॥` becomes a space, then whitespace runs are collapsed per line. This is
+  what makes `vāc-artha`, `vāc artha.` and `vāc  artha` analyze identically; it also
+  means an avagraha written as `'` simply disappears. Newlines survive so verse
+  structure is kept, and only the padding around a line is trimmed. Running it twice
+  changes nothing (idempotent).
+
+What gets *recorded* differs from what gets *analyzed*: `input.devanagari` holds the
+canonicalized user text with its separators verbatim, while `input.iast` and every
+engine receive the cleaned text. A comma- and hyphen-riddled IAST input therefore shows
+its punctuation back in `input.devanagari` yet produces byte-identical dharmamitra and
+vidyut subtrees (verified on Raghuvaṃśa 1.2).
 
 Conversion helpers in `app.py`:
 
@@ -85,23 +121,25 @@ its accent marks because `Dhatu.mula()` expects them.
 Meter analysis needs syllable counts, and character counts are wrong
 (conjuncts share a vowel; anusvāra/visarga carry none). SLP1's one-vowel-per-code
 point property makes the correct count trivial: `_count_aksharas` counts
-characters in `_VOWELS = "aAiIuUfFxXoOeE"`. That feeds `_split_into_padas`, which
-cuts a verse line where cumulative aksharas reach half the line, so vidyut's
-per-pāda classifier sees true 8+8 (or 11/12-syllable) halves instead of whole
-lines. Lines with fewer than three meaningful tokens or ≤ 12 aksharas pass
-through unsplit.
+characters in `_VOWELS = "aAiIuUfFxXoOeE"`. That feeds `_split_into_padas`, which cuts
+a verse line where cumulative aksharas reach half the line, so vidyut's per-pāda
+classifier sees true 8+8 (or 11/12-syllable) halves instead of whole lines. The cut is
+made at an exact akshara position even if that lands inside a written token — sandhi
+joins words across pāda boundaries, and the halves feed only the classifier, never the
+word list. Lines whose total aksharas are odd or ≤ 12, and lines with fewer than three
+tokens, pass through unsplit rather than being cut at a false boundary.
 
 ## 3. Determinism
 
-The normalized pass is reproducible: the same `output-verbose.json` always yields a
-byte-identical `output.json`. The rules that buy that stability:
+The processed pass is reproducible: the same `multi-engine-analysis.json` always yields
+a byte-identical `processed-analysis.json`. The rules that buy that stability:
 
 - **Ranked, never first-seen.** SP split candidates go through `_best_word_split`;
   morphology groups through `_morph_rank` (a complete case reading outranks a
   fragment such as one tagged only `samāsapūrvapadanāmapadam`). Vidyut split chains
   are scored by `_chain_score` = (kosha-attested parts, −len(chain)).
 - **Anusvara-normalized keys.** `saṃpṛktau` and `sampṛktau` must collide onto one
-  key; `normalize._norm_anusvara` does that, and the *key* is normalized at
+  key; `postprocess_analysis._norm_anusvara` does that, and the *key* is normalized at
   collection time so collisions resolve by rank rather than by dict insertion
   order.
 - **Sorted iteration where a library's order is unspecified.** vidyut/sanskrit_parser
@@ -118,16 +156,16 @@ sanskrit_parser enumerate candidate splits and vakya parses in an order it does 
 specify, so two `app.py shloka` runs differ in `engine_outputs.sanskrit_parser`
 (observed: 5 different split candidates between runs, and `vakya_parses` appearing or
 not depending on which parse crossed the 5 s watchdog). The dharmamitra and vidyut
-subtrees were byte-identical across those runs. Because normalize re-ranks rather than
+subtrees were byte-identical across those runs. Because postprocess re-ranks rather than
 traverses, that noise usually cancels — but when sanskrit_parser proposes a genuinely
-different candidate set, `output.json` legitimately changes with it. Pin the raw file
-(and hence the normalized one) if you need archival reproducibility.
+different candidate set, `processed-analysis.json` legitimately changes with it. Pin the raw file
+(and hence the processed one) if you need archival reproducibility.
 
 ## 4. Lemma provenance (Dharmamitra tokens)
 
 The Dharmamitra API returns surface forms only — no lemmas. `enrich_dharmamitra_lemmas`
-fills them from the **local vidyut kosha**, so lemma claims in `output.json` are
-vidyut's, not the API's.
+fills them from the **local vidyut kosha**, so lemma claims in `processed-analysis.json`
+are vidyut's, not the API's.
 
 Lookup path: IAST form → Devanagari → SLP1 via *sanscript* (not vidyut lipi:
 lipi's Iast→Slp1 yields `arTau`, while the kosha keys inflected forms as `arTO`).
@@ -172,12 +210,21 @@ data-0.4.0/            # VIDYUT_DATA_DIR (default ./data-0.4.0)
 `Kosha.get` keys are *inflected* SLP1 forms (`vAk`, `arTO`, `jagataH`), which is why
 the pause/stem normalization of §4 exists.
 
+`chandas/meters.tsv` holds 145 vṛttas whose third column is a `/`-separated list of pāda
+patterns; `Chandas.classify(slp1)` exposes only `.padya` (the matched name or `None`) and
+`.aksharas`, while `vrttas`/`jatis` are attributes, not methods. The catalogue has **no
+anuṣṭubh/śloka entry**, so a classical śloka's pādas match lookalikes instead: Raghuvaṃśa
+1.1 yields `madalekhā` and `śuddhavirāṭ` for two pādas and nothing for the other two.
+`_summarize_chandas` reports that honestly — `vrtta: null`, both names in `candidates`, the
+real shape in `aksharas_per_pada: [8, 8, 8, 8]`. Do not "fix" the null by promoting a
+candidate; vidyut's data simply does not know the śloka vṛtta.
+
 ## 7. Development workflow
 
 ```bash
 uv sync                                   # runtime deps + pytest (dev group)
-uv run python app.py shloka -o output-verbose.json   # ~20 s; hits the DM API
-uv run python normalize.py -o output.json            # offline, instant
+uv run python app.py shloka -o multi-engine-analysis.json   # ~20 s; hits the DM API
+uv run python postprocess_analysis.py                       # offline, instant
 uv run pytest -q                          # offline suite
 ```
 
@@ -185,8 +232,11 @@ uv run pytest -q                          # offline suite
   root on `sys.path`. Tests are deterministic and never call the Dharmamitra API;
   kosha-backed tests use a module-scoped fixture over the local data.
 - Both passes write to stdout by default (`-o -`). Piping is therefore explicit:
-  `uv run python app.py shloka > output-verbose.json`. normalize.py prints its size
-  summary to stderr so stdout redirection stays clean.
+  `uv run python app.py shloka > multi-engine-analysis.json`. postprocess_analysis.py
+  prints its size summary to stderr so stdout redirection stays clean.
+- Exit codes: `app.py` exits 1 when a local engine (sanskrit_parser, vidyut) could not
+  run at all — the error object is still written to the output file first; an offline
+  Dharmamitra API only produces a warning and exit 0.
 - On import, sanskrit_parser sets its own logger to DEBUG and attaches a stderr
   handler; suppression must be applied *after* importing it, otherwise every run
   emits ~180 MB of debug noise into whatever stream you redirected.
@@ -201,14 +251,14 @@ Ordered by how likely they are to bite:
 2. **SIGALRM is POSIX-only and native-blind.** The vakya watchdog cannot interrupt C
    extensions (vidyut, sanskrit_parser internals) that never return to the Python
    interpreter, and it does nothing on Windows. Treat 5 s as a guardrail, not a bound.
-3. **Unpinned upstreams vs hard-coded tag spellings.** `normalize.py` matches IAST tag
+3. **Unpinned upstreams vs hard-coded tag spellings.** `postprocess_analysis.py` matches IAST tag
    strings (`prathamāvibhaktiḥ`, `bahuvacanam`, `puṃlliṅgam`) and the residual tag
    `samāsapūrvapadanāmapadam`. `pyproject.toml` pins only `vidyut>=0.4.0`;
    `sanskrit-parser` and `indic-transliteration` float, so a wording change upstream
    silently degrades morphology extraction to empty fields rather than failing loudly.
-   Pin them before relying on the normalized output in a pipeline.
-4. **`_norm_anusvara` is duplicated** between `app.py` and `normalize.py`. Deliberate:
-   normalize.py stays stdlib-only so it can be run against any raw JSON without
+   Pin them before relying on the processed output in a pipeline.
+4. **`_norm_anusvara` is duplicated** between `app.py` and `postprocess_analysis.py`. Deliberate:
+   the postprocessor stays stdlib-only so it can be run against any raw JSON without
    importing the heavy engine stack. Change one, remember the other.
 5. **Retry policy is minimal.** One retry for Dharmamitra connection errors; no backoff,
    no caching, no resume. Re-running a shloka costs ~20 s and re-hits the API.

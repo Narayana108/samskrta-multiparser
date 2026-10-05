@@ -1,4 +1,4 @@
-"""Offline, deterministic tests for normalize.py.
+"""Offline, deterministic tests for postprocess_analysis.py.
 
 Every fixture is a hand-written dict in the shape of the raw multi-engine
 analysis output; all strings are IAST, matching the project's output
@@ -8,7 +8,7 @@ untouched here.
 
 import pytest
 
-import normalize
+import postprocess_analysis
 
 
 # ---------------------------------------------------------------------------
@@ -16,15 +16,15 @@ import normalize
 # ---------------------------------------------------------------------------
 
 def test_norm_anusvara_collides_variant_spellings():
-    assert normalize._norm_anusvara("saṃpṛktau") == "sampṛktau"
-    assert normalize._norm_anusvara("sampṛktau") == "sampṛktau"
+    assert postprocess_analysis._norm_anusvara("saṃpṛktau") == "sampṛktau"
+    assert postprocess_analysis._norm_anusvara("sampṛktau") == "sampṛktau"
 
 
 def test_norm_anusvara_rewrites_only_anusvara_and_is_idempotent():
-    assert normalize._norm_anusvara("durlabhaṃ") == "durlabham"
+    assert postprocess_analysis._norm_anusvara("durlabhaṃ") == "durlabham"
     for word in ("vāgarthāviva", "havyaṃ", "saṃbodhana"):
-        once = normalize._norm_anusvara(word)
-        assert normalize._norm_anusvara(once) == once
+        once = postprocess_analysis._norm_anusvara(word)
+        assert postprocess_analysis._norm_anusvara(once) == once
 
 
 # ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ def test_parse_full_tag_group():
         "root": "vāgartha",
         "tags": ["bahuvacanam", "prathamāvibhaktiḥ", "puṃlliṅgam"],
     }
-    assert normalize.parse_sp_tag_group(group) == {
+    assert postprocess_analysis.parse_sp_tag_group(group) == {
         "root": "vāgartha",
         "vacana": "bahu",
         "vibhakti": "prathamā",
@@ -55,7 +55,7 @@ def test_parse_full_tag_group():
     ("saṃbodhanavibhaktiḥ", "saṃbodhana"),
 ])
 def test_parse_vibhakti_tag(tag, expected):
-    assert normalize.parse_sp_tag_group({"tags": [tag]}) == {"vibhakti": expected}
+    assert postprocess_analysis.parse_sp_tag_group({"tags": [tag]}) == {"vibhakti": expected}
 
 
 @pytest.mark.parametrize("tag, short", [
@@ -64,7 +64,7 @@ def test_parse_vibhakti_tag(tag, expected):
     ("bahuvacanam", "bahu"),
 ])
 def test_parse_vacana_tag(tag, short):
-    assert normalize.parse_sp_tag_group({"tags": [tag]}) == {"vacana": short}
+    assert postprocess_analysis.parse_sp_tag_group({"tags": [tag]}) == {"vacana": short}
 
 
 @pytest.mark.parametrize("linga", [
@@ -73,7 +73,7 @@ def test_parse_vacana_tag(tag, short):
     "napuṃsakaliṅgam",
 ])
 def test_parse_linga_tag_keeps_full_tag(linga):
-    assert normalize.parse_sp_tag_group({"tags": [linga]}) == {"linga": linga}
+    assert postprocess_analysis.parse_sp_tag_group({"tags": [linga]}) == {"linga": linga}
 
 
 def test_unrecognized_tags_survive_in_residual_list_stripped_and_ordered():
@@ -81,7 +81,7 @@ def test_unrecognized_tags_survive_in_residual_list_stripped_and_ordered():
         "root": "rāma",
         "tags": ["samāsapūrvapadanāmapadam", " bahuvacanam ", "\tkaviḥ", "aniṣṭa"],
     }
-    parsed = normalize.parse_sp_tag_group(group)
+    parsed = postprocess_analysis.parse_sp_tag_group(group)
     assert parsed["vacana"] == "bahu"
     assert parsed["tags"] == ["samāsapūrvapadanāmapadam", "kaviḥ", "aniṣṭa"]
     assert "vibhakti" not in parsed
@@ -89,23 +89,23 @@ def test_unrecognized_tags_survive_in_residual_list_stripped_and_ordered():
 
 def test_vibhakti_regex_is_anchored():
     # A near-miss tag must fall through to the residual list, not match.
-    assert normalize.parse_sp_tag_group(
+    assert postprocess_analysis.parse_sp_tag_group(
         {"tags": ["prathamāvibhaktiḥpurvam"]}
     ) == {"tags": ["prathamāvibhaktiḥpurvam"]}
 
 
 def test_root_only_emitted_when_nonempty():
-    assert normalize.parse_sp_tag_group({"root": "", "tags": ["ekavacanam"]}) == {
+    assert postprocess_analysis.parse_sp_tag_group({"root": "", "tags": ["ekavacanam"]}) == {
         "vacana": "eka"
     }
-    assert normalize.parse_sp_tag_group({"root": "agni", "tags": []}) == {
+    assert postprocess_analysis.parse_sp_tag_group({"root": "agni", "tags": []}) == {
         "root": "agni"
     }
 
 
 def test_empty_group_returns_none():
-    assert normalize.parse_sp_tag_group({"tags": []}) is None
-    assert normalize.parse_sp_tag_group({}) is None
+    assert postprocess_analysis.parse_sp_tag_group({"tags": []}) is None
+    assert postprocess_analysis.parse_sp_tag_group({}) is None
 
 
 # ---------------------------------------------------------------------------
@@ -122,13 +122,13 @@ _COMPOUND_FRAGMENT = {"tags": ["samāsapūrvapadanāmapadam"]}
 
 
 def test_full_case_reading_beats_compound_marker_in_both_orders():
-    assert normalize._morph_rank(_FULL_READING) > normalize._morph_rank(
+    assert postprocess_analysis._morph_rank(_FULL_READING) > postprocess_analysis._morph_rank(
         _COMPOUND_FRAGMENT
     )
-    assert max([_COMPOUND_FRAGMENT, _FULL_READING], key=normalize._morph_rank) is (
+    assert max([_COMPOUND_FRAGMENT, _FULL_READING], key=postprocess_analysis._morph_rank) is (
         _FULL_READING
     )
-    assert max([_FULL_READING, _COMPOUND_FRAGMENT], key=normalize._morph_rank) is (
+    assert max([_FULL_READING, _COMPOUND_FRAGMENT], key=postprocess_analysis._morph_rank) is (
         _FULL_READING
     )
 
@@ -136,11 +136,11 @@ def test_full_case_reading_beats_compound_marker_in_both_orders():
 def test_rank_prefers_vacana_then_fewer_residual_tags():
     case_and_number = {"vibhakti": "tṛtīyā", "vacana": "eka"}
     case_only = {"vibhakti": "tṛtīyā"}
-    assert normalize._morph_rank(case_and_number) > normalize._morph_rank(case_only)
+    assert postprocess_analysis._morph_rank(case_and_number) > postprocess_analysis._morph_rank(case_only)
 
     lean = {"vibhakti": "tṛtīyā", "tags": ["kaviḥ"]}
     heavy = {"vibhakti": "tṛtīyā", "tags": ["kaviḥ", "aniṣṭa"]}
-    assert normalize._morph_rank(lean) > normalize._morph_rank(heavy)
+    assert postprocess_analysis._morph_rank(lean) > postprocess_analysis._morph_rank(heavy)
 
 
 # ---------------------------------------------------------------------------
@@ -186,7 +186,7 @@ def test_collect_morphology_recurses_through_nested_splits_and_errors():
             }]},
         ],
     }
-    assert normalize.collect_sp_morphology(sp_output) == {
+    assert postprocess_analysis.collect_sp_morphology(sp_output) == {
         "vāgarthāviva": {
             "root": "vāgartha",
             "vacana": "bahu",
@@ -204,8 +204,8 @@ def test_collect_morphology_anusvara_collision_winner_is_order_independent():
         "vibhakti": "prathamā",
         "linga": "puṃlliṅgam",
     }}
-    forward = normalize.collect_sp_morphology(_nested_sp_raw(fragment_first=False))
-    reverse = normalize.collect_sp_morphology(_nested_sp_raw(fragment_first=True))
+    forward = postprocess_analysis.collect_sp_morphology(_nested_sp_raw(fragment_first=False))
+    reverse = postprocess_analysis.collect_sp_morphology(_nested_sp_raw(fragment_first=True))
     assert forward == expected  # full reading wins over the fragment
     assert reverse == forward   # not last-writer-wins
 
@@ -221,7 +221,7 @@ def test_collect_decompositions_filters_bad_entries():
         "all-non-str": [None, 5],
         "mixed": ["upa", "x", None],
     }}
-    assert normalize.collect_sp_decompositions(sp_output) == {
+    assert postprocess_analysis.collect_sp_decompositions(sp_output) == {
         "agnim": ["agni"],
         "mixed": ["upa", "x"],
     }
@@ -229,7 +229,7 @@ def test_collect_decompositions_filters_bad_entries():
 
 @pytest.mark.parametrize("sp_output", [{}, {"word_decompositions": None}])
 def test_collect_decompositions_missing_input_gives_empty_dict(sp_output):
-    assert normalize.collect_sp_decompositions(sp_output) == {}
+    assert postprocess_analysis.collect_sp_decompositions(sp_output) == {}
 
 
 def test_collect_decompositions_collision_prefers_more_parts():
@@ -237,7 +237,7 @@ def test_collect_decompositions_collision_prefers_more_parts():
         "sampṛktau": ["sa", "pṛktau"],
         "saṃpṛktau": ["sampṛktau"],
     }}
-    assert normalize.collect_sp_decompositions(sp_output) == {
+    assert postprocess_analysis.collect_sp_decompositions(sp_output) == {
         "sampṛktau": ["sa", "pṛktau"]
     }
 
@@ -252,7 +252,7 @@ def test_collect_decompositions_collision_tie_break_is_lexicographic(keys_first)
     }
     if not keys_first:
         pair = {"saṃy": ["a", "z"], "samy": ["p", "q"]}
-    assert normalize.collect_sp_decompositions({"word_decompositions": pair}) == {
+    assert postprocess_analysis.collect_sp_decompositions({"word_decompositions": pair}) == {
         "samy": ["a", "z"]
     }
 
@@ -270,7 +270,7 @@ def test_collect_dm_tokens_drops_unusable_entries():
         None,
         {"form": "vīra"},
     ]}
-    assert normalize.collect_dm_tokens(dm_output) == [
+    assert postprocess_analysis.collect_dm_tokens(dm_output) == [
         {"form": "agnim", "lemma": "agni", "kosha_type": "noun"},
         {"form": "vīra"},
     ]
@@ -278,13 +278,13 @@ def test_collect_dm_tokens_drops_unusable_entries():
 
 @pytest.mark.parametrize("dm_output", [{}, {"tokens": None}, {"tokens": []}])
 def test_collect_dm_tokens_missing_or_empty_tokens(dm_output):
-    assert normalize.collect_dm_tokens(dm_output) == []
+    assert postprocess_analysis.collect_dm_tokens(dm_output) == []
 
 
 def test_group_dm_tokens_greedy_first_letter_split():
     words = ["havyaṃ", "pavakaḥ"]
     tokens = [{"form": "havyam"}, {"form": "hutaḥ"}, {"form": "kaviḥ"}]
-    groups = normalize.group_dm_tokens_by_word(words, tokens)
+    groups = postprocess_analysis.group_dm_tokens_by_word(words, tokens)
     assert [[t["form"] for t in g] for g in groups] == [
         ["havyam", "hutaḥ"],
         ["kaviḥ"],
@@ -293,15 +293,15 @@ def test_group_dm_tokens_greedy_first_letter_split():
 
 def test_group_dm_tokens_attaches_trailing_tokens_to_last_pada():
     tokens = [{"form": "agnim"}, {"form": "sūryaḥ"}]  # 's' matches no word letter
-    groups = normalize.group_dm_tokens_by_word(["agniḥ"], tokens)
+    groups = postprocess_analysis.group_dm_tokens_by_word(["agniḥ"], tokens)
     assert [[t["form"] for t in g] for g in groups] == [["agnim", "sūryaḥ"]]
 
 
 def test_group_dm_tokens_empty_inputs():
-    empty_groups = normalize.group_dm_tokens_by_word(["agniḥ", "īḷe"], [])
+    empty_groups = postprocess_analysis.group_dm_tokens_by_word(["agniḥ", "īḷe"], [])
     assert empty_groups == [[], []]
     # No pada to attach to: unmatched tokens are dropped, not fabricated.
-    assert normalize.group_dm_tokens_by_word([], [{"form": "agnim"}]) == []
+    assert postprocess_analysis.group_dm_tokens_by_word([], [{"form": "agnim"}]) == []
 
 
 # ---------------------------------------------------------------------------
@@ -309,21 +309,21 @@ def test_group_dm_tokens_empty_inputs():
 # ---------------------------------------------------------------------------
 
 def test_diff_regions_equal_sequences_including_anusvara_variants():
-    assert normalize._diff_regions(["dharmaḥ"], ["dharmaḥ"]) == []
-    assert normalize._diff_regions(["saṃpṛktau"], ["sampṛktau"]) == []
+    assert postprocess_analysis._diff_regions(["dharmaḥ"], ["dharmaḥ"]) == []
+    assert postprocess_analysis._diff_regions(["saṃpṛktau"], ["sampṛktau"]) == []
 
 
 def test_diff_regions_replace_region():
-    assert normalize._diff_regions(
+    assert postprocess_analysis._diff_regions(
         ["agniḥ", "samiddhaḥ"], ["agniḥ", "samiddham"]
     ) == [{"sanskrit_parser": ["samiddhaḥ"], "dharmamitra": ["samiddham"]}]
 
 
 def test_diff_regions_insert_and_delete_have_null_sides():
-    assert normalize._diff_regions(["dharmaḥ"], ["dharmaḥ", "cāraḥ"]) == [
+    assert postprocess_analysis._diff_regions(["dharmaḥ"], ["dharmaḥ", "cāraḥ"]) == [
         {"sanskrit_parser": None, "dharmamitra": ["cāraḥ"]}
     ]
-    assert normalize._diff_regions(["tapaḥ", "dhena"], []) == [
+    assert postprocess_analysis._diff_regions(["tapaḥ", "dhena"], []) == [
         {"sanskrit_parser": ["tapaḥ", "dhena"], "dharmamitra": None}
     ]
 
@@ -333,12 +333,12 @@ def test_diff_regions_insert_and_delete_have_null_sides():
 # ---------------------------------------------------------------------------
 
 def test_dm_word_entry_filters_keys():
-    assert normalize._dm_word_entry({"form": "agnim"}) == {"form": "agnim"}
-    assert normalize._dm_word_entry(
+    assert postprocess_analysis._dm_word_entry({"form": "agnim"}) == {"form": "agnim"}
+    assert postprocess_analysis._dm_word_entry(
         {"form": "agnim", "lemma": "agni", "kosha_type": "noun"}
     ) == {"form": "agnim", "lemma": "agni", "type": "noun"}
     # Empty enrichment values are dropped.
-    assert normalize._dm_word_entry(
+    assert postprocess_analysis._dm_word_entry(
         {"form": "agnim", "lemma": "", "kosha_type": ""}
     ) == {"form": "agnim"}
 
@@ -351,7 +351,7 @@ def test_sp_word_entry_looks_up_normalized_form_and_filters_keys():
         "linga": "puṃlliṅgam",
         "tags": ["samāsapūrvapadanāmapadam"],
     }}
-    assert normalize._sp_word_entry("saṃpṛktau", morph) == {
+    assert postprocess_analysis._sp_word_entry("saṃpṛktau", morph) == {
         "form": "saṃpṛktau",
         "root": "vāgartha",
         "vibhakti": "prathamā",
@@ -359,9 +359,9 @@ def test_sp_word_entry_looks_up_normalized_form_and_filters_keys():
         "linga": "puṃlliṅgam",
         "tags": ["samāsapūrvapadanāmapadam"],
     }
-    assert normalize._sp_word_entry("īḷe", morph) == {"form": "īḷe"}
+    assert postprocess_analysis._sp_word_entry("īḷe", morph) == {"form": "īḷe"}
     # Falsy morphology fields are not copied.
-    assert normalize._sp_word_entry(
+    assert postprocess_analysis._sp_word_entry(
         "agni", {"agni": {"root": "", "tags": [], "vacana": "eka"}}
     ) == {"form": "agni", "vacana": "eka"}
 
@@ -382,7 +382,7 @@ def _tapodhena_fixture():
 
 def test_build_padas_full_entry_with_differences_when_dm_available():
     words, sp_decomp, sp_morph, dm_groups = _tapodhena_fixture()
-    padas = normalize.build_padas(words, sp_decomp, sp_morph, dm_groups, True)
+    padas = postprocess_analysis.build_padas(words, sp_decomp, sp_morph, dm_groups, True)
     assert padas == [{
         "pada": "tapodhena",
         "dharmamitra": {
@@ -404,13 +404,13 @@ def test_build_padas_full_entry_with_differences_when_dm_available():
 
 def test_build_padas_dm_available_false_omits_differences_entirely():
     words, sp_decomp, sp_morph, dm_groups = _tapodhena_fixture()
-    padas = normalize.build_padas(words, sp_decomp, sp_morph, dm_groups, False)
+    padas = postprocess_analysis.build_padas(words, sp_decomp, sp_morph, dm_groups, False)
     assert set(padas[0]) == {"pada", "dharmamitra", "sanskrit_parser"}
     assert "differences" not in padas[0]
 
 
 def test_build_padas_empty_dm_group_with_dm_available_gives_null_side():
-    padas = normalize.build_padas(
+    padas = postprocess_analysis.build_padas(
         ["tapodhena"], {"tapodhena": ["tapaḥ", "dhena"]}, {}, [[]], True
     )
     assert padas[0]["dharmamitra"] is None
@@ -420,7 +420,7 @@ def test_build_padas_empty_dm_group_with_dm_available_gives_null_side():
 
 
 def test_build_padas_agreeing_engines_get_no_differences_key():
-    padas = normalize.build_padas(
+    padas = postprocess_analysis.build_padas(
         ["agnim"], {"agnim": ["agnim"]}, {}, [[{"form": "agnim"}]], True
     )
     assert "differences" not in padas[0]
@@ -428,7 +428,7 @@ def test_build_padas_agreeing_engines_get_no_differences_key():
 
 
 def test_build_padaccheda_none_for_engines_without_parts():
-    assert normalize.build_padaccheda([]) == {
+    assert postprocess_analysis.build_padaccheda([]) == {
         "dharmamitra": None,
         "sanskrit_parser": None,
     }
@@ -437,7 +437,7 @@ def test_build_padaccheda_none_for_engines_without_parts():
         "dharmamitra": None,
         "sanskrit_parser": {"padaccheda": [], "words": []},
     }]
-    assert normalize.build_padaccheda(padas) == {
+    assert postprocess_analysis.build_padaccheda(padas) == {
         "dharmamitra": None,
         "sanskrit_parser": None,
     }
@@ -456,14 +456,14 @@ def test_build_padaccheda_joins_parts_with_pipe():
             "sanskrit_parser": {"padaccheda": ["īḷe"], "words": []},
         },
     ]
-    assert normalize.build_padaccheda(padas) == {
+    assert postprocess_analysis.build_padaccheda(padas) == {
         "dharmamitra": "agnim",
         "sanskrit_parser": "agni | īḷe",
     }
 
 
 # ---------------------------------------------------------------------------
-# normalize_raw
+# postprocess
 # ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize("raw", [
@@ -478,9 +478,9 @@ def test_build_padaccheda_joins_parts_with_pipe():
     {"input": {"iast": "   "}},
     {"input": {"iast": "\n \t"}},
 ])
-def test_normalize_raw_requires_string_input_iast(raw):
+def test_postprocess_requires_string_input_iast(raw):
     with pytest.raises(ValueError) as excinfo:
-        normalize.normalize_raw(raw)
+        postprocess_analysis.postprocess(raw)
     assert str(excinfo.value) == "raw output has no usable 'input.iast' string"
 
 
@@ -506,8 +506,8 @@ def _clean_raw() -> dict:
     }
 
 
-def test_normalize_raw_clean_fixture_end_to_end():
-    normalized = normalize.normalize_raw(_clean_raw())
+def test_postprocess_clean_fixture_end_to_end():
+    normalized = postprocess_analysis.postprocess(_clean_raw())
     assert normalized == {
         "mode": "verbose",
         "input": {"iast": "agnim īḷe"},
@@ -545,13 +545,13 @@ def test_normalize_raw_clean_fixture_end_to_end():
     assert "engine_errors" not in normalized
 
 
-def test_normalize_raw_records_engine_error_and_keeps_other_engine():
+def test_postprocess_records_engine_error_and_keeps_other_engine():
     raw = _clean_raw()
     raw["engine_outputs"] = {
         "sanskrit_parser": raw["engine_outputs"]["sanskrit_parser"],
         "dharmamitra": {"error": "boom"},
     }
-    normalized = normalize.normalize_raw(raw)
+    normalized = postprocess_analysis.postprocess(raw)
     assert normalized["engine_errors"] == {"dharmamitra": "boom"}
     # The surviving engine is still processed; DM side is empty everywhere.
     assert normalized["padaccheda"]["sanskrit_parser"] == "agni | īḷe"
@@ -560,7 +560,7 @@ def test_normalize_raw_records_engine_error_and_keeps_other_engine():
     assert all("differences" not in p for p in normalized["padas"])
 
 
-def test_normalize_raw_error_key_coerced_to_str_and_both_engines_recorded():
+def test_postprocess_error_key_coerced_to_str_and_both_engines_recorded():
     raw = {
         "input": {"iast": "agnim"},
         "engine_outputs": {
@@ -568,16 +568,16 @@ def test_normalize_raw_error_key_coerced_to_str_and_both_engines_recorded():
             "dharmamitra": {"error": 7},
         },
     }
-    normalized = normalize.normalize_raw(raw)
+    normalized = postprocess_analysis.postprocess(raw)
     assert normalized["engine_errors"] == {
         "sanskrit_parser": "sp failed",
         "dharmamitra": "7",
     }
 
 
-def test_normalize_raw_without_engine_outputs_at_all():
+def test_postprocess_without_engine_outputs_at_all():
     raw = {"input": {"iast": "agnim īḷe"}}
-    normalized = normalize.normalize_raw(raw)
+    normalized = postprocess_analysis.postprocess(raw)
     assert normalized["mode"] is None  # 'mode' passed through from raw
     assert normalized["padaccheda"] == {
         "dharmamitra": None,
@@ -587,3 +587,24 @@ def test_normalize_raw_without_engine_outputs_at_all():
     assert all(p["dharmamitra"] is None for p in normalized["padas"])
     assert all("differences" not in p for p in normalized["padas"])
     assert "engine_errors" not in normalized
+
+
+def test_postprocess_passes_vidyut_chandas_summary_through():
+    raw = _clean_raw()
+    chanda = {
+        "vrtta": None,
+        "candidates": ["sragdharā"],
+        "pada_count": 4,
+        "classified_pada_count": 3,
+        "aksharas_per_pada": [21, 21, 21, 21],
+    }
+    raw["engine_outputs"]["vidyut"] = {"chandas": chanda, "meter": []}
+    assert postprocess_analysis.postprocess(raw)["chandas"] == chanda
+
+
+def test_postprocess_records_vidyut_error_and_omits_chandas():
+    raw = _clean_raw()
+    raw["engine_outputs"]["vidyut"] = {"error": "Vidyut data directory not found"}
+    processed = postprocess_analysis.postprocess(raw)
+    assert processed["engine_errors"]["vidyut"] == "Vidyut data directory not found"
+    assert "chandas" not in processed
