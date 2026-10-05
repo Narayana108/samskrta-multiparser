@@ -13,8 +13,10 @@ Architecture:
     ├── run_sanskrit_parser()       # Local: sandhi + morphology + vakya
     ├── run_dharmamitra()           # Remote: API-based lemma tags
     ├── run_vidyut()                # Local: kosha + prakriya + meter + sandhi
-    ├── normalize.py                # Normalization & deduplication layer
     └── main()                      # Orchestrates all engines, writes JSON
+
+normalize.py is a separate CLI pass that condenses this raw output into the
+compact comparison file; it imports nothing from this module.
 
 Engine capabilities:
     - sanskrit_parser: Sandhi splitting, morphological tags, vakya (sentence) parsing
@@ -28,8 +30,9 @@ Usage:
     python app.py shloka -i -                # read from stdin
 
 Output:
-    - output.json: Raw JSON with all three engine outputs
-    - output.normalized.json: Compact normalized output (run normalize.py separately)
+    - stdout by default (or FILE with -o): raw JSON for all three engines,
+      conventionally saved as output-verbose.json
+    - normalize.py condenses that into the compact output.json (see README.md)
 
 Error isolation:
     Each engine runs independently. If one fails, its key contains {"error": "..."}
@@ -41,6 +44,7 @@ import json
 import os
 import signal
 import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -57,10 +61,16 @@ logging.getLogger("sanskrit_util").setLevel(logging.WARNING)
 
 API_URL = "https://dharmamitra.org/api/tagging/"
 API_HEADERS = {
-    "Authorization": "Basic b2xkc3R1ZGVudDpiZWhhcHB5",
+    # Public demo credential; override with DHARMAMITRA_AUTH="Basic ..." if it rotates.
+    "Authorization": os.environ.get(
+        "DHARMAMITRA_AUTH", "Basic b2xkc3R1ZGVudDpiZWhhcHB5"
+    ),
     "Content-Type": "application/json",
 }
 API_MODE = "unsandhied-lemma-morphosyntax"
+# Vakya (sentence) parsing is combinatorial; cap it per sandhi candidate.
+VAKYA_TIMEOUT_SECS = 5
+
 
 # Vidyut data directory — contains kosha, prakriya, chandas, sandhi, cheda subdirectories
 # Override via VIDYUT_DATA_DIR environment variable
@@ -91,8 +101,8 @@ def preprocess_devanagari(text: str) -> str:
 def devanagari_to_iast(devanagari_text: str) -> str:
     """Convert cleaned Devanagari text to IAST using vidyut lipi.
     
-    IAST (International Alphabet of Sanskrit Transliteration) is an ASCII-safe
-    encoding used for API communication and internal processing.
+    IAST (International Alphabet of Sanskrit Transliteration) is the project-wide
+    output script: Unicode with diacritics, not ASCII.
     
     Args:
         devanagari_text: Cleaned Devanagari text
@@ -102,6 +112,31 @@ def devanagari_to_iast(devanagari_text: str) -> str:
     """
     from vidyut.lipi import transliterate, Scheme
     return transliterate(devanagari_text, Scheme.Devanagari, Scheme.Iast)
+
+
+def _convert_devanagari_to_iast(obj: Any) -> Any:
+    """Recursively convert all Devanagari strings in a dict/list to IAST.
+    
+    Args:
+        obj: Any JSON-serializable object (dict, list, str, etc.)
+    
+    Returns:
+        The same structure with Devanagari strings converted to IAST
+    """
+    if isinstance(obj, dict):
+        return {_convert_devanagari_to_iast(k): _convert_devanagari_to_iast(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_devanagari_to_iast(item) for item in obj]
+    elif isinstance(obj, str):
+        if any('\u0900' <= c <= '\u097F' for c in obj):
+            try:
+                from vidyut.lipi import transliterate, Scheme
+                return transliterate(obj, Scheme.Devanagari, Scheme.Iast)
+            except Exception:
+                return obj
+        return obj
+    else:
+        return obj
 
 
 def read_input(filename: str) -> str:
@@ -118,80 +153,91 @@ def read_input(filename: str) -> str:
     """
     if filename == "-":
         return sys.stdin.read().strip()
-    try:
-        with open(filename, "r", encoding="utf-8") as f:
-            return f.read().strip()
-    except FileNotFoundError:
-        raise FileNotFoundError(f"Input file not found: {filename}")
+    with open(filename, "r", encoding="utf-8") as f:
+        return f.read().strip()
+
+
+_warned_sites: set = set()
+
+
+def _warn_once(site: str, exc: Exception) -> None:
+    """Report an engine-side failure once per site.
+
+    Warnings go to stderr so the JSON on stdout stays machine-readable while a
+    swallowed library error still becomes visible.
+    """
+    if site not in _warned_sites:
+        _warned_sites.add(site)
+        print(f"Warning: {site}: {exc}", file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------
-# Devanagari label maps — PyO3 enum values → Devanagari
+# IAST label maps — PyO3 enum values → IAST
 # ---------------------------------------------------------------------------
 # These maps convert internal enum string representations to canonical
-# Devanagari forms for consistent output across all engines.
+# IAST forms for consistent output across all engines.
 
-VIBHAKTI_DEVANAGARI = {
-    "praTamA": "प्रथमा",
-    "dvitIyA": "द्वितीया",
-    "tftIyA": "तृतीया",
-    "caturTI": "चतुर्थी",
-    "paYcamI": "पञ्चमी",
-    "zazWI": "षष्ठी",
-    "saptamI": "सप्तमी",
-    "samboDanam": "सम्बोधनम्",
+VIBHAKTI_IAST = {
+    "praTamA": "prathamā",
+    "dvitIyA": "dvitīyā",
+    "tftIyA": "tṛtīyā",
+    "caturTI": "caturthī",
+    "paYcamI": "pañcamī",
+    "zazWI": "ṣaṣṭhī",
+    "saptamI": "saptamī",
+    "samboDanam": "saṃbodhanam",
 }
 
-LAKARA_DEVANAGARI = {
-    "la~w": "लट्",
-    "li~w": "लिट्",
-    "lu~w": "लुट्",
-    "lf~w": "लृट्",
-    "le~w": "लेट्",
-    "lo~w": "लोट्",
-    "la~N": "लङ्",
-    "viDili~N": "विधिलिङ्",
-    "ASIrli~N": "आशीर्लिङ्",
-    "lu~N": "लुङ्",
-    "lf~N": "लुङ्",
+LAKARA_IAST = {
+    "la~w": "laṭ",
+    "li~w": "liṭ",
+    "lu~w": "luṭ",
+    "lf~w": "lṛṭ",
+    "le~w": "leṭ",
+    "lo~w": "loṭ",
+    "la~N": "laṅ",
+    "viDili~N": "vidhiliṅ",
+    "ASIrli~N": "āśīrliṅ",
+    "lu~N": "luṅ",
+    "lf~N": "lṛṅ",
 }
 
-PURUSHA_DEVANAGARI = {
-    "praTama": "प्रथमपुरुषः",
-    "maDyama": "मध्यमपुरुषः",
-    "uttama": "उत्तमपुरुषः",
+PURUSHA_IAST = {
+    "praTama": "prathama-puruṣaḥ",
+    "maDyama": "madhyama-puruṣaḥ",
+    "uttama": "uttama-puruṣaḥ",
 }
 
-VACANA_DEVANAGARI = {
-    "eka": "एकवचनम्",
-    "dvi": "द्विवचनम्",
-    "bahu": "बहुवचनम्",
+VACANA_IAST = {
+    "eka": "ekavacanam",
+    "dvi": "dvivacanam",
+    "bahu": "bahuvacanam",
 }
 
-LINGA_DEVANAGARI = {
-    "puM": "पुंलिङ्गम्",
-    "strI": "स्त्रीलिङ्गम्",
-    "napuMsaka": "नपुंसकलिङ्गम्",
+LINGA_IAST = {
+    "puM": "puṃlliṅgam",
+    "strI": "strīliṅgam",
+    "napuMsaka": "napuṃsakaliṅgam",
 }
 
-GANA_DEVANAGARI = {
-    "BvAdi": "भ्वादिः",
-    "adAdi": "आदादिः",
-    "juhotyAdi": "जुहोत्यादिः",
-    "divAdi": "दिवादिः",
-    "svAdi": "स्वदिः",
-    "tudAdi": "तुदादिः",
-    "ruDAdi": "रुधादिः",
-    "tanAdi": "तनादिः",
-    "kryAdi": "क्रीयादिः",
-    "curAdi": "चुरादिः",
-    "kaRqvAdi": "कण्ड्वादिः",
+GANA_IAST = {
+    "BvAdi": "bhvādiḥ",
+    "adAdi": "ādādiḥ",
+    "juhotyAdi": "juhotyādiḥ",
+    "divAdi": "divādiḥ",
+    "svAdi": "svādiḥ",
+    "tudAdi": "tudādiḥ",
+    "ruDAdi": "rudhādiḥ",
+    "tanAdi": "tanādiḥ",
+    "kryAdi": "krīyādiḥ",
+    "curAdi": "curādiḥ",
+    "kaRqvAdi": "kaṇḍvādiḥ",
 }
 
-PRAYOGA_DEVANAGARI = {
-    "kartari": "कर्तरी",
-    "karmaRi": "कर्मणि",
-    "BAve": "भावे",
+PRAYOGA_IAST = {
+    "kartari": "kartari",
+    "karmaRi": "karmaṇi",
+    "BAve": "bhāve",
 }
 
 
@@ -203,18 +249,20 @@ PRAYOGA_DEVANAGARI = {
 # - Morphological tag extraction (root, vibhakti, vacana, linga, etc.)
 # - Vakya (sentence) parsing with dependency graphs
 
-def _slp1_to_devanagari(slp1: str) -> str:
-    """Transliterate an SLP1 Sanskrit string to Devanagari.
-    
+def _slp1_to_iast(slp1: str) -> str:
+    """Transliterate an SLP1 (or already-IAST) Sanskrit string to IAST.
+
     Args:
-        slp1: IAST or SLP1 encoded string
-    
+        slp1: SLP1, IAST or Devanagari encoded string; Devanagari codepoints
+            pass through untouched and are converted later by main's
+            `_convert_devanagari_to_iast` wrapper
+
     Returns:
-        Devanagari string
+        IAST string
     """
     from indic_transliteration import sanscript
     try:
-        return sanscript.transliterate(slp1, sanscript.SLP1, sanscript.DEVANAGARI)
+        return sanscript.transliterate(slp1, sanscript.SLP1, sanscript.IAST)
     except Exception:
         return slp1
 
@@ -222,13 +270,14 @@ def _slp1_to_devanagari(slp1: str) -> str:
 def _morphological_tags_to_json(
     tags,
 ) -> List[Dict[str, Any]]:
-    """Convert morphological tags to JSON-serializable list of dicts.
-    
+    """Convert morphological tags to a JSON-serializable list of dicts.
+
     Args:
         tags: List of (root, tag_set) tuples from sanskrit_parser
-    
+
     Returns:
-        List of dicts with 'root' (Devanagari) and 'tags' (sorted Devanagari tags)
+        List of dicts with 'root' and sorted 'tags', transliterated toward
+        IAST here and finalized by main's Devanagari-to-IAST wrapper.
     """
     if tags is None:
         return []
@@ -236,35 +285,36 @@ def _morphological_tags_to_json(
     for root, tag_set in tags:
         result.append(
             {
-                "root": _slp1_to_devanagari(str(root)),
-                "tags": sorted(_slp1_to_devanagari(str(t)) for t in tag_set),
+                "root": _slp1_to_iast(str(root)),
+                "tags": sorted(_slp1_to_iast(str(t)) for t in tag_set),
             }
         )
     return result
 
 
 def _parse_node_to_json(node) -> Dict[str, Any]:
-    """Convert a ParseNode to JSON-serializable dict.
-    
+    """Convert a ParseNode to a JSON-serializable dict.
+
     Args:
-        node: ParseNode from sanskrit_parser vakya parsing
-    
+        node: ParseNode from sanskrit_parser vakya parsing (Devanagari output
+            encoding; main's wrapper converts the strings to IAST)
+
     Returns:
         Dict with pada, root, and tags
     """
     return {
         "pada": node.pada,
-        "root": _slp1_to_devanagari(str(node.parse_tag.root)),
-        "tags": node.parse_tag.tags,
+        "root": _slp1_to_iast(str(node.parse_tag.root)),
+        "tags": [str(t) for t in node.parse_tag.tags],
     }
 
 
-def _parse_edge_to_json(edge) -> Optional[Dict[str, Any]]:
-    """Convert a ParseEdge to JSON-serializable dict with predecessor info.
-    
+def _parse_edge_to_json(edge) -> Dict[str, Any]:
+    """Convert a ParseEdge to a JSON-serializable dict with predecessor info.
+
     Args:
         edge: ParseEdge from sanskrit_parser vakya parsing
-    
+
     Returns:
         Dict with pada, root, tags, predecessor, and sambandha
     """
@@ -272,57 +322,106 @@ def _parse_edge_to_json(edge) -> Optional[Dict[str, Any]]:
     node = edge.node
     return {
         "pada": node.pada,
-        "root": _slp1_to_devanagari(str(node.parse_tag.root)),
-        "tags": node.parse_tag.tags,
+        "root": _slp1_to_iast(str(node.parse_tag.root)),
+        "tags": [str(t) for t in node.parse_tag.tags],
         "predecessor": {
             "pada": pred.pada,
-            "root": _slp1_to_devanagari(str(pred.parse_tag.root)),
-            "tags": pred.parse_tag.tags,
+            "root": _slp1_to_iast(str(pred.parse_tag.root)),
+            "tags": [str(t) for t in pred.parse_tag.tags],
         },
         "sambandha": edge.label,
     }
 
 
 def _build_vakya_graph(graph: List[Any]) -> List[Dict[str, Any]]:
-    """Build vakya parse graph from interleaved ParseNode/ParseEdge list.
-    
+    """Build a vakya parse graph from an interleaved ParseNode/ParseEdge list.
+
+    Nodes are matched to their incoming edge by object identity rather than by
+    pada text: a line may repeat a word (anaphoric `tad … tad`), and keying by
+    text would merge those occurrences and attach the wrong predecessor.
+
     Args:
         graph: Interleaved list of ParseNode and ParseEdge objects
-    
+
     Returns:
         Ordered list of node dicts with predecessor and sambandha attached
     """
-    nodes: Dict[str, Dict[str, Any]] = {}
-    edges: List[Dict[str, Any]] = []
+    ordered_nodes: List[Dict[str, Any]] = []
+    node_by_id: Dict[int, Dict[str, Any]] = {}
 
-    for item in graph:
-        item_type = type(item).__name__
-        if item_type == "ParseNode":
-            key = item.pada
-            nodes[key] = _parse_node_to_json(item)
-        elif item_type == "ParseEdge":
-            edge_json = _parse_edge_to_json(item)
-            if edge_json:
-                edges.append(edge_json)
-
-    # Attach predecessor info to successor nodes
-    for edge in edges:
-        successor_pada = edge["pada"]
-        if successor_pada in nodes:
-            nodes[successor_pada]["predecessor"] = edge["predecessor"]
-            nodes[successor_pada]["sambandha"] = edge["sambandha"]
-
-    # Build ordered graph list
-    ordered_graph: List[Dict[str, Any]] = []
-    seen: set = set()
     for item in graph:
         if type(item).__name__ == "ParseNode":
-            key = item.pada
-            if key not in seen:
-                ordered_graph.append(nodes[key])
-                seen.add(key)
+            entry = _parse_node_to_json(item)
+            ordered_nodes.append(entry)
+            node_by_id[id(item)] = entry
 
-    return ordered_graph
+    for item in graph:
+        if type(item).__name__ != "ParseEdge":
+            continue
+        edge_json = _parse_edge_to_json(item)
+        target = node_by_id.get(id(item.node))
+        if target is not None:
+            target["predecessor"] = edge_json["predecessor"]
+            target["sambandha"] = edge_json["sambandha"]
+
+    return ordered_nodes
+
+
+def _is_standalone_word(parser, word_obj) -> bool:
+    """Check if a word has standalone morphology (case+number or avyaya)."""
+    tags = parser.sandhi_analyzer.getMorphologicalTags(word_obj, tmap=True)
+    if not tags:
+        return False
+    for root, tag_set in tags:
+        tag_strs = [str(t) for t in tag_set]
+        has_case = any('viBaktiH' in t for t in tag_strs)
+        has_number = any('vacanam' in t for t in tag_strs)
+        is_avyaya = any(t == 'avyayam' for t in tag_strs)
+        if (has_case and has_number) or is_avyaya:
+            return True
+    return False
+
+
+def _best_word_split(parser, dev_word: str) -> List[str]:
+    """Pick a deterministic, morphology-validated split of one Devanagari word.
+
+    parser.split() candidate order varies between processes, so rank all
+    candidates instead of trusting splits[0]. Prefer splits whose every part
+    has standalone morphology (case+number or avyaya), then complete words
+    (longest shortest part), then fewer parts; the sorted part list is the
+    final tie-break so output stays byte-stable across runs.
+
+    Args:
+        parser: sanskrit_parser Parser instance
+        dev_word: Devanagari word to decompose
+
+    Returns:
+        List of IAST parts; [dev_word] when no split is found.
+    """
+    splits = parser.split(dev_word, limit=10)
+    if not splits:
+        return [devanagari_to_iast(dev_word)]
+
+    candidates = []
+    seen = set()
+    for s in splits:
+        parts = tuple(devanagari_to_iast(w.devanagari()) for w in s.split)
+        if parts in seen or any(len(p) <= 1 for p in parts):
+            continue
+        seen.add(parts)
+        standalone = all(_is_standalone_word(parser, w_obj) for w_obj in s.split)
+        candidates.append(
+            (standalone, min(len(p) for p in parts), -len(parts), sorted(parts), parts)
+        )
+
+    if not candidates:
+        return [devanagari_to_iast(dev_word)]
+    best = max(candidates, key=lambda c: (c[0], c[1], c[2], c[3]))
+    return list(best[4])
+
+
+def _vakya_timeout_handler(signum, frame):
+    raise TimeoutError("Vakya parsing timed out")
 
 
 def run_sanskrit_parser(input_text: str, mode: str) -> Dict[str, Any]:
@@ -341,6 +440,9 @@ def run_sanskrit_parser(input_text: str, mode: str) -> Dict[str, Any]:
     from sanskrit_parser.api import Parser
     from indic_transliteration import sanscript
 
+    # sanskrit_parser sets its own logger to DEBUG and attaches a stderr
+    # StreamHandler at import time; override after the import happens.
+    logging.getLogger("sanskrit_parser").setLevel(logging.WARNING)
     parser = Parser(output_encoding=sanscript.DEVANAGARI)
 
     limit = 10 if mode == "pada" else 5
@@ -354,48 +456,60 @@ def run_sanskrit_parser(input_text: str, mode: str) -> Dict[str, Any]:
             tags = parser.sandhi_analyzer.getMorphologicalTags(item, tmap=True)
             items_json.append(
                 {
-                    "pada": item.devanagari(),
+                    "pada": devanagari_to_iast(item.devanagari()),
                     "morphological_tags": _morphological_tags_to_json(tags),
                 }
             )
 
-        # Vakya parsing for shloka mode only
-        vakya_parses = []
+        # Vakya (sentence) parsing is best-effort: it is combinatorial and can
+        # hang on long padas, so bound it with SIGALRM and record the failure
+        # instead of aborting the engine.
+        vakya_parses: List[Dict[str, Any]] = []
+        vakya_error: Optional[str] = None
         if mode == "shloka":
-            def _parse_timeout_handler(signum, frame):
-                raise TimeoutError("Vakya parsing timed out")
-
-            old_handler = signal.signal(signal.SIGALRM, _parse_timeout_handler)
-            signal.alarm(5)
+            old_handler = signal.signal(signal.SIGALRM, _vakya_timeout_handler)
+            signal.alarm(VAKYA_TIMEOUT_SECS)
             try:
-                parses = split.parse(limit=3)
-                signal.alarm(0)
-                for parse_idx, parse in enumerate(parses):
-                    graph = _build_vakya_graph(parse.graph)
+                for parse_idx, parse in enumerate(split.parse(limit=3)):
                     vakya_parses.append(
                         {
                             "parse_index": parse_idx,
                             "cost": parse.cost,
-                            "graph": graph,
+                            "graph": _build_vakya_graph(parse.graph),
                         }
                     )
-            except (TimeoutError, Exception):
-                signal.alarm(0)
+            except TimeoutError:
+                vakya_error = f"vakya parsing timed out after {VAKYA_TIMEOUT_SECS}s"
+            except Exception as exc:
+                vakya_error = f"vakya parsing failed: {exc}"
             finally:
+                signal.alarm(0)
                 signal.signal(signal.SIGALRM, old_handler)
 
         split_entry: Dict[str, Any] = {
             "split_index": split_idx,
-            "split": [item.devanagari() for item in items],
+            "split": [devanagari_to_iast(item.devanagari()) for item in items],
             "items": items_json,
             "vakya_parses": vakya_parses,
         }
+        if vakya_error:
+            split_entry["vakya_error"] = vakya_error
         sandhi_splits.append(split_entry)
+
+    # Per-word decompositions: split each input word on its own so results do
+    # not depend on whole-line candidate ordering (which varies per process).
+    word_decompositions: Dict[str, List[str]] = {}
+    for wdev in input_text.split():
+        if not any('\u0900' <= c <= '\u097F' for c in wdev):
+            continue
+        key = devanagari_to_iast(wdev).replace("\u1e43", "m")
+        word_decompositions[key] = _best_word_split(parser, wdev)
 
     return {
         "mode": mode,
         "input": input_text,
         "sandhi_splits": sandhi_splits,
+        "word_decompositions": word_decompositions,
     }
 
 
@@ -407,14 +521,17 @@ def run_sanskrit_parser(input_text: str, mode: str) -> Dict[str, Any]:
 
 def _parse_tokens(raw_output: str) -> List[Dict[str, Any]]:
     """Parse underscore-separated API output into structured tokens.
-    
+
+    Untaggable positions come back as empty fields (`____iva_`); they are
+    dropped here because there is nothing to record about them.
+
     Args:
         raw_output: Raw API response string with underscore-separated tokens
-    
+
     Returns:
-        List of token dicts with 'form' and 'tagged' fields
+        List of token dicts with a 'form' field
     """
-    return [{"form": seg, "tagged": True} for seg in raw_output.split("_") if seg]
+    return [{"form": seg} for seg in raw_output.split("_") if seg]
 
 
 def run_dharmamitra(iast_text: str, iast_lines: List[str]) -> Dict[str, Any]:
@@ -429,24 +546,49 @@ def run_dharmamitra(iast_text: str, iast_lines: List[str]) -> Dict[str, Any]:
     """
     import requests
 
+    # The API silently drops everything after a line whose end has trailing
+    # whitespace before the newline, so collapse spaces around newlines.
+    clean_text = "\n".join(
+        line.strip() for line in iast_text.split("\n") if line.strip()
+    )
+
     data = {
-        "texts": [iast_text],
+        "texts": [clean_text],
         "mode": API_MODE,
         "input_encoding": "auto",
         "human_readable_tags": True,
         "output_format": "dict",
     }
 
-    try:
-        response = requests.post(API_URL, headers=API_HEADERS, json=data, timeout=30)
-        response.raise_for_status()
-    except requests.exceptions.Timeout:
-        return {"error": "Dharmamitra API request timed out"}
-    except requests.exceptions.RequestException as exc:
-        return {"error": f"Dharmamitra API unavailable: {exc}"}
+    # One retry: the API is occasionally briefly unreachable and a single blip
+    # otherwise costs the whole engine's contribution to output.json.
+    response = None
+    for attempt in range(2):
+        try:
+            response = requests.post(API_URL, headers=API_HEADERS, json=data, timeout=30)
+            response.raise_for_status()
+            break
+        except requests.exceptions.Timeout:
+            if attempt == 0:
+                time.sleep(1)
+                continue
+            return {"error": "Dharmamitra API request timed out"}
+        except requests.exceptions.RequestException as exc:
+            if attempt == 0:
+                time.sleep(1)
+                continue
+            return {"error": f"Dharmamitra API unavailable: {exc}"}
 
-    result = response.json()
-    raw_output = result.get("results", [""])[0]
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        return {"error": f"Dharmamitra API returned non-JSON body: {exc}"}
+
+    results = payload.get("results")
+    if not isinstance(results, list) or not results or not isinstance(results[0], str):
+        return {"error": f"Dharmamitra API response shape unexpected: {str(payload)[:200]}"}
+
+    raw_output = results[0]
 
     return {
         "api_endpoint": API_URL,
@@ -461,25 +603,150 @@ def run_dharmamitra(iast_text: str, iast_lines: List[str]) -> Dict[str, Any]:
 # vidyut engine adapter
 # ---------------------------------------------------------------------------
 # Runs vidyut for:
-# - Cheda segmentation (word splitting)
 # - Kosha dictionary lookup (grammatical entries)
 # - Sandhi splitting (recursive compound decomposition via DFS)
 # - Prakriya (derivation steps for dhatus and pratipadikas)
 # - Meter classification (chandas)
 
-def _slp1_to_devanagari_vidyut(slp1_text: str) -> str:
-    """Convert SLP1 text to Devanagari via vidyut lipi.
-    
+# vidyut marks Vedic accents inside dhatu upadeśas ('~' anudātta, '\' svarita);
+# they must be stripped before transliterating a root for display.
+_ACCENT_MARKERS = str.maketrans("", "", "~\\'")
+
+
+def _slp1_to_iast_vidyut(slp1_text: str) -> str:
+    """Convert SLP1 text to IAST via vidyut lipi.
+
+    Vedic accent markers are dropped first: lipi would otherwise turn them into
+    stray combining signs in the output.
+
     Args:
         slp1_text: SLP1-encoded text
-    
+
     Returns:
-        Devanagari string
+        IAST string
     """
     from vidyut.lipi import transliterate, Scheme
     if not slp1_text:
         return ""
-    return transliterate(slp1_text, Scheme.Slp1, Scheme.Devanagari)
+    return transliterate(slp1_text.translate(_ACCENT_MARKERS), Scheme.Slp1, Scheme.Iast)
+
+
+def _kosha_entry_info(entry: Any) -> Optional[Dict[str, str]]:
+    """Classify one kosha entry as {'type', 'lemma', 'stem'} (IAST type/lemma).
+
+    Returns None when the entry carries no lemma. 'stem' keeps the raw SLP1
+    lemma so callers can compare it against surface spellings.
+    """
+    entry_repr = repr(entry)
+    if "Tinanta" in entry_repr:
+        word_type = "tīnantāḥ"
+    elif getattr(entry, "is_avyaya", False):
+        word_type = "avyayam"
+    else:
+        word_type = "sūnantāḥ"
+    lemma = getattr(entry, "lemma", "") or getattr(
+        getattr(entry, "pratipadika_entry", None), "lemma", ""
+    )
+    if not lemma:
+        return None
+    return {"type": word_type, "lemma": _slp1_to_iast_vidyut(lemma), "stem": lemma}
+
+
+def _kosha_info_from_entries(entries: List[Any]) -> Optional[Dict[str, str]]:
+    """First usable classification among a word's kosha entries."""
+    for entry in entries:
+        info = _kosha_entry_info(entry)
+        if info:
+            return info
+    return None
+
+
+def enrich_dharmamitra_lemmas(dharmamitra_results: Dict[str, Any]) -> None:
+    """Add vidyut kosha lemma info to each Dharmamitra token (in place).
+
+    The Dharmamitra API returns untagged surface tokens only; the local
+    vidyut kosha supplies lemma and word type. Conversion goes IAST ->
+    Devanagari -> SLP1 via sanscript because that chain matches the kosha's
+    key spelling (vidyut's own Iast->Slp1 yields 'arTau' where the kosha
+    stores 'arTO').
+
+    Args:
+        dharmamitra_results: Dharmamitra engine output dict with 'tokens' list
+    """
+    from pathlib import Path
+    from indic_transliteration import sanscript
+    from vidyut.kosha import Kosha
+
+    kosha = Kosha(Path(DATA_DIR) / "kosha")
+
+    def finalize(infos):
+        """Collapse matched entries into one lemma field (list when ambiguous)."""
+        lemmas = sorted({i["lemma"] for i in infos})
+        types = sorted({i["type"] for i in infos})
+        return {
+            "type": types[0] if len(types) == 1 else types,
+            "lemma": lemmas[0] if len(lemmas) == 1 else lemmas,
+        }
+
+    def lookup(slp1: str, iast_form: str):
+        # Pause (sandhi-final) spelling: a stem written ...c/j/ś surfaces as
+        # ...k/g/ṣ, and the kosha keys only inflected forms ('vAc' misses,
+        # 'vAk' hits lemma vac).
+        pause = {"c": "k", "j": "g", "z": "S"}
+        base = slp1[:-1] if slp1.endswith("H") else slp1
+        keys = [slp1, base]
+        if base and base[-1] in pause:
+            keys.append(base[:-1] + pause[base[-1]])
+
+        infos = []
+        seen = set()
+
+        def collect(entries):
+            for entry in entries:
+                info = _kosha_entry_info(entry)
+                if info and info["lemma"] not in seen:
+                    seen.add(info["lemma"])
+                    infos.append(info)
+
+        for key in keys:
+            try:
+                collect(kosha.get(key) or [])
+            except KeyError:
+                pass
+        if infos:
+            exact = [i for i in infos if any(k.lower().startswith(i["stem"].lower()) for k in keys)]
+            return finalize(exact or infos)
+
+        # Stem fallback, guarded by a shared 3-character prefix: without the
+        # guard homographic dhatu stems win (kosha.get('arTa') -> arTi for an
+        # 'arTO' surface).
+        def matches(info):
+            a = info["lemma"].replace("\u1e43", "m")[:3].lower()
+            b = iast_form.replace("\u1e43", "m")[:3].lower()
+            return len(a) >= 3 and a == b
+
+        for n in (1, 2, 3):
+            if len(slp1) - n < 4:
+                break
+            try:
+                collect(kosha.get(slp1[:-n]) or [])
+            except KeyError:
+                continue
+            guarded = [i for i in infos if matches(i)]
+            if guarded:
+                return finalize(guarded)
+        return None
+
+    for token in dharmamitra_results.get("tokens", []):
+        form = token.get("form", "")
+        if not form:
+            continue
+        dev = sanscript.transliterate(form, sanscript.IAST, sanscript.DEVANAGARI)
+        slp1 = sanscript.transliterate(dev, sanscript.DEVANAGARI, sanscript.SLP1)
+        info = lookup(slp1, form)
+        if info:
+            token["lemma"] = info["lemma"]
+            token["kosha_type"] = info["type"]
 
 
 def kosha_lookup(kosha, word: str) -> list:
@@ -503,11 +770,13 @@ def kosha_lookup(kosha, word: str) -> list:
     except KeyError:
         pass
 
-    # Fallback: try stripping SLP1 case endings to find stem form.
+    # Fallback: strip up to three trailing SLP1 characters (case endings).
+    # Stop before the stem gets too short, otherwise the same key is queried
+    # again or a spurious short-word entry matches.
     for length in range(1, 4):
-        stem = word[:-length] if len(word) > length else word
-        if not stem:
-            continue
+        if len(word) - length < 2:
+            break
+        stem = word[:-length]
         try:
             entries = kosha.get(stem)
             if entries:
@@ -552,41 +821,41 @@ def _format_pada_entry_json(entry) -> Dict[str, Any]:
     result = {}
 
     if entry.is_avyaya:
-        result["type"] = "अव्ययम्"
+        result["type"] = "avyayam"
     else:
         entry_repr = repr(entry)
         if "Tinanta" in entry_repr:
-            result["type"] = "तिन्तन्तः"
+            result["type"] = "tīnantāḥ"
         else:
-            result["type"] = "सुन्तन्तः"
+            result["type"] = "sūnantāḥ"
 
     if hasattr(entry, 'pratipadika_entry') and hasattr(entry, 'linga'):
         pe = entry.pratipadika_entry
         if pe:
-            result["pratipadika"] = _slp1_to_devanagari_vidyut(pe.lemma)
+            result["pratipadika"] = _slp1_to_iast_vidyut(pe.lemma)
             if not pe.is_avyaya and hasattr(pe, 'artha_sa') and pe.artha_sa:
-                result["artha"] = _slp1_to_devanagari_vidyut(pe.artha_sa)
+                result["artha"] = _slp1_to_iast_vidyut(pe.artha_sa)
 
         if entry.linga:
-            result["linga"] = LINGA_DEVANAGARI.get(str(entry.linga), str(entry.linga))
+            result["linga"] = LINGA_IAST.get(str(entry.linga), str(entry.linga))
         if entry.vibhakti:
-            result["vibhakti"] = VIBHAKTI_DEVANAGARI.get(str(entry.vibhakti), str(entry.vibhakti))
+            result["vibhakti"] = VIBHAKTI_IAST.get(str(entry.vibhakti), str(entry.vibhakti))
         if entry.vacana:
-            result["vacana"] = VACANA_DEVANAGARI.get(str(entry.vacana), str(entry.vacana))
+            result["vacana"] = VACANA_IAST.get(str(entry.vacana), str(entry.vacana))
 
     if hasattr(entry, 'dhatu_entry') and hasattr(entry, 'prayoga'):
         de = entry.dhatu_entry
         if de:
-            result["dhatu"] = _slp1_to_devanagari_vidyut(de.clean_text)
+            result["dhatu"] = _slp1_to_iast_vidyut(de.clean_text)
             if de.dhatu and de.dhatu.gana:
-                result["gana"] = GANA_DEVANAGARI.get(str(de.dhatu.gana), str(de.dhatu.gana))
+                result["gana"] = GANA_IAST.get(str(de.dhatu.gana), str(de.dhatu.gana))
             if de.artha_sa:
-                result["artha"] = _slp1_to_devanagari_vidyut(de.artha_sa)
+                result["artha"] = _slp1_to_iast_vidyut(de.artha_sa)
 
-            result["prayoga"] = PRAYOGA_DEVANAGARI.get(str(entry.prayoga), str(entry.prayoga))
-            result["lakara"] = LAKARA_DEVANAGARI.get(str(entry.lakara), str(entry.lakara))
-            result["purusha"] = PURUSHA_DEVANAGARI.get(str(entry.purusha), str(entry.purusha))
-            result["vacana"] = VACANA_DEVANAGARI.get(str(entry.vacana), str(entry.vacana))
+            result["prayoga"] = PRAYOGA_IAST.get(str(entry.prayoga), str(entry.prayoga))
+            result["lakara"] = LAKARA_IAST.get(str(entry.lakara), str(entry.lakara))
+            result["purusha"] = PURUSHA_IAST.get(str(entry.purusha), str(entry.purusha))
+            result["vacana"] = VACANA_IAST.get(str(entry.vacana), str(entry.vacana))
 
     return result
 
@@ -598,7 +867,7 @@ def _format_prakriya_steps(prakriya) -> List[Dict[str, Any]]:
         prakriya: Prakriya object from vidyut vyakarana
     
     Returns:
-        List of step dicts with step number, sutra, source, terms_dev, changed_dev
+        List of step dicts with step number, sutra, source, terms_iast, changed_iast
     """
     steps = []
     history = prakriya.history
@@ -623,188 +892,179 @@ def _format_prakriya_steps(prakriya) -> List[Dict[str, Any]]:
 
             if isinstance(terms[0], str):
                 term_texts = ' '.join(filtered)
-                changed_dev = [_slp1_to_devanagari_vidyut(t) for t in filtered]
+                changed_iast = [_slp1_to_iast_vidyut(t) for t in filtered]
             else:
                 term_texts = ' '.join(t.text for t in filtered)
-                changed_dev = [_slp1_to_devanagari_vidyut(t.text) for t in filtered if t.was_changed]
+                changed_iast = [_slp1_to_iast_vidyut(t.text) for t in filtered if t.was_changed]
 
             if term_texts:
                 steps.append({
                     "step": step_idx,
                     "sutra": sutra,
                     "source": source,
-                    "terms_dev": _slp1_to_devanagari_vidyut(term_texts),
-                    "changed_dev": changed_dev,
+                    "terms_iast": _slp1_to_iast_vidyut(term_texts),
+                    "changed_iast": changed_iast,
                 })
             else:
                 steps.append({
                     "step": step_idx,
                     "sutra": sutra,
                     "source": source,
-                    "terms_dev": "",
-                    "changed_dev": [],
+                    "terms_iast": "",
+                    "changed_iast": [],
                 })
         else:
             steps.append({
                 "step": step_idx,
                 "sutra": sutra,
                 "source": source,
-                "terms_dev": "",
-                "changed_dev": [],
+                "terms_iast": "",
+                "changed_iast": [],
             })
 
     return steps
 
 
+# SLP1 writes every vowel as one code point (e = e, E = ai, o = o, O = au,
+# f = ṛ, x = ḷ), so an akshara is exactly one character from this set.
+_VOWELS = set("aAiIuUfFxXoOeE")
+
+
+def _count_aksharas(slp1_token: str) -> int:
+    """Count syllabic nuclei (aksharas) in an SLP1 token.
+
+    Consonant clusters share the vowel that follows them, and anusvara (M),
+    visarga (H) and avagraha carry no vowel of their own, so counting vowel
+    code points gives the akshara count directly.
+    """
+    return sum(1 for char in slp1_token if char in _VOWELS)
+
+
 def _split_into_padas(slp1_line: str) -> List[str]:
-    """Split a SLP1 line into 8-syllable quarter-verses (padas).
-    
+    """Split a SLP1 verse line into halves at the akshara midpoint.
+
+    vidyut's Chandas classifier works per half-verse, so an anuṣṭubh line of
+    four padas must be cut where its cumulative akshara count reaches half the
+    line total; a character-count proxy misplaces that cut. Punctuation-only
+    tokens stay attached to the half they follow.
+
     Args:
         slp1_line: SLP1-encoded line of text
-    
-    Returns:
-        List of SLP1-encoded padas (typically 2 halves for a full verse)
-    """
-    from vidyut.lipi import transliterate, Scheme
 
+    Returns:
+        List of SLP1 halves (single element when the line is too short to split)
+    """
     tokens = slp1_line.split()
     if not tokens:
         return [slp1_line]
 
-    meaningful_tokens = [t for t in tokens if t not in ('.', '..', '.')]
-    if len(meaningful_tokens) < 3:
+    meaningful = [t for t in tokens if t.strip(".")]
+    if len(meaningful) < 3:
         return [slp1_line]
 
-    total_syllables = sum(len(t) for t in meaningful_tokens)
-    if total_syllables <= 12:
+    total = sum(_count_aksharas(t) for t in meaningful)
+    if total <= 12:
         return [slp1_line]
 
-    half_syllables = total_syllables // 2
+    half = total / 2
     cumulative = 0
-    split_idx = len(meaningful_tokens)
-
-    for i, t in enumerate(meaningful_tokens):
-        cumulative += len(t)
-        if cumulative >= half_syllables:
+    split_idx = len(meaningful)
+    for i, token in enumerate(meaningful):
+        cumulative += _count_aksharas(token)
+        if cumulative >= half:
             split_idx = i + 1
             break
 
-    first_tokens = []
-    meaningful_count = 0
-    for t in tokens:
-        if t not in ('.', '..', '.'):
-            if meaningful_count < split_idx:
-                first_tokens.append(t)
-                meaningful_count += 1
-            else:
-                break
-        else:
-            first_tokens.append(t)
+    first_tokens: List[str] = []
+    seen_meaningful = 0
+    for token in tokens:
+        if not token.strip("."):
+            first_tokens.append(token)
+            continue
+        if seen_meaningful >= split_idx:
+            break
+        first_tokens.append(token)
+        seen_meaningful += 1
 
-    first_half = ' '.join(first_tokens)
-    second_half = ' '.join(tokens[len(first_tokens):])
-
-    results = []
-    if first_half:
-        results.append(first_half)
-    if second_half:
-        results.append(second_half)
-
-    return results
-
-
-def _is_terminal(kosha, word: str) -> bool:
-    """Check if a word is a known dictionary entry (terminal node).
-    
-    Args:
-        kosha: Kosha dictionary instance
-        word: SLP1-encoded word
-    
-    Returns:
-        True if word has kosha entries
-    """
-    return len(kosha_lookup(kosha, word)) > 0
+    halves = [' '.join(first_tokens), ' '.join(tokens[len(first_tokens):])]
+    return [h for h in halves if h]
 
 
 def _get_kosha_info(kosha, word: str) -> Optional[Dict[str, Any]]:
-    """Get kosha info for a word: type and lemma.
-    
+    """Look up a word and classify its kosha entries.
+
     Args:
         kosha: Kosha dictionary instance
         word: SLP1-encoded word
-    
+
     Returns:
-        Dict with 'type' (सुन्तन्तः/तिन्तन्तः/अव्ययम्) and 'lemma' (Devanagari),
-        or None if not found
+        Dict with 'type' ('sūnantāḥ' / 'tīnantāḥ' / 'avyayam') and 'lemma',
+        both IAST; None when the word has no usable kosha entry.
     """
-    entries = kosha_lookup(kosha, word)
-    if not entries:
-        return None
-    entry = entries[0]
-    entry_repr = repr(entry)
-    if "Tinanta" in entry_repr:
-        word_type = "तिन्तन्तः"
-    elif hasattr(entry, 'is_avyaya') and entry.is_avyaya:
-        word_type = "अव्ययम्"
-    else:
-        word_type = "सुन्तन्तः"
-    lemma = getattr(entry, 'lemma', '') or (getattr(entry, 'pratipadika_entry', None) and getattr(entry.pratipadika_entry, 'lemma', ''))
-    return {"type": word_type, "lemma": _slp1_to_devanagari_vidyut(lemma)}
+    return _kosha_info_from_entries(kosha_lookup(kosha, word))
+
+
+def _has_standalone_entry(entries: List[Any]) -> bool:
+    """Check if entries include at least one standalone (non-derived) word."""
+    for entry in entries:
+        entry_repr = repr(entry)
+        if "Krdanta" not in entry_repr and "Tinanta" not in entry_repr:
+            return True
+    return False
 
 
 def _is_quality_split(splitter, kosha, word: str) -> List[Any]:
-    """Check if a binary split is semantically valid.
-    
+    """Return the semantically valid binary splits of a word.
+
     Filters out spurious matches where very short strings match verb roots.
-    Criteria:
-      - Both parts must be ≥ 3 characters
-      - Both parts must have kosha entries
-      - Both parts must have at least 2 kosha entries (filters spurious matches)
-      - Both parts must have at least one non-derived (standalone) entry
-    
+    A split qualifies when:
+      - both parts are ≥ 4 characters,
+      - both parts have at least two kosha entries (a lone entry is usually noise),
+      - both parts have at least one non-derived (standalone) entry.
+
     Args:
         splitter: Splitter instance for sandhi rules
         kosha: Kosha dictionary instance
         word: SLP1-encoded word to split
-    
+
     Returns:
         List of (split, first_info, second_info) tuples for valid splits
     """
-    def _has_standalone_entry(entries):
-        """Check if entries include at least one standalone word (not all derived)."""
-        for e in entries:
-            entry_repr = repr(e)
-            # Filter out entries that are purely derived forms (Krdanta, Tinanta, etc.)
-            if "Krdanta" not in entry_repr and "Tinanta" not in entry_repr:
-                return True
-        return False
-
     results = []
     for i in range(1, len(word)):
         try:
             splits = list(splitter.split_at(word, i))
-        except Exception:
+        except Exception as exc:
+            _warn_once("vidyut sandhi split_at", exc)
             continue
         for split in splits:
             if not split.is_valid:
                 continue
-            first_info = _get_kosha_info(kosha, split.first)
-            second_info = _get_kosha_info(kosha, split.second)
-            if not first_info or not second_info:
-                continue
             if len(split.first) < 4 or len(split.second) < 4:
                 continue
-            first_count = len(kosha_lookup(kosha, split.first))
-            second_count = len(kosha_lookup(kosha, split.second))
-            if first_count < 2 or second_count < 2:
+            # One FST lookup per part; this loop is the hot path of the engine.
+            first_entries = kosha_lookup(kosha, split.first)
+            second_entries = kosha_lookup(kosha, split.second)
+            if len(first_entries) < 2 or len(second_entries) < 2:
                 continue
-            # Require both parts to have at least one standalone entry
-            if not _has_standalone_entry(kosha_lookup(kosha, split.first)):
+            if not _has_standalone_entry(first_entries):
                 continue
-            if not _has_standalone_entry(kosha_lookup(kosha, split.second)):
+            if not _has_standalone_entry(second_entries):
                 continue
-            results.append((split, first_info, second_info))
+            results.append(
+                (
+                    split,
+                    _kosha_info_from_entries(first_entries),
+                    _kosha_info_from_entries(second_entries),
+                )
+            )
     return results
+
+
+def _chain_score(chain: List[Dict[str, Any]]):
+    """Score a split chain: more kosha-attested parts and fewer parts win."""
+    kosha_count = sum(1 for part in chain if part.get("kosha"))
+    return (kosha_count, -len(chain))
 
 
 def recursive_split(splitter, kosha, word: str, max_depth: int = 4, max_parts: int = 4) -> List[List[Dict[str, Any]]]:
@@ -827,17 +1087,17 @@ def recursive_split(splitter, kosha, word: str, max_depth: int = 4, max_parts: i
     
     Returns:
         List of split chains, each chain is a list of dicts:
-        [{"part": slp1_text, "dev": devanagari_text, "kosha": {...}|None}, ...]
+        [{"part": slp1_text, "iast": iast_text, "kosha": {...}|None}, ...]
     """
     results = []
 
     # Record intact word as leaf chain (macro-compound level)
-    if _is_terminal(kosha, word):
-        kosha_info = _get_kosha_info(kosha, word)
+    kosha_entries = kosha_lookup(kosha, word)
+    if kosha_entries:
         results.append([{
             "part": word,
-            "dev": _slp1_to_devanagari_vidyut(word),
-            "kosha": kosha_info,
+            "iast": _slp1_to_iast_vidyut(word),
+            "kosha": _kosha_info_from_entries(kosha_entries),
             "depth": 0,
         }])
 
@@ -863,54 +1123,41 @@ def recursive_split(splitter, kosha, word: str, max_depth: int = 4, max_parts: i
         elif first_chains:
             # Only first half has deeper splits
             for fc in first_chains:
-                full_chain = fc + [{"part": split.second, "dev": _slp1_to_devanagari_vidyut(split.second), "kosha": second_info, "depth": 1}]
+                full_chain = fc + [{"part": split.second, "iast": _slp1_to_iast_vidyut(split.second), "kosha": second_info, "depth": 1}]
                 if len(full_chain) <= max_parts:
                     results.append(full_chain)
         elif second_chains:
             # Only second half has deeper splits (original behavior)
             for sc in second_chains:
-                full_chain = [{"part": split.first, "dev": _slp1_to_devanagari_vidyut(split.first), "kosha": first_info, "depth": 1}] + sc
+                full_chain = [{"part": split.first, "iast": _slp1_to_iast_vidyut(split.first), "kosha": first_info, "depth": 1}] + sc
                 if len(full_chain) <= max_parts:
                     results.append(full_chain)
         else:
             # Neither half has deeper splits — record this split as a leaf
             results.append([
-                {"part": split.first, "dev": _slp1_to_devanagari_vidyut(split.first), "kosha": first_info, "depth": 1},
-                {"part": split.second, "dev": _slp1_to_devanagari_vidyut(split.second), "kosha": second_info, "depth": 1},
+                {"part": split.first, "iast": _slp1_to_iast_vidyut(split.first), "kosha": first_info, "depth": 1},
+                {"part": split.second, "iast": _slp1_to_iast_vidyut(split.second), "kosha": second_info, "depth": 1},
             ])
 
     # Sort results: prefer chains with more kosha matches, fewer parts
-    def chain_score(chain):
-        kosha_count = sum(1 for p in chain if p.get("kosha"))
-        part_count = len(chain)
-        return (kosha_count, -part_count)
-
-    results.sort(key=chain_score, reverse=True)
+    results.sort(key=_chain_score, reverse=True)
 
     return results
 
 
-def run_vidyut(devanagari_text: str, iast_text: str, iast_lines: List[str], mode: str) -> Dict[str, Any]:
-    """Run vidyut engine: cheda segmentation, kosha lookup, sandhi splitting, prakriya, meter.
-    
-    Uses input text directly — cheda for word segmentation, sandhi (Splitter)
-    for recursive compound splitting, kosha for dictionary lookup.
-    
+def run_vidyut(devanagari_text: str) -> Dict[str, Any]:
+    """Run vidyut engine: kosha lookup, sandhi splitting, prakriya, meter.
+
     Args:
         devanagari_text: Cleaned Devanagari text
-        iast_text: IAST-encoded text
-        iast_lines: List of IAST-encoded lines
-        mode: 'pada' or 'shloka'
-    
+
     Returns:
-        Dict with kosha, prakriya, meter, cheda, and sandhi sections
+        Dict with kosha, prakriya, and meter sections
     """
-    from pathlib import Path
     from vidyut.lipi import transliterate, Scheme
     from vidyut.kosha import Kosha
     from vidyut.prakriya import (
-        Vyakarana, Dhatu, Pratipadika, Pada,
-        Gana, Lakara, Purusha, Vacana, Linga, Vibhakti, Prayoga
+        Vyakarana, Dhatu, Pratipadika, Pada, Gana, Lakara, Purusha, Vacana, Prayoga
     )
     from vidyut.chandas import Chandas
     from vidyut.sandhi import Splitter
@@ -939,8 +1186,10 @@ def run_vidyut(devanagari_text: str, iast_text: str, iast_lines: List[str], mode
         for raw in raw_tokens:
             punct = ""
             stripped = raw
-            while stripped and stripped[-1] in "।॥.":
-                punct = stripped[-1] + punct
+            # preprocess_devanagari already removed the dandas, so at most an
+            # ASCII period can still be trailing here.
+            while stripped and stripped[-1] == ".":
+                punct = "." + punct
                 stripped = stripped[:-1]
             if stripped:
                 tokens.append((stripped, punct))
@@ -950,12 +1199,12 @@ def run_vidyut(devanagari_text: str, iast_text: str, iast_lines: List[str], mode
     words = []
 
     for slp1_token, punct in tokens:
-        devanagari = _slp1_to_devanagari_vidyut(slp1_token)
+        iast = _slp1_to_iast_vidyut(slp1_token)
 
         entries = kosha_lookup(kosha, slp1_token)
 
         word_entry = {
-            "devanagari": devanagari,
+            "iast": iast,
             "punctuation": punct,
             "is_compound": False,
         }
@@ -971,12 +1220,10 @@ def run_vidyut(devanagari_text: str, iast_text: str, iast_lines: List[str], mode
             unique_entries = []
             for e in entries[:8]:
                 entry_dict = _format_pada_entry_json(e)
-                key = (
-                    entry_dict.get("pratipadika", ""),
-                    entry_dict.get("linga", ""),
-                    entry_dict.get("vibhakti", ""),
-                    entry_dict.get("vacana", ""),
-                )
+                # Deduplicate on the whole formatted reading: verb entries
+                # carry dhatu/lakara/purusha instead of pratipadika/linga/
+                # vibhakti/vacana, so a partial key collapses distinct verbs.
+                key = json.dumps(entry_dict, sort_keys=True, ensure_ascii=False)
                 if key not in seen_entries:
                     seen_entries.add(key)
                     unique_entries.append(entry_dict)
@@ -986,15 +1233,15 @@ def run_vidyut(devanagari_text: str, iast_text: str, iast_lines: List[str], mode
 
             # Extract dhatu/pratipadika
             for entry in entries:
-                entry_repr = repr(entry)
-                if "Tinanta" in entry_repr:
-                    de = entry.dhatu_entry
-                    if de and de.dhatu and de.dhatu.aupadeshika:
-                        d = de.dhatu
-                if hasattr(entry, 'pratipadika_entry'):
-                    pe = entry.pratipadika_entry
-                    if pe and pe.lemma:
-                        all_pratipadikas.add(pe.lemma)
+                pe = getattr(entry, 'pratipadika_entry', None)
+                if pe and pe.lemma:
+                    all_pratipadikas.add(pe.lemma)
+                if "Tinanta" not in repr(entry):
+                    continue
+                de = entry.dhatu_entry
+                if de and de.dhatu and de.dhatu.aupadeshika:
+                    # DhatuEntry.clean_text is the accent-free dictionary spelling.
+                    all_dhatus.add((de.dhatu.aupadeshika, str(de.dhatu.gana), de.clean_text or ""))
         else:
             chains = recursive_split(splitter, kosha, slp1_token, max_depth=2, max_parts=4)
 
@@ -1002,19 +1249,14 @@ def run_vidyut(devanagari_text: str, iast_text: str, iast_lines: List[str], mode
                 word_entry["is_compound"] = True
 
                 # Score chains: prefer more kosha entries, fewer parts
-                def chain_score(chain):
-                    kosha_count = sum(1 for p in chain if p.get("kosha"))
-                    part_count = len(chain)
-                    return (kosha_count, -part_count)
-
-                chains.sort(key=chain_score, reverse=True)
+                chains.sort(key=_chain_score, reverse=True)
 
                 # Build flat sandhi_splits list
                 word_entry["sandhi_splits"] = []
                 seen = set()
                 for chain in chains:
-                    parts_dev = [part["dev"] for part in chain]
-                    split_str = " + ".join(parts_dev)
+                    parts_iast = [part["iast"] for part in chain]
+                    split_str = " + ".join(parts_iast)
                     if split_str not in seen:
                         seen.add(split_str)
                         word_entry["sandhi_splits"].append(split_str)
@@ -1037,14 +1279,16 @@ def run_vidyut(devanagari_text: str, iast_text: str, iast_lines: List[str], mode
         "tanAdi": Gana.Tanadi,
         "kryAdi": Gana.Kryadi,
         "curAdi": Gana.Curadi,
-        "kaRqvAdi": Gana.Kryadi,
+        "kaRqvAdi": Gana.Kandvadi,
     }
 
     dhatus_prakriya = []
-    for aupadeshika, gana_name in sorted(all_dhatus):
+    for aupadeshika, gana_name, clean_text in sorted(all_dhatus):
         gana = gana_map.get(gana_name, Gana.Bhvadi)
         dhatu = Dhatu.mula(aupadeshika, gana)
-        dhatu_dev = _slp1_to_devanagari_vidyut(aupadeshika)
+        # aupadeshika keeps the accent marks Dhatu.mula needs; display uses the
+        # dictionary spelling.
+        dhatu_dev = _slp1_to_iast_vidyut(clean_text or aupadeshika)
 
         dhatu_entry = {
             "dhatu": dhatu_dev,
@@ -1056,8 +1300,8 @@ def run_vidyut(devanagari_text: str, iast_text: str, iast_lines: List[str], mode
             prakriyas = vyakarana.derive(dhatu)
             if prakriyas:
                 dhatu_entry["krdantas"] = _format_prakriya_steps(prakriyas[0])
-        except Exception:
-            pass
+        except Exception as exc:
+            _warn_once("vidyut krdanta derivation", exc)
 
         combos = [
             (Lakara.Lat, Purusha.Madhyama, Vacana.Eka),
@@ -1080,16 +1324,16 @@ def run_vidyut(devanagari_text: str, iast_text: str, iast_lines: List[str], mode
                         final = ' '.join(result)
                     else:
                         final = ' '.join(t.text for t in result if t.text)
-                    dev = _slp1_to_devanagari_vidyut(final)
-                    lakara_dev = LAKARA_DEVANAGARI.get(str(lakara), str(lakara))
-                    purusha_dev = PURUSHA_DEVANAGARI.get(str(purusha), str(purusha))
-                    vacana_dev = VACANA_DEVANAGARI.get(str(vacana), str(vacana))
+                    dev = _slp1_to_iast_vidyut(final)
+                    lakara_dev = LAKARA_IAST.get(str(lakara), str(lakara))
+                    purusha_dev = PURUSHA_IAST.get(str(purusha), str(purusha))
+                    vacana_dev = VACANA_IAST.get(str(vacana), str(vacana))
                     dhatu_entry["tinantas"].append({
                         "label": f"{lakara_dev}/{purusha_dev}/{vacana_dev}",
                         "form": dev,
                     })
-            except Exception:
-                pass
+            except Exception as exc:
+                _warn_once("vidyut tinanta derivation", exc)
 
         dhatus_prakriya.append(dhatu_entry)
 
@@ -1101,50 +1345,52 @@ def run_vidyut(devanagari_text: str, iast_text: str, iast_lines: List[str], mode
             prakriyas = vyakarana.derive(pratipadika)
             if prakriyas:
                 pratipadikas_prakriya.append({
-                    "lemma": _slp1_to_devanagari_vidyut(lemma),
+                    "lemma": _slp1_to_iast_vidyut(lemma),
                     "steps": _format_prakriya_steps(prakriyas[0]),
                 })
-        except Exception:
-            pass
+        except Exception as exc:
+            _warn_once("vidyut pratipadika derivation", exc)
 
     # Meter classification
     meter_results = []
     slp1_lines = slp1_text.strip().split("\n")
-    known_vrtta = None
 
     for slp1_line in slp1_lines:
         slp1_line = slp1_line.strip()
         if not slp1_line:
             continue
-        dev_line = _slp1_to_devanagari_vidyut(slp1_line)
+        iast_line = _slp1_to_iast_vidyut(slp1_line)
         padas = _split_into_padas(slp1_line)
         pada_results = []
 
         for pada_slp1 in padas:
             match = chandas.classify(pada_slp1)
             pada_result = {
-                "devanagari": _slp1_to_devanagari_vidyut(pada_slp1),
+                "iast": _slp1_to_iast_vidyut(pada_slp1),
                 "meter": None,
                 "akshara_count": 0,
                 "weight_pattern": "",
             }
 
             if match.padya:
-                vrtta_dev = _slp1_to_devanagari_vidyut(match.padya)
-                pada_result["meter"] = vrtta_dev
-                known_vrtta = vrtta_dev
+                vrtta_iast = _slp1_to_iast_vidyut(match.padya)
+                pada_result["meter"] = vrtta_iast
 
             if match.aksharas:
-                for pada_aksharas in match.aksharas:
-                    weight_pattern = ''.join(a.weight for a in pada_aksharas)
-                    akshara_count = len(pada_aksharas)
-                    pada_result["akshara_count"] = akshara_count
-                    pada_result["weight_pattern"] = weight_pattern
+                # vidyut returns one akshara group per pāda; keep all of them
+                # instead of letting the last group overwrite earlier ones.
+                patterns = [
+                    ''.join(a.weight for a in pada_aksharas)
+                    for pada_aksharas in match.aksharas
+                ]
+                if patterns:
+                    pada_result["akshara_count"] = sum(len(p) for p in patterns)
+                    pada_result["weight_pattern"] = " | ".join(patterns)
 
             pada_results.append(pada_result)
 
         meter_results.append({
-            "line_devanagari": dev_line,
+            "line_iast": iast_line,
             "padas": pada_results,
         })
 
@@ -1155,8 +1401,6 @@ def run_vidyut(devanagari_text: str, iast_text: str, iast_lines: List[str], mode
             "pratipadikas": pratipadikas_prakriya,
         },
         "meter": meter_results,
-        "cheda": [],
-        "sandhi": [],
     }
 
 
@@ -1189,8 +1433,8 @@ def main() -> int:
     )
     parser.add_argument(
         "-o", "--output",
-        default="output.json",
-        help="Path to output file (default: output.json)",
+        default="-",
+        help="Output file path; '-' (default) prints JSON to stdout only",
     )
     parser.add_argument(
         "-f", "--format",
@@ -1238,7 +1482,7 @@ def main() -> int:
 
     # Run sanskrit_parser engine
     try:
-        output["engine_outputs"]["sanskrit_parser"] = run_sanskrit_parser(cleaned, args.mode)
+        output["engine_outputs"]["sanskrit_parser"] = _convert_devanagari_to_iast(run_sanskrit_parser(cleaned, args.mode))
     except Exception as exc:
         output["engine_outputs"]["sanskrit_parser"] = {"error": f"sanskrit_parser unavailable: {exc}"}
 
@@ -1250,25 +1494,30 @@ def main() -> int:
     except Exception as exc:
         output["engine_outputs"]["dharmamitra"] = {"error": f"Dharmamitra engine failed: {exc}"}
 
-    # Run vidyut engine (uses input text directly)
+    # Run vidyut engine (Devanagari input; converts to SLP1 internally)
     try:
-        output["engine_outputs"]["vidyut"] = run_vidyut(cleaned, iast_text, iast_lines, args.mode)
+        output["engine_outputs"]["vidyut"] = _convert_devanagari_to_iast(run_vidyut(cleaned))
     except Exception as exc:
         output["engine_outputs"]["vidyut"] = {"error": f"vidyut engine failed: {exc}"}
 
-    # Write output
+    # Enrich Dharmamitra tokens with lemmas from the vidyut kosha
+    if dharmamitra_results.get("tokens"):
+        try:
+            enrich_dharmamitra_lemmas(dharmamitra_results)
+        except Exception as exc:
+            print(f"Warning: Dharmamitra lemma enrichment failed: {exc}", file=sys.stderr)
+
     indent = 2 if args.format == "pretty" else None
     json_str = json.dumps(output, indent=indent, ensure_ascii=False)
 
-    try:
-        with open(args.output, "w", encoding="utf-8") as f:
-            f.write(json_str)
-    except OSError as exc:
-        print(f"Error writing output: {exc}", file=sys.stderr)
-        return 1
-
-    # Print to stdout (IAST only to avoid Devanagari rendering issues)
-    print(json_str)
+    if args.output == "-":
+        print(json_str)
+    else:
+        try:
+            Path(args.output).write_text(json_str, encoding="utf-8")
+        except OSError as exc:
+            print(f"Error writing output: {exc}", file=sys.stderr)
+            return 1
     return 0
 
 
