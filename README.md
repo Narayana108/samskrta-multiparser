@@ -1,4 +1,6 @@
-# samskrta-multi-parser-raw
+# samskrta-multiparser
+
+[github.com/Narayana108/samskrta-multiparser](https://github.com/Narayana108/samskrta-multiparser)
 
 Unified multi-engine Sanskrit analyzer. Runs three independent engines — [sanskrit_parser](https://github.com/kmadathil/sanskrit_parser), [Dharmamitra](https://dharmamitra.org) and [vidyut](https://github.com/ambuda-org/vidyut) — on the same input (Devanagari, or any romanization vidyut's lipi can detect: IAST, SLP1, Harvard-Kyoto, ITRANS) and writes a pair of JSON documents under one base name: `<base>.raw.json`, holding everything each engine produced, and `<base>.result.json`, the condensed word-by-word reading.
 
@@ -65,7 +67,8 @@ sandhi rules, with quality filtering to prevent spurious splits.
 ### Install dependencies
 
 ```bash
-cd samskrta-multi-parser-raw
+git clone git@github.com:Narayana108/samskrta-multiparser.git
+cd samskrta-multiparser
 uv sync
 ```
 

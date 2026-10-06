@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""samskrta-multi-parser-raw — Unified multi-engine Sanskrit analyzer.
+"""samskrta-multiparser — Unified multi-engine Sanskrit analyzer.
 
 Runs three independent engines (sanskrit_parser, Dharmamitra API, vidyut)
 on the same input — Devanagari or any romanization vidyut lipi detects (IAST,
@@ -1534,7 +1534,7 @@ def main() -> int:
         a warning and still returns 0.
     """
     parser = argparse.ArgumentParser(
-        description="samskrta-multi-parser-raw — Unified multi-engine Sanskrit analyzer"
+        description="samskrta-multiparser — Unified multi-engine Sanskrit analyzer"
     )
     parser.add_argument(
         "mode",

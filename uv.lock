@@ -1641,7 +1641,7 @@ wheels = [
 ]
 
 [[package]]
-name = "samskrta-multi-parser-raw"
+name = "samskrta-multiparser"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

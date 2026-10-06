@@ -1,6 +1,6 @@
 # Documentation
 
-Deep reference for `samskrta-multi-parser-raw`. The [README](README.md) covers
+Deep reference for `samskrta-multiparser`. The [README](README.md) covers
 usage; this file covers *why* the code is shaped the way it is, the library
 quirks that forced specific workarounds, and what to watch when maintaining it.
 
