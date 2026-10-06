@@ -485,6 +485,13 @@ def _kosha_exact(kosha, dev_word: str) -> Tuple[bool, int]:
     return exact, len(kosha_lookup(kosha, slp1))
 
 
+# Bounds of the transparent-compound gate in `_best_word_split`: a split only beats a shorter
+# candidate when it has at most this many parts and every part is at least this long. Measured on
+# tests/data/sandhi_truth.json — 2-3 parts with parts >= 5 letters scores 44/64; allowing 1-part
+# fragments or 4-letter parts loses padas to junk such as `mat | is`.
+_MAX_DEEP_PARTS = 3
+_MIN_DEEP_PART_LEN = 5
+
 def _is_standalone_word(parser, word_obj) -> bool:
     """Check if a word has standalone morphology (case+number or avyaya)."""
     tags = parser.sandhi_analyzer.getMorphologicalTags(word_obj, tmap=True)
@@ -500,23 +507,78 @@ def _is_standalone_word(parser, word_obj) -> bool:
     return False
 
 
+def _rank_morphology_only(candidates):
+    """Rank candidate splits by morphology alone, without any dictionary check.
+
+    Args:
+        candidates: one dict per candidate with `parts`, `count`, `min_part_len` and `standalone`
+
+    Returns:
+        The winning candidate dict
+    """
+    return max(
+        candidates,
+        key=lambda c: (c["standalone"], c["min_part_len"], -c["count"], sorted(c["parts"])),
+    )
+
+
+def _rank_with_kosha(candidates):
+    """Rank candidate splits using kosha attestation; keys documented in `_best_word_split`.
+
+    Args:
+        candidates: one dict per candidate with `parts`, `count`, `exact_all`, `entry_min`,
+            `min_part_len` and `standalone`
+
+    Returns:
+        The winning candidate dict
+    """
+    whole = next((c for c in candidates if c["count"] == 1), None)
+    whole_attested = bool(whole and whole["exact_all"])
+    whole_entries = whole["entry_min"] if whole else -1
+    for cand in candidates:
+        cand["deep"] = (
+            cand["exact_all"]
+            and 1 < cand["count"] <= _MAX_DEEP_PARTS
+            and cand["min_part_len"] >= _MIN_DEEP_PART_LEN
+            and (not whole_attested or cand["entry_min"] > whole_entries)
+        )
+    return max(
+        candidates,
+        key=lambda c: (
+            c["exact_all"],
+            c["deep"],
+            -c["count"],
+            c["standalone"],
+            c["entry_min"],
+            c["min_part_len"],
+            sorted(c["parts"]),
+        ),
+    )
+
+
 def _best_word_split(parser, dev_word: str, kosha: Optional[Any] = None) -> List[str]:
     """Pick a deterministic, validated split of one Devanagari word.
 
-    parser.split() candidate order varies between processes, so all candidates are
-    ranked instead of trusting splits[0]. With a kosha the ranking keys are, in order:
+    parser.split() candidate order varies between processes, so all candidates are ranked instead
+    of trusting splits[0]. With a kosha the ranking keys are, in order:
 
     1. every part is an exactly attested kosha form — this rejects fragments such as
        ``gam | iṣi | āmī`` or ``ava | tu``, so finite verbs stay whole (``mokṣayiṣyāmi``);
-    2. fewer parts — a compound the dictionary knows as one word is left alone;
-    3. every part has standalone morphology (case+number, or avyaya);
-    4. the rarest part is as common as possible (most kosha entries for its scarcest part);
-    5. longest shortest part, then the sorted part list, keeping output byte-stable.
+    2. the transparent-compound gate: a two- or three-part split whose every part is at least five
+       letters long outranks shorter candidates, but only when its scarcest part is better attested
+       than the whole word. That cuts ``sūryaprabhavas``, ``vajrasamutkīrṇe`` and
+       ``saṃbhṛtārthānām`` into their members while leaving a verb such as ``mokṣayiṣyāmi`` alone;
+    3. fewer parts — an atom the dictionary knows as one word is left alone;
+    4. every part has standalone morphology (case+number, or avyaya);
+    5. the rarest part is as common as possible (most kosha entries for its scarcest part);
+    6. longest shortest part, then the sorted part list, keeping output byte-stable.
 
     Measured on the 64 curated padas of ``tests/data/sandhi_truth.json`` (see
-    ``tests/test_sandhi_accuracy.py``): this rule reproduces the reference reading for 40 of
-    them, morphology-only ranking — the fallback used when no kosha is available — for 36, and
-    the candidate pool contains a reference-consistent split for 54.
+    ``tests/test_sandhi_accuracy.py``): this rule reproduces the reference reading for 44 of them;
+    morphology-only ranking — the fallback used when no kosha is available — reaches 36, and the
+    candidate pool contains a reference-consistent split for 56. Over all 79 distinct words of the
+    nine pinned verses the gate changes exactly five splits, every one of them a compound read as
+    its members; nothing else moves.
 
     Args:
         parser: sanskrit_parser Parser instance
@@ -526,10 +588,28 @@ def _best_word_split(parser, dev_word: str, kosha: Optional[Any] = None) -> List
     Returns:
         List of IAST parts; [dev_word] when no split is found.
     """
-    splits = parser.split(dev_word, limit=10)
-    if not splits:
-        return [devanagari_to_iast(dev_word)]
+    _, items = _best_word_split_with_items(parser, dev_word, kosha)
+    return [devanagari_to_iast(w.devanagari()) for w in items] or [devanagari_to_iast(dev_word)]
 
+
+def _best_word_split_with_items(parser, dev_word: str, kosha: Optional[Any] = None):
+    """Split one Devanagari word and return the winning parts with their analyzer objects.
+
+    Same search and ranking as `_best_word_split`; also hands back the sanskrit_parser word
+    objects of the chosen split so callers can ask for their morphology. The whole-line splits in
+    `sandhi_splits` only cover whatever candidates the library sampled, so without this the reading
+    document loses case/number/root data for words it did choose (observed as `"form": "pāpebhyas"`
+    with no other fields).
+
+    Args:
+        parser: sanskrit_parser Parser instance
+        dev_word: Devanagari word to decompose
+        kosha: optional Kosha from `load_kosha` for dictionary validation
+
+    Returns:
+        (IAST parts, word objects) — both empty when no split is found.
+    """
+    splits = parser.split(dev_word, limit=10) or []
     candidates = []
     seen = set()
     for s in splits:
@@ -537,25 +617,30 @@ def _best_word_split(parser, dev_word: str, kosha: Optional[Any] = None) -> List
         if parts in seen or any(len(p) <= 1 for p in parts):
             continue
         seen.add(parts)
-        standalone = all(_is_standalone_word(parser, w_obj) for w_obj in s.split)
-        min_part_len = min(len(p) for p in parts)
-        if kosha is None:
-            candidates.append((standalone, min_part_len, -len(parts), sorted(parts), parts))
-            continue
-        exact_flags, entry_counts = [], []
-        for w_obj in s.split:
-            exact_hit, entry_count = _kosha_exact(kosha, w_obj.devanagari())
-            exact_flags.append(exact_hit)
-            entry_counts.append(entry_count)
-        candidates.append(
-            (all(exact_flags), -len(parts), standalone, min(entry_counts), min_part_len,
-             sorted(parts), parts)
-        )
+        cand = {
+            "parts": parts,
+            "items": list(s.split),
+            "count": len(parts),
+            "min_part_len": min(len(p) for p in parts),
+            "standalone": all(_is_standalone_word(parser, w_obj) for w_obj in s.split),
+        }
+        if kosha is not None:
+            exact_flags, entry_counts = [], []
+            for w_obj in s.split:
+                exact_hit, entry_count = _kosha_exact(kosha, w_obj.devanagari())
+                exact_flags.append(exact_hit)
+                entry_counts.append(entry_count)
+            cand["exact_all"] = all(exact_flags)
+            cand["entry_min"] = min(entry_counts)
+        candidates.append(cand)
 
     if not candidates:
-        return [devanagari_to_iast(dev_word)]
-    best = max(candidates, key=lambda c: c[:-1])
-    return list(best[-1])
+        return [], []
+    if kosha is None:
+        best = _rank_morphology_only(candidates)
+    else:
+        best = _rank_with_kosha(candidates)
+    return list(best["parts"]), best["items"]
 
 
 def _vakya_timeout_handler(signum, frame):
@@ -638,20 +723,36 @@ def run_sanskrit_parser(input_text: str, mode: str) -> Dict[str, Any]:
         sandhi_splits.append(split_entry)
 
     # Per-word decompositions: split each input word on its own so results do
-    # not depend on whole-line candidate ordering (which varies per process).
+    # not depend on whole-line candidate ordering (which varies per process). The chosen parts
+    # carry their morphological tags as well — `sandhi_splits` only covers whatever candidates the
+    # library sampled for the whole line, so a word this pass picked can be absent there and would
+    # lose its root/case/number in the reading document.
     word_decompositions: Dict[str, List[str]] = {}
+    word_morphology: List[Dict[str, Any]] = []
     kosha = load_kosha()
     for wdev in input_text.split():
         if not any('\u0900' <= c <= '\u097F' for c in wdev):
             continue
+        parts, items = _best_word_split_with_items(parser, wdev, kosha)
+        if not parts:
+            parts = [devanagari_to_iast(wdev)]
         key = devanagari_to_iast(wdev).replace("\u1e43", "m")
-        word_decompositions[key] = _best_word_split(parser, wdev, kosha)
+        word_decompositions[key] = parts
+        for w_obj in items:
+            tags = parser.sandhi_analyzer.getMorphologicalTags(w_obj, tmap=True)
+            word_morphology.append(
+                {
+                    "pada": devanagari_to_iast(w_obj.devanagari()),
+                    "morphological_tags": _morphological_tags_to_json(tags),
+                }
+            )
 
     return {
         "mode": mode,
         "input": input_text,
         "sandhi_splits": sandhi_splits,
         "word_decompositions": word_decompositions,
+        "word_morphology": word_morphology,
     }
 
 

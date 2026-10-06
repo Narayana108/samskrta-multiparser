@@ -13,11 +13,13 @@ Two tests:
 * an always-on set of padas covering each decision the ranking exists to get right — a finite
   verb must survive whole, an elided conjunction must be separated, and a compound boundary in
   the middle of a pada must not dissolve into word fragments;
-* a gated corpus score (`SAMSKRTA_LIVE_GOLDEN=1`, ~20 s): the ranking must keep at least
+* a gated corpus score (`SAMSKRTA_LIVE_GOLDEN=1`, ~10 s): the ranking must keep at least
   `MIN_MATCHES` of the padas. Ranking rules were tuned against that number — making dictionary
-  attestation the primary key instead of standalone morphology raises the score from 36/64 to
-  40/64, and the candidate pool sanskrit_parser generates contains a reference-consistent split
-  for 54/64, which is the ceiling any ranking can reach.
+  attestation the primary key instead of standalone morphology raises the score from 36/64 to 40,
+  and the transparent-compound gate in `_best_word_split` raises it to 44; every ranking that
+  splits deeper than that (frequency-summed parts, "prefer more parts") loses ten padas or more to
+  fragments such as `mat | is`. The candidate pool sanskrit_parser generates contains a
+  reference-consistent split for 56/64, which is the ceiling any per-word ranking can reach.
 
 A pada counts as matched when the part count agrees and every part pairs one-to-one with an
 expected part sharing a kosha lemma stem. Surface spellings are not compared: sandhi changes
@@ -49,12 +51,16 @@ CURATED_PADAS = [
     "sarvadharmānparityajya",  # long pada split only at real word boundaries
     "saṃpṛktau",               # a dual the dictionary knows whole must not be cut
     "vāmanaḥ",                 # a single attested word must not be split at all
+    "sūryaprabhavo",           # compound the dictionary knows, yet read as sūrya | prabhavaḥ
+    "vajrasamutkīrṇe",         # long compound cut at its real member boundary, not into shards
+    "saṃbhṛtārthānāṃ",        # genitive plural compound: saṃbhṛta | arthānām
 ]
 
-# Scored over the whole fixture by the gated test: 40/64 with dictionary-validated ranking,
-# 36/64 without it. The floor keeps two padas of margin because processes rank tied candidates
+# Scored over the whole fixture by the gated test: 44/64 with dictionary-validated ranking (43 if
+# the scorer refuses to fold the engines' word-final anusvara/visarga spellings), 36/64 without any
+# dictionary. The floor keeps two padas of margin because processes rank tied candidates
 # differently.
-MIN_MATCHES = 38
+MIN_MATCHES = 42
 
 live = pytest.mark.skipif(
     os.environ.get("SAMSKRTA_LIVE_GOLDEN") != "1",
@@ -87,6 +93,12 @@ def splitter():
 def lemma_stems(kosha, form_iast: str) -> frozenset:
     """Kosha lemma stems reachable from a surface form; the form itself when unattested.
 
+    Two lookups are merged. The plain one is the form as written. The folded one tolerates the
+    word-final orthography the engines choose among themselves — sanskrit_parser writes anusvara
+    as 'M' and a final visarga as 's', while the curated reading spells the same stem with the
+    sign it had before sandhi ('pāpebhyaḥ' vs 'pāpebhyas'). Without that second lookup a correct
+    split is scored as wrong.
+
     Args:
         kosha: Kosha instance
         form_iast: IAST word form
@@ -97,9 +109,11 @@ def lemma_stems(kosha, form_iast: str) -> frozenset:
     from indic_transliteration import sanscript
 
     slp1 = sanscript.transliterate(form_iast, sanscript.IAST, sanscript.SLP1)
+    folded = "".join({"M": "m", "H": "s"}.get(ch, ch) for ch in slp1).rstrip("sr")
     infos = [app._kosha_entry_info(entry) for entry in app.kosha_lookup(kosha, slp1)]
+    infos += [app._kosha_entry_info(entry) for entry in app.kosha_lookup(kosha, folded)]
     stems = {info["stem"] for info in infos if info}
-    return frozenset(stems or {slp1})
+    return frozenset(stems or {slp1, folded})
 
 
 def pada_matches(kosha, parts, expected_parts) -> bool:

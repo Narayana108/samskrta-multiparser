@@ -5,7 +5,7 @@
   },
   "padaccheda": {
     "dharmamitra": "tyāgāya | saṃbhṛta | arthānām | satyāya | mita | bhāṣiṇām | yaśase | vijigīṣūṇām | prajāyai | gṛhamedhinām",
-    "sanskrit_parser": "tyāgāya | sambhṛtārthānām | satyāya | mitabhāṣiṇām | yaśase | vijigīṣūṇām | prajāyai | gṛhamedhinām"
+    "sanskrit_parser": "tyāgāya | sambhṛtā | arthānām | satyāya | mitabhāṣiṇām | yaśase | vijigīṣūṇām | prajāyai | gṛhamedhinām"
   },
   "padas": [
     {
@@ -84,12 +84,20 @@
       },
       "sanskrit_parser": {
         "padaccheda": [
-          "sambhṛtārthānām"
+          "sambhṛtā",
+          "arthānām"
         ],
         "words": [
           {
-            "form": "sambhṛtārthānām",
-            "root": "sambhṛtārtha",
+            "form": "sambhṛtā",
+            "root": "sambhṛta",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "strīliṅgam"
+          },
+          {
+            "form": "arthānām",
+            "root": "artha",
             "vibhakti": "ṣaṣṭhī",
             "vacana": "bahu",
             "linga": "strīliṅgam"
@@ -99,11 +107,15 @@
       "differences": [
         {
           "sanskrit_parser": [
-            "sambhṛtārthānām"
+            "sambhṛtā"
           ],
           "dharmamitra": [
-            "saṃbhṛta",
-            "arthānām",
+            "saṃbhṛta"
+          ]
+        },
+        {
+          "sanskrit_parser": null,
+          "dharmamitra": [
             "satyāya",
             "mita",
             "bhāṣiṇām"

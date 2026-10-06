@@ -177,13 +177,13 @@ def _morph_rank(entry: Dict[str, Any]):
 def collect_sp_morphology(sp_output: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     """Map every sanskrit_parser surface form to its best parsed morphology.
 
-    Walks the raw output and collects every tag group attached to a 'pada'
-    across all sandhi splits. Split order varies between processes, so
-    candidates are ranked — full case+number readings first, then a canonical
-    tie-break — instead of taking whatever appears first. Candidates are keyed
-    by the anusvara-normalized form up front; otherwise two spellings of one
-    pada ('saṃpṛktau' / 'sampṛktau') compete as separate keys and the winner
-    would be decided by insertion order.
+    Walks the raw output and collects every tag group attached to a 'pada' — both the items of the
+    whole-line `sandhi_splits` and the `word_morphology` entries recorded for the words the per-word
+    ranking chose. Split order and sampled candidate set vary between processes, so candidates are
+    ranked — full case+number readings first, then a canonical tie-break — instead of taking whatever
+    appears first. Candidates are keyed by the anusvara-normalized form up front; otherwise two
+    spellings of one pada ('saṃpṛktau' / 'sampṛktau') compete as separate keys and the winner would be
+    decided by insertion order.
     """
     groups: Dict[str, List[Dict[str, Any]]] = {}
 

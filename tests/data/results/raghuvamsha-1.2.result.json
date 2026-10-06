@@ -5,7 +5,7 @@
   },
   "padaccheda": {
     "dharmamitra": "kva | sūrya | prabhavaḥ | vaṃśaḥ | kva | ca | alpa | viṣayā | matiḥ | titīrṣuḥ | dustaram | mohāt | uḍupena | asmi | sāgaram",
-    "sanskrit_parser": "kva | sūryaprabhavas | vaṃśas | kva | cā | alpaviṣayā | matis | titīrṣus | dustaram | mohāt | uḍupena | asmi | sāgaram"
+    "sanskrit_parser": "kva | sūrya | prabhavas | vaṃśas | kva | cā | alpaviṣayā | matis | titīrṣus | dustaram | mohāt | uḍupena | asmi | sāgaram"
   },
   "padas": [
     {
@@ -69,25 +69,32 @@
       },
       "sanskrit_parser": {
         "padaccheda": [
-          "sūryaprabhavas"
+          "sūrya",
+          "prabhavas"
         ],
         "words": [
           {
-            "form": "sūryaprabhavas",
-            "root": "sūryaprabhava",
-            "vibhakti": "prathamā",
+            "form": "sūrya",
+            "root": "sūrya",
+            "vibhakti": "saṃbodhana",
             "vacana": "eka",
             "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "prabhavas",
+            "root": "prabhu",
+            "vibhakti": "saṃbodhana",
+            "vacana": "bahu",
+            "linga": "strīliṅgam"
           }
         ]
       },
       "differences": [
         {
           "sanskrit_parser": [
-            "sūryaprabhavas"
+            "prabhavas"
           ],
           "dharmamitra": [
-            "sūrya",
             "prabhavaḥ",
             "vaṃśaḥ"
           ]

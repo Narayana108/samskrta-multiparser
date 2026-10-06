@@ -5,7 +5,7 @@
   },
   "padaccheda": {
     "dharmamitra": "vāc | arthau | iva | saṃpṛktau | vāc | artha | pratipattaye | jagantaḥ | pitarau | vande | pārvatī | parameśvarau",
-    "sanskrit_parser": "vāgarthās | viva | sampṛktau | vāgartha | pratipattaye | jagatas | pitarau | vande | pārvatī | parameśvarau"
+    "sanskrit_parser": "vāgartha | āviva | sampṛktau | vāgartha | pratipattaye | jagatas | pitarau | vande | pārvatī | parameśvarau"
   },
   "padas": [
     {
@@ -42,31 +42,35 @@
       },
       "sanskrit_parser": {
         "padaccheda": [
-          "vāgarthās",
-          "viva"
+          "vāgartha",
+          "āviva"
         ],
         "words": [
           {
-            "form": "vāgarthās",
+            "form": "vāgartha",
             "root": "vāgartha",
-            "vibhakti": "saṃbodhana",
-            "vacana": "bahu",
-            "linga": "puṃlliṅgam"
-          },
-          {
-            "form": "viva",
-            "root": "viva",
             "vibhakti": "saṃbodhana",
             "vacana": "eka",
             "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "āviva",
+            "root": "av",
+            "vacana": "dvi",
+            "tags": [
+              "liṭ",
+              "parasmaipadam",
+              "prāthamikaḥ",
+              "uttamapuruṣaḥ"
+            ]
           }
         ]
       },
       "differences": [
         {
           "sanskrit_parser": [
-            "vāgarthās",
-            "viva"
+            "vāgartha",
+            "āviva"
           ],
           "dharmamitra": [
             "vāc",

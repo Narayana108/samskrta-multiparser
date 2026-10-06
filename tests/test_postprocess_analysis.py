@@ -213,6 +213,33 @@ def test_collect_morphology_anusvara_collision_winner_is_order_independent():
     assert reverse == forward   # not last-writer-wins
 
 
+def test_collect_morphology_covers_words_only_found_in_word_morphology():
+    """A word the per-word ranking chose may appear in no sampled whole-line split.
+
+    Its tags arrive through `word_morphology`; without that source the reading document shows the
+    bare form with no root, case or number — and which words lose them changes every run.
+    """
+    sp_output = {
+        "sandhi_splits": [{"items": [{
+            "pada": "sarva",
+            "morphological_tags": [
+                {"root": "sarva", "tags": ["ekavacanam", "prathamāvibhaktiḥ", "puṃlliṅgam"]},
+            ],
+        }]}],
+        "word_morphology": [{
+            "pada": "pāpebhyas",
+            "morphological_tags": [
+                {"root": "pāpa", "tags": ["samāsapūrvapadanāmapadam"]},
+                {"root": "pāpa", "tags": ["bahuvacanam", "pañcamīvibhaktiḥ", "puṃlliṅgam"]},
+            ],
+        }],
+    }
+    assert postprocess_analysis.collect_sp_morphology(sp_output) == {
+        "sarva": {"root": "sarva", "vacana": "eka", "vibhakti": "prathamā", "linga": "puṃlliṅgam"},
+        "pāpebhyas": {"root": "pāpa", "vacana": "bahu", "vibhakti": "pañcamī", "linga": "puṃlliṅgam"},
+    }
+
+
 # ---------------------------------------------------------------------------
 # collect_sp_decompositions
 # ---------------------------------------------------------------------------

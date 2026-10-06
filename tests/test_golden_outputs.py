@@ -58,7 +58,7 @@ EXPECTED = {
             "| pitarau | vande | pārvatī | parameśvarau"
         ),
         "sanskrit_parser_padaccheda": (
-            "vāgarthās | viva | sampṛktau | vāgartha | pratipattaye | jagatas | pitarau "
+            "vāgartha | āviva | sampṛktau | vāgartha | pratipattaye | jagatas | pitarau "
             "| vande | pārvatī | parameśvarau"
         ),
     },
@@ -113,12 +113,12 @@ EXPECTED = {
             "atha | vā | kṛta | vāgdvāre | vaṃśe | asmin | pūrva | sūribhiḥ | maṇau | vajra "
             "| samutkīrṇe | sūtrasya | iva | asti | mama | gatiḥ"
         ),
-        # The avagraha token reaches sanskrit_parser fused and it splits it into three words;
-        # inside compounds (vajrasamutkīrṇe) it stops at the word boundary it was given.
+        # The avagraha token reaches sanskrit_parser fused and it splits it into three words; the
+        # long compound is cut at its member boundary by the transparent-compound gate.
         "sanskrit_parser_padaccheda": (
             "atha | vā | kṛta | vāgdvāre | vaṃśe | asmin | pūrvasūribhis | maṇau "
-            "| vajrasamutkīrṇe | sūtrasya | iva | asti | me | gatis"
-        ),
+            "| vajra | samutkīrṇe | sūtrasya | iva | asti | me | gatis"
+        )
     },
     "raghuvamsha-1.5": {
         # One pada per half-line here: the verse is written as two long fused compounds, and
@@ -238,11 +238,12 @@ def test_result_document_shape(stem):
 # ---------------------------------------------------------------------------
 
 def test_raghuvamsha_one_dot_one_keeps_both_readings_of_the_compound():
-    """वागर्थाविव: Dharmamitra splits it to the word boundary, sanskrit_parser does not."""
+    """वागर्थाविव: Dharmamitra reads three words (vāk | arthau | iva), sanskrit_parser cuts the
+    compound in two but keeps the dual ending fused; neither reading is discarded."""
     result = load_golden("raghuvamsha-1.1", ".result.json")
     pada = next(p for p in result["padas"] if p["pada"] == "vāgarthāviva")
     assert pada["dharmamitra"]["padaccheda"] == ["vāc", "arthau", "iva"]
-    assert pada["sanskrit_parser"]["padaccheda"] == ["vāgarthās", "viva"]
+    assert pada["sanskrit_parser"]["padaccheda"] == ["vāgartha", "āviva"]
     assert pada["differences"], "a disagreement this large must be recorded"
 
 
@@ -312,6 +313,20 @@ def test_raghuvamsha_one_dot_four_splits_the_avagraha_token_without_restoring_th
     )
     pada = next(p for p in result["padas"] if p["pada"].startswith("vaṃśe"))
     assert pada["sanskrit_parser"]["padaccheda"] == ["vaṃśe", "asmin", "pūrvasūribhis"]
+
+
+@pytest.mark.parametrize("stem", VERSES)
+def test_every_chosen_word_carries_an_analysis(stem):
+    """No word the ranker chose may reach the reading document as a bare form.
+
+    Morphology for the chosen words comes from ``word_morphology`` in the raw document; when that
+    source is missing, whichever words happen to appear in a sampled whole-line split keep their
+    root/case/number and the rest go null — different words lose their analysis on every run.
+    """
+    result = load_golden(stem, ".result.json")
+    bare = [w["form"] for p in result["padas"]
+            for w in (p.get("sanskrit_parser") or {}).get("words", []) if "root" not in w]
+    assert not bare, f"{stem}: words without an analysis: {bare}"
 
 
 # ---------------------------------------------------------------------------

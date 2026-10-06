@@ -310,6 +310,16 @@ Ordered by how likely they are to bite:
     (words fine, but vidyut counts the extra syllable and 1.4 reported aksharas `[17, 8, 8]`
     instead of `[8, 8, 8, 8]`). Only the first keeps both splitting and metre correct, so
     `_SEPARATORS` does not touch `ऽ`.
+11. **Chosen-word morphology must be recorded per word, not harvested from line splits.**
+    `parser.split(line, limit=5)` samples whole-line candidates and their order/member set change
+    between processes. Reading-document word analyses are keyed by the forms the per-word ranking chose
+    in `word_decompositions`, which those sampled candidates need not contain — so before
+    `word_morphology` existed, 17 of 116 chosen words (`pāpebhyas`, `āsam`, `udra`, …) came back as a
+    bare `"form"` with no root/case/number, and *which* words lost them changed on every regeneration.
+    `_best_word_split_with_items` returns the winning split's word objects precisely so
+    `run_sanskrit_parser` can tag them; `tests/test_golden_outputs.py::test_every_chosen_word_carries_an_analysis`
+    fails if that link is broken again.
+
 
 ## 9. Splitting quality: how it is measured
 
@@ -323,20 +333,34 @@ Per-word sandhi splitting has no oracle inside the tool, so one was built outsid
   point, never the answer key.
 - **Metric.** A pada matches when the part count agrees *and* the parts pair one-to-one such that
   each pair shares at least one kosha lemma stem (SLP1). Spellings are not compared: sandhi changes
-  them (`vāc`/`vāk`) and sanskrit_parser writes word-final visarga as `s`, anusvara as `m`. Plain
+  them (`vāc`/`vāk`) and sanskrit_parser writes word-final visarga as `s`, anusvara as `m`. Because
+  the engines disagree with the reference about exactly that ending, `lemma_stems()` looks the form
+  up twice — once as written, once folded (`M→m`, `H→s`, trailing `s`/`r` dropped) — so
+  `sarva | pāpebhyas` scores against `sarva | pāpebhyaḥ` instead of being called a wrong split. Plain
   stem-set equality was rejected as too permissive (an unattested fragment falls back to itself, so
   garbage sets collide), and folding surface forms onto stems before comparison as too brittle.
 - **Measured, on that fixture.** vidyut's `recursive_split` chains contained a reference-consistent
   reading for 33 of the 63 padas they covered; sanskrit_parser's ten-candidate pool contains one for
-  **54/64** — the ceiling any ranking can reach. Ranking by morphology alone reaches **36/64**;
-  dictionary-validated ranking (`_best_word_split` with `load_kosha()`) reaches **40/64**. The gated
-  test floors the score at 38 so that tie-breaking drift between processes cannot fail it while any
+  **56/64** — the ceiling any ranking can reach. Ranking by morphology alone reaches **36/64**;
+  dictionary-validated ranking (`_best_word_split` with `load_kosha()`) reaches **44/64**, of which
+  the transparent-compound gate (`_MAX_DEEP_PARTS`, `_MIN_DEEP_PART_LEN`) contributes three. The gated
+  test floors the score at 42 so that tie-breaking drift between processes cannot fail it while any
   real regression does.
+- **Rankings that were tried and lost.** Reconstructability under `Sandhi.join` as a primary key:
+  39/64. Summed kosha frequency of the parts: 10-22/64. "Prefer more parts whenever all are
+  attested": 8/64 — it cuts `jagatas` into `ja | ga | tas`. A kosha-pruned recursive segmentation
+  generator built on sanskrit_parser's own split rules lifts the pool from 56 to 58 but changes no
+  pick, and costs 12 s per corpus pass; it is not shipped. The gate above is the only deeper-splitting
+  rule that paid: +3 padas over all nine verses for exactly five changed words, all compounds read as
+  their members.
 - **What the misses are.** Almost all remaining ones need context: samāsa resolution
   (`yathākālaprabodhinām`, `prāṃśulabhye` stay whole), case government across a pada, and a handful
   where sandhi joined two words so that the join is indistinguishable from an inflection
   (`māme | akam`). No per-word method fixes these; they are why Dharmamitra's column stays in
-  `<base>.result.json` next to the offline one instead of being scored away.
+  `<base>.result.json` next to the offline one instead of being scored away. Re-ranking toward
+  Dharmamitra was measured too: its reading is present in sanskrit_parser's candidate pool for only
+  11 of the 60 padas it answers, and it agrees with the curated reference on just **22/64** itself,
+  so "split like Dharmamitra" would cost accuracy rather than buy it.
 - **Re-measuring.** `SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_sandhi_accuracy.py` prints
   every missed pada by name on failure. Rule changes can be re-scored in seconds by generating each
   pada's candidate pool once and re-running the ranking over it; the pool, not the ranking, is the

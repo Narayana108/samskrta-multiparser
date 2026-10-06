@@ -5,7 +5,7 @@
   },
   "padaccheda": {
     "dharmamitra": "atha | vā | kṛta | vāgdvāre | vaṃśe | asmin | pūrva | sūribhiḥ | maṇau | vajra | samutkīrṇe | sūtrasya | iva | asti | mama | gatiḥ",
-    "sanskrit_parser": "atha | vā | kṛta | vāgdvāre | vaṃśe | asmin | pūrvasūribhis | maṇau | vajrasamutkīrṇe | sūtrasya | iva | asti | me | gatis"
+    "sanskrit_parser": "atha | vā | kṛta | vāgdvāre | vaṃśe | asmin | pūrvasūribhis | maṇau | vajra | samutkīrṇe | sūtrasya | iva | asti | me | gatis"
   },
   "padas": [
     {
@@ -302,12 +302,20 @@
       "dharmamitra": null,
       "sanskrit_parser": {
         "padaccheda": [
-          "vajrasamutkīrṇe"
+          "vajra",
+          "samutkīrṇe"
         ],
         "words": [
           {
-            "form": "vajrasamutkīrṇe",
-            "root": "vajrasamutkīrṇa",
+            "form": "vajra",
+            "root": "vajra",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "samutkīrṇe",
+            "root": "samutkīrṇa",
             "vibhakti": "saṃbodhana",
             "vacana": "eka",
             "linga": "strīliṅgam"
@@ -317,7 +325,8 @@
       "differences": [
         {
           "sanskrit_parser": [
-            "vajrasamutkīrṇe"
+            "vajra",
+            "samutkīrṇe"
           ],
           "dharmamitra": null
         }

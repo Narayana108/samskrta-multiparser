@@ -5,7 +5,7 @@
   },
   "padaccheda": {
     "dharmamitra": "yā | sṛṣṭiḥ | sraṣṭuḥ | ādyā | vahati | vidhi | hutam | yā | haviḥ | yā | ca | hotrī | ye | dve | kālam | vidhattaḥ | śruti | viṣaya | guṇā | yā | sthitā | vyāpya | viśvam | yām | āhuḥ | sarva | bīja | prakṛtiḥ | iti | yayā | prāṇinaḥ | prāṇavantaḥ | pratyakṣābhiḥ | prapannaḥ | tanubhiḥ | avatu | vaḥ | tābhiḥ | aṣṭābhiḥ | īśaḥ",
-    "sanskrit_parser": "yā | sṛṣṭis | sraṣṭur | ādyā | vahati | vidhi | hutam | yā | havis | yā | ca | hotrī | ye | dve | kālam | vidhat | tas | śrutiviṣayaguṇā | yā | sthitā | vyāpya | viśvam | yāmā | ahus | sarvabīja | prakṛti | riti | yayā | prāṇinas | prāṇavantas | pratyakṣābhis | prapannas | tanubhis | avatu | vastā | ābhis | aṣṭābhis | īśas"
+    "sanskrit_parser": "yā | sṛṣṭis | sraṣṭur | ādyā | vahati | vidhi | hutam | yā | havis | yā | ca | hotrī | ye | dve | kālam | vidhat | tas | śrutiviṣayaguṇā | yā | sthitā | vyāpya | viśvam | yāmā | ahus | sarvabīja | prakṛti | riti | yayā | prāṇinas | prāṇavantas | pratyakṣa | ābhis | prapannas | tanubhis | avatu | vastā | ābhis | aṣṭābhis | īśas"
   },
   "padas": [
     {
@@ -507,10 +507,22 @@
         ],
         "words": [
           {
-            "form": "vidhat"
+            "form": "vidhat",
+            "root": "vidhat",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam",
+            "tags": [
+              "kartari",
+              "śatṛ"
+            ]
           },
           {
-            "form": "tas"
+            "form": "tas",
+            "root": "tas",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "strīliṅgam"
           }
         ]
       },
@@ -574,7 +586,11 @@
         ],
         "words": [
           {
-            "form": "śrutiviṣayaguṇā"
+            "form": "śrutiviṣayaguṇā",
+            "root": "śrutiviṣayaguṇa",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "strīliṅgam"
           }
         ]
       },
@@ -638,7 +654,17 @@
         ],
         "words": [
           {
-            "form": "sthitā"
+            "form": "sthitā",
+            "root": "sthita",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "strīliṅgam",
+            "tags": [
+              "karmaṇi",
+              "kta",
+              "kṛdantaḥ",
+              "prāthamikaḥ"
+            ]
           }
         ]
       }
@@ -742,10 +768,18 @@
         ],
         "words": [
           {
-            "form": "yāmā"
+            "form": "yāmā",
+            "root": "yāmā",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "strīliṅgam"
           },
           {
-            "form": "ahus"
+            "form": "ahus",
+            "root": "ahu",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "strīliṅgam"
           }
         ]
       },
@@ -1020,12 +1054,20 @@
       "dharmamitra": null,
       "sanskrit_parser": {
         "padaccheda": [
-          "pratyakṣābhis"
+          "pratyakṣa",
+          "ābhis"
         ],
         "words": [
           {
-            "form": "pratyakṣābhis",
+            "form": "pratyakṣa",
             "root": "pratyakṣa",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "ābhis",
+            "root": "ā",
             "vibhakti": "tṛtīyā",
             "vacana": "bahu",
             "linga": "strīliṅgam"
@@ -1035,7 +1077,8 @@
       "differences": [
         {
           "sanskrit_parser": [
-            "pratyakṣābhis"
+            "pratyakṣa",
+            "ābhis"
           ],
           "dharmamitra": null
         }
