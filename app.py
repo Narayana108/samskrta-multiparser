@@ -12,7 +12,7 @@ Architecture:
     ├── preprocess_input()          # Replace separators with spaces, collapse whitespace
     ├── devanagari_to_iast()        # Convert Devanagari → IAST
     ├── run_sanskrit_parser()       # Local: sandhi + morphology + vakya
-    ├── run_dharmamitra()           # Remote: API-based lemma tags
+    ├── run_dharmamitra()           # Remote: independent unsandhiing (surface forms only)
     ├── run_vidyut()                # Local: kosha + prakriya + meter + sandhi
     └── main()                      # Engines, then both documents of the output pair
 
@@ -23,7 +23,7 @@ from this one.
 
 Engine capabilities:
     - sanskrit_parser: Sandhi splitting, morphological tags, vakya (sentence) parsing
-    - dharmamitra: Sandhi splitting with lemma morphosyntax tags (remote API)
+    - dharmamitra: independent sandhi splitting over the network; its response is surface forms only
     - vidyut: Kosha dictionary lookup, dhatu/pratipadika prakriya, meter classification,
               recursive sandhi splitting via DFS through kosha dictionary
 

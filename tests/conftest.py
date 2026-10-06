@@ -2,8 +2,10 @@
 
 Pins the vidyut data directory before anything imports ``app`` (which resolves
 ``DATA_DIR`` at import time) and puts the project root on ``sys.path`` so the
-test modules can import ``app`` and ``postprocess_analysis`` directly. No test may touch
-the network: the Dharmamitra engine is a remote API and is never exercised here.
+test modules can import ``app`` and ``postprocess_analysis`` directly. The default suite
+touches no network: the Dharmamitra engine is a remote API and is never exercised here. The one
+exception is opt-in — ``SAMSKRTA_LIVE_GOLDEN=1`` enables the live golden regeneration in
+``test_golden_outputs.py``, which is skipped otherwise.
 """
 
 import os

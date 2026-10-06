@@ -1,0 +1,437 @@
+{
+  "mode": "shloka",
+  "input": {
+    "script": "Devanagari",
+    "devanagari": "क्व सूर्यप्रभवो वंशः क्व चाल्पविषया मतिः ।\nतितीर्षुर्दुस्तरं मोहादुडुपेनास्मि सागरम् ॥",
+    "iast": "kva sūryaprabhavo vaṃśaḥ kva cālpaviṣayā matiḥ\ntitīrṣurdustaraṃ mohāduḍupenāsmi sāgaram"
+  },
+  "padaccheda": {
+    "dharmamitra": "kva | sūrya | prabhavaḥ | vaṃśaḥ | kva | ca | alpa | viṣayā | matiḥ | titīrṣuḥ | dustaram | mohāt | uḍupena | asmi | sāgaram",
+    "sanskrit_parser": "kva | sūryaprabhavas | vaṃśas | kva | cā | alpaviṣayā | matis | titīrṣus | dustaram | mohāt | uḍupena | asmi | sāgaram"
+  },
+  "padas": [
+    {
+      "pada": "kva",
+      "dharmamitra": {
+        "padaccheda": [
+          "kva"
+        ],
+        "words": [
+          {
+            "form": "kva",
+            "lemma": "kva",
+            "type": "avyayam"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "kva"
+        ],
+        "words": [
+          {
+            "form": "kva",
+            "root": "kva",
+            "tags": [
+              "avyayam",
+              "kriyāviśeṣaṇam"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "pada": "sūryaprabhavo",
+      "dharmamitra": {
+        "padaccheda": [
+          "sūrya",
+          "prabhavaḥ",
+          "vaṃśaḥ"
+        ],
+        "words": [
+          {
+            "form": "sūrya",
+            "lemma": [
+              "sūrya",
+              "sūryā"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "prabhavaḥ",
+            "lemma": "prabhava",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "vaṃśaḥ",
+            "lemma": "vaṃśa",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "sūryaprabhavas"
+        ],
+        "words": [
+          {
+            "form": "sūryaprabhavas",
+            "root": "sūryaprabhava",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "sūryaprabhavas"
+          ],
+          "dharmamitra": [
+            "sūrya",
+            "prabhavaḥ",
+            "vaṃśaḥ"
+          ]
+        }
+      ]
+    },
+    {
+      "pada": "vaṃśaḥ",
+      "dharmamitra": null,
+      "sanskrit_parser": {
+        "padaccheda": [
+          "vaṃśas"
+        ],
+        "words": [
+          {
+            "form": "vaṃśas",
+            "root": "vaṃśa",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "vaṃśas"
+          ],
+          "dharmamitra": null
+        }
+      ]
+    },
+    {
+      "pada": "kva",
+      "dharmamitra": {
+        "padaccheda": [
+          "kva"
+        ],
+        "words": [
+          {
+            "form": "kva",
+            "lemma": "kva",
+            "type": "avyayam"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "kva"
+        ],
+        "words": [
+          {
+            "form": "kva",
+            "root": "kva",
+            "tags": [
+              "avyayam",
+              "kriyāviśeṣaṇam"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "pada": "cālpaviṣayā",
+      "dharmamitra": {
+        "padaccheda": [
+          "ca",
+          "alpa",
+          "viṣayā"
+        ],
+        "words": [
+          {
+            "form": "ca",
+            "lemma": "ca",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "alpa",
+            "lemma": "alpa",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "viṣayā",
+            "lemma": [
+              "viṣ",
+              "viṣa",
+              "viṣaya",
+              "viṣā"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "cā",
+          "alpaviṣayā"
+        ],
+        "words": [
+          {
+            "form": "cā",
+            "root": "ca",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "strīliṅgam"
+          },
+          {
+            "form": "alpaviṣayā",
+            "root": "alpaviṣaya",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "strīliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "cā",
+            "alpaviṣayā"
+          ],
+          "dharmamitra": [
+            "ca",
+            "alpa",
+            "viṣayā"
+          ]
+        }
+      ]
+    },
+    {
+      "pada": "matiḥ",
+      "dharmamitra": {
+        "padaccheda": [
+          "matiḥ",
+          "titīrṣuḥ"
+        ],
+        "words": [
+          {
+            "form": "matiḥ",
+            "lemma": "mati",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "titīrṣuḥ",
+            "lemma": [
+              "titarīṣa",
+              "titarīṣi"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "matis"
+        ],
+        "words": [
+          {
+            "form": "matis",
+            "root": "mati",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "strīliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "matis"
+          ],
+          "dharmamitra": [
+            "matiḥ",
+            "titīrṣuḥ"
+          ]
+        }
+      ]
+    },
+    {
+      "pada": "titīrṣurdustaraṃ",
+      "dharmamitra": {
+        "padaccheda": [
+          "dustaram",
+          "mohāt",
+          "uḍupena",
+          "asmi",
+          "sāgaram"
+        ],
+        "words": [
+          {
+            "form": "dustaram",
+            "lemma": "dustṝ",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "mohāt",
+            "lemma": "moha",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "uḍupena",
+            "lemma": "uḍupa",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "asmi",
+            "lemma": "as",
+            "type": "tīnantāḥ"
+          },
+          {
+            "form": "sāgaram",
+            "lemma": "sāgara",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "titīrṣus",
+          "dustaram"
+        ],
+        "words": [
+          {
+            "form": "titīrṣus",
+            "root": "titīrṣu",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "strīliṅgam"
+          },
+          {
+            "form": "dustaram",
+            "root": "dustara",
+            "vibhakti": "dvitīyā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "titīrṣus"
+          ],
+          "dharmamitra": null
+        },
+        {
+          "sanskrit_parser": null,
+          "dharmamitra": [
+            "mohāt",
+            "uḍupena",
+            "asmi",
+            "sāgaram"
+          ]
+        }
+      ]
+    },
+    {
+      "pada": "mohāduḍupenāsmi",
+      "dharmamitra": null,
+      "sanskrit_parser": {
+        "padaccheda": [
+          "mohāt",
+          "uḍupena",
+          "asmi"
+        ],
+        "words": [
+          {
+            "form": "mohāt",
+            "root": "moha",
+            "vibhakti": "pañcamī",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "uḍupena",
+            "root": "uḍupa",
+            "vibhakti": "tṛtīyā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "asmi",
+            "root": "as",
+            "vacana": "eka",
+            "tags": [
+              "laṭ",
+              "parasmaipadam",
+              "uttamapuruṣaḥ"
+            ]
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "mohāt",
+            "uḍupena",
+            "asmi"
+          ],
+          "dharmamitra": null
+        }
+      ]
+    },
+    {
+      "pada": "sāgaram",
+      "dharmamitra": null,
+      "sanskrit_parser": {
+        "padaccheda": [
+          "sāgaram"
+        ],
+        "words": [
+          {
+            "form": "sāgaram",
+            "root": "sāgara",
+            "vibhakti": "dvitīyā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "sāgaram"
+          ],
+          "dharmamitra": null
+        }
+      ]
+    }
+  ],
+  "chandas": {
+    "vrtta": null,
+    "candidates": [
+      "jaloddhatagati"
+    ],
+    "pada_count": 4,
+    "classified_pada_count": 1,
+    "aksharas_per_pada": [
+      8,
+      8,
+      8,
+      8
+    ]
+  }
+}

@@ -168,6 +168,12 @@ traverses, that noise usually cancels — but when sanskrit_parser proposes a ge
 different candidate set, `<base>.result.json` legitimately changes with it. Pin the raw
 document (and hence the reading one) if you need archival reproducibility.
 
+The pinned pairs in `tests/data/results/` (§7) exist because of this. Re-running Bhagavad Gītā
+18.66 reproduced the dharmamitra and vidyut subtrees byte-for-byte but ranked mokṣayiṣyāmi as
+`mokṣe | iṣi | āmi` where the stored document has `mokṣe | iṣyā | āmi` — a tied per-word ranking in
+sanskrit_parser's candidate list, not a postprocessing difference. That is why the live golden test
+compares the Dharmamitra half of the reading document and leaves the splitter column alone.
+
 ## 4. Lemma provenance (Dharmamitra tokens)
 
 The Dharmamitra API returns surface forms only — no lemmas. `enrich_dharmamitra_lemmas`
@@ -192,8 +198,10 @@ documented miss (e.g. `jagantaḥ`), not an error.
   whitespace before a newline silently cuts the response there, so tokens for later
   pādas vanish (symptom: DM tokens cover only the first pāda). `run_dharmamitra`
   strips per-line whitespace before POSTing.
-- **The `mode` parameter is ignored** by the endpoint; the request asks for
-  unsandhied lemma-morphosyntax output and gets it regardless of what the field says.
+- **The response carries no tags.** The request asks for
+  `mode="unsandhied-lemma-morphosyntax"`, but `results[0]` arrives as an underscore-separated list of
+  unsandhied **surface forms** (`kva_sūrya_prabhavaḥ_vaṃśaḥ_…`). No lemma or morphosyntax tags come back,
+  which is exactly why §4 fills lemmas from the local vidyut kosha.
 - **Untagable words come back as empty underscore fields** (`____iva_`);
   `_parse_tokens` drops only those empty segments, so an untagable word produces no
   token rather than a bogus one.
@@ -238,6 +246,13 @@ uv run pytest -q                        # offline suite
 - `tests/conftest.py` pins `VIDYUT_DATA_DIR` to the bundled data and puts the project
   root on `sys.path`. Tests are deterministic and never call the Dharmamitra API;
   kosha-backed tests use a module-scoped fixture over the local data.
+- Each test verse has a pinned pair in `tests/data/results/` (`<stem>.raw.json`,
+  `<stem>.result.json`, pretty-printed so diffs stay reviewable). Regenerate one after an
+  intentional change with
+  `uv run python app.py shloka -f pretty -i tests/data/<stem>.txt -o tests/data/results/<stem>`.
+  The offline half of `tests/test_golden_outputs.py` then proves `postprocess()` still reproduces
+  the reading document exactly; the live half re-runs all three engines, needs network access, and
+  is skipped unless `SAMSKRTA_LIVE_GOLDEN=1`.
 - Output naming: `-o BASE` writes `BASE.raw.json` and `BASE.result.json`; with no `-o`
   the base is `results/<input stem>` (`results/shloka` / `results/pada` for stdin
   input). Parent directories are created on demand, and a trailing `.json`, `.raw` or
