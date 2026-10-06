@@ -161,7 +161,6 @@ The output is a JSON object with the following structure:
     "devanagari": "वागर्थाविव संपृक्तौ...",
     "iast": "vāgarthāviva saṃpṛktau..."
   },
-  "mode": "pada" | "shloka",
   "engine_outputs": {
     "sanskrit_parser": { ... },
     "dharmamitra": { ... },
@@ -442,7 +441,6 @@ linguistic content of both comparison engines.
 
 ```json
 {
-  "mode": "shloka",
   "input": {"devanagari": "वागर्थाविव संपृक्तौ वागर्थप्रतिपत्तये\nजगतः पितरौ वन्दे पार्वतीपरमेश्वरौ", "iast": "vāgarthāviva saṃpṛktau vāgarthapratipattaye\njagataḥ pitarau vande pārvatīparameśvarau"},
   "padaccheda": {
     "dharmamitra": "vāc | arthau | iva | saṃpṛktau | vāc | artha | pratipattaye | jagantaḥ | pitarau | vande | pārvatī | parameśvarau",

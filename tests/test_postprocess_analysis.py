@@ -489,7 +489,7 @@ def test_postprocess_requires_string_input_iast(raw):
 
 def _clean_raw() -> dict:
     return {
-        "mode": "verbose",
+        "mode": "verbose",  # a stray key in the raw document; the reading must not carry it
         "input": {"iast": "agnim īḷe"},
         "engine_outputs": {
             "sanskrit_parser": {
@@ -512,7 +512,6 @@ def _clean_raw() -> dict:
 def test_postprocess_clean_fixture_end_to_end():
     normalized = postprocess_analysis.postprocess(_clean_raw())
     assert normalized == {
-        "mode": "verbose",
         "input": {"iast": "agnim īḷe"},
         "padaccheda": {"dharmamitra": "agnim", "sanskrit_parser": "agni | īḷe"},
         "padas": [
@@ -581,7 +580,7 @@ def test_postprocess_error_key_coerced_to_str_and_both_engines_recorded():
 def test_postprocess_without_engine_outputs_at_all():
     raw = {"input": {"iast": "agnim īḷe"}}
     normalized = postprocess_analysis.postprocess(raw)
-    assert normalized["mode"] is None  # 'mode' passed through from raw
+    assert "mode" not in normalized, "the reading document has no mode field"
     assert normalized["padaccheda"] == {
         "dharmamitra": None,
         "sanskrit_parser": "agnim | īḷe",

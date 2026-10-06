@@ -1,5 +1,4 @@
 {
-  "mode": "shloka",
   "input": {
     "devanagari": "या सृष्टिः स्रष्टुराद्या वहति विधिहुतं या हविर्या च होत्री\nये द्वे कालं विधत्तः श्रुतिविषयगुणा या स्थिता व्याप्य विश्वम्\nयामाहुः सर्वबीजप्रकृतिरिति यया प्राणिनः प्राणवन्तः\nप्रत्यक्षाभिः प्रपन्नस्तनुभिरवतु वस्ताभिरष्टाभिरीशः",
     "iast": "yā sṛṣṭiḥ sraṣṭurādyā vahati vidhihutaṃ yā haviryā ca hotrī\nye dve kālaṃ vidhattaḥ śrutiviṣayaguṇā yā sthitā vyāpya viśvam\nyāmāhuḥ sarvabījaprakṛtiriti yayā prāṇinaḥ prāṇavantaḥ\npratyakṣābhiḥ prapannastanubhiravatu vastābhiraṣṭābhirīśaḥ"
@@ -508,22 +507,10 @@
         ],
         "words": [
           {
-            "form": "vidhat",
-            "root": "vidhat",
-            "vibhakti": "saṃbodhana",
-            "vacana": "eka",
-            "linga": "puṃlliṅgam",
-            "tags": [
-              "kartari",
-              "śatṛ"
-            ]
+            "form": "vidhat"
           },
           {
-            "form": "tas",
-            "root": "tas",
-            "vibhakti": "saṃbodhana",
-            "vacana": "eka",
-            "linga": "strīliṅgam"
+            "form": "tas"
           }
         ]
       },
@@ -1137,7 +1124,11 @@
             "linga": "puṃlliṅgam"
           },
           {
-            "form": "ābhis"
+            "form": "ābhis",
+            "root": "ā",
+            "vibhakti": "tṛtīyā",
+            "vacana": "bahu",
+            "linga": "strīliṅgam"
           },
           {
             "form": "aṣṭābhis",

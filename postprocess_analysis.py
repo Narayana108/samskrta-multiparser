@@ -7,7 +7,6 @@ Writes: <base>.result.json (the condensed reading document)
 Output structure::
 
     {
-      "mode": "shloka",
       "input": {"devanagari": "...", "iast": "..."},
       "padaccheda": {                       # flat word sequence per engine
         "dharmamitra": "vāc | arthau | iva | ...",
@@ -384,8 +383,9 @@ def postprocess(raw: Dict[str, Any]) -> Dict[str, Any]:
         raw: Raw multi-engine analysis output (multi-engine-analysis.json content)
 
     Returns:
-        Processed dict with mode, input, padaccheda and padas; plus
-        engine_errors when an engine reported a failure instead of results.
+        Processed dict with input, padaccheda and padas; plus engine_errors when an
+        engine reported a failure instead of results. The raw document's 'mode' key is
+        ignored — it is a command-line choice, not part of the reading.
 
     Raises:
         ValueError: When the raw output has no usable 'input.iast' string.
@@ -419,7 +419,6 @@ def postprocess(raw: Dict[str, Any]) -> Dict[str, Any]:
     padas = build_padas(input_words, sp_decomp, sp_morph, dm_groups, bool(dm_tokens))
 
     processed: Dict[str, Any] = {
-        "mode": raw.get("mode"),
         "input": inp,
         "padaccheda": build_padaccheda(padas),
         "padas": padas,

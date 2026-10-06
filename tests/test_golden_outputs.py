@@ -188,8 +188,7 @@ def test_result_document_bytes_are_stable(stem, tmp_path):
 @pytest.mark.parametrize("stem", VERSES)
 def test_raw_document_shape(stem):
     raw = load_golden(stem, ".raw.json")
-    assert list(raw) == ["input", "mode", "engine_outputs"]
-    assert raw["mode"] == "shloka"
+    assert list(raw) == ["input", "engine_outputs"]
     assert set(raw["engine_outputs"]) == {"sanskrit_parser", "dharmamitra", "vidyut"}
     for engine, payload in raw["engine_outputs"].items():
         assert "error" not in payload, f"{engine} failed in the golden run: {payload['error']}"
@@ -206,8 +205,7 @@ def test_raw_document_shape(stem):
 def test_result_document_shape(stem):
     result = load_golden(stem, ".result.json")
     expected = EXPECTED[stem]
-    assert list(result) == ["mode", "input", "padaccheda", "padas", "chandas"]
-    assert result["mode"] == "shloka"
+    assert list(result) == ["input", "padaccheda", "padas", "chandas"]
     assert "engine_errors" not in result  # a clean golden run has no failed engine
 
     chandas = result["chandas"]

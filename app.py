@@ -1675,14 +1675,14 @@ def main() -> int:
     iast_lines = [devanagari_to_iast(line) for line in lines]
 
     # Build output structure
-    # The documents record the text in both working scripts only; which romanization the user
-    # typed is an input detail, not part of the analysis.
+    # The documents record the text in both working scripts only; which romanization the user typed
+    # is an input detail, not part of the analysis. Neither is the mode: it is chosen on the command
+    # line and every section of the document already says what kind of reading it is.
     output = {
         "input": {
             "devanagari": cleaned,
             "iast": iast_text,
         },
-        "mode": args.mode,
         "engine_outputs": {},
     }
 
