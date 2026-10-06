@@ -23,7 +23,7 @@ The engines overlap on purpose; none of them is good at everything.
 - **Sandhi splitting — sanskrit_parser.** `run_sanskrit_parser()` uses three calls on `Parser(output_encoding=sanscript.DEVANAGARI)` from [sanskrit_parser](https://github.com/kmadathil/sanskrit_parser):
   - `parser.split(line, limit=5)` — up to five candidate unsandhied readings of each line (ten in pada mode). Every item of every candidate is then tagged with `parser.sandhi_analyzer.getMorphologicalTags(item, tmap=True)`, which is where the root and the vibhakti / vacana / linga tags come from.
   - `split.parse(limit=3)` on each candidate — the vakya (sentence) graph: for every pada its root and tags, plus its predecessor and the sambandha label. Best-effort only: it is combinatorial, so it runs under a `SIGALRM` watchdog (`VAKYA_TIMEOUT_SECS = 5`) and records `vakya_error` instead of failing the engine.
-  - `parser.split(word, limit=10)` on each word by itself — `_best_word_split()` ranks those candidates (every part must have standalone morphology from `getMorphologicalTags`; then longest shortest part; then fewest parts; sorted parts as tie-break) because candidate order changes between processes. These per-word readings are what `<base>.result.json` prints under `padaccheda.sanskrit_parser`.
+  - `parser.split(word, limit=10)` on each word by itself — `_best_word_split()` ranks those candidates instead of taking the first, because candidate order changes between processes. With the vidyut kosha loaded (`load_kosha()`, cached) the keys are: every part exactly attested in the dictionary; then fewest parts; then every part having standalone morphology; then scarcest-part rarity; then longest shortest part; sorted parts last for byte-stability. These per-word readings are what `<base>.result.json` prints under `padaccheda.sanskrit_parser`, and their quality is measured — see [What each engine cannot do](#what-each-engine-cannot-do-and-what-this-tool-does-about-it).
 - **An independent second opinion — Dharmamitra.** `run_dharmamitra()` POSTs the IAST text to `https://dharmamitra.org/api/tagging/` (`mode="unsandhied-lemma-morphosyntax"`, one retry, 30 s timeout) and reads `results[0]`: in practice that is an underscore-separated sequence of **surface forms** — `kva_sūrya_prabhavaḥ_vaṃśaḥ_…` — so the API's contribution is its own unsandhiing, nothing else. Nothing is merged: `<base>.result.json` keeps both word sequences side by side under `padaccheda` and lists every region where they disagree under `differences`, so the reader — not a scoring heuristic — decides which split to accept for a given pada.
 - **Everything else — vidyut.** `run_vidyut()` uses four [vidyut](https://github.com/ambuda-org/vidyut) modules against the local `data-0.4.0/` trees:
   - `vidyut.kosha.Kosha(data-0.4.0/kosha)` — an FST dictionary queried with `kosha.get(slp1)`; `kosha_lookup()` adds a stem fallback (strip up to three trailing SLP1 characters) for surface forms the keys miss, and `enrich_dharmamitra_lemmas()` re-queries it (with pause-spelling fixes: `…c → …k`, `…j → …g`, `…ś → …ṣ`) to attach lemmas to Dharmamitra's tokens. `_kosha_entry_info` classifies each hit — repr contains `Tinanta` → tīnantāḥ, else `entry.is_avyaya` → avyayam, else sūnantāḥ — and keeps the lemma. A word that hits gets up to eight deduplicated `grammatical_entries`, formatted by `_format_pada_entry_json`: pratipadika / artha / linga / vibhakti / vacana for nominal forms; dhatu / gaṇa / prayoga / lakāra / puruṣa / vacana for finite verbs.
@@ -32,6 +32,17 @@ The engines overlap on purpose; none of them is good at everything.
   - `vidyut.lipi` — `detect()` names the input script and `transliterate()` moves between Devanagari, IAST and SLP1 for everything else in the pipeline.
 
 vidyut does ship a sandhi splitter — `Splitter.from_csv(data-0.4.0/sandhi/rules.csv)` — and `run_vidyut()` uses it through `_is_quality_split()`, which calls `splitter.split_at(word, i)` at every position and keeps only splits whose parts are ≥ 4 characters long, have at least two kosha entries each, and have at least one non-derived entry per part. `recursive_split()` then walks the surviving pairs depth-first (`max_depth=2`, at most four parts) and `_chain_score` ranks the chains (more kosha-attested parts, fewer parts). Unfiltered splitting runs well past the real word boundary, which is why those `sandhi_splits` stay in `<base>.raw.json` as a third opinion; the pada-by-pada comparison in `<base>.result.json` is between sanskrit_parser and Dharmamitra, and vidyut's contribution there is the `chandas` summary.
+
+### What each engine cannot do, and what this tool does about it
+
+The split of merit is Dharmamitra's, but only for sandhi: it reads the whole sentence, so it knows that `मामेकं` is `mām + ekam`. It is also the least reliable source in the pipeline, which is why nothing is merged.
+
+- **Dharmamitra — right boundaries, wrong words.** Remote only (30 s timeout, one retry; an offline run records `{"error": …}` and the other engines still produce documents). Its answer is a flat underscore-separated stream with no pada marks: when it cuts one word into more tokens than the verse has padas, every later alignment shifts by one, which shows up as a null side or `—` column in `<base>.result.json` (Raghuvaṃśa 1.2 `mohāduḍupenāsmi`, 1.3 `gamiṣyāmyupahāsyatām`). Its readings contain base stems instead of surface forms (`vāc` for वाक्), its own misreadings (`jagantaḥ` for जगतः) and tokens no sandhi rule produces (`upahāsya | tām` for उपहास्यताम्). Mitigation: side-by-side columns plus `differences`, never a merged answer; lemmas are filled locally from the vidyut kosha (DOCUMENTATION §4); wherever it serves as a test reference its splits are hand-corrected against published padaccheda tables first.
+- **sanskrit_parser — a good generator with no context.** It inspects one word at a time, so samāsa stays whole (`yathākālaprabodhinām`, `prāṃśulabhye`) and it sometimes cuts inside a joined form (`māme | akam` for माम् एकम्). Mitigations: all ten candidates are ranked by dictionary attestation rather than taken in library order (deterministic within one process, accuracy-floored across processes); `parser.split()` returns `None`, not `[]`, when it finds no split at all — guarded with `or []` after that crashed the raw pass on an avagraha token; the combinatorial vakya parse runs under a 5 s `SIGALRM` watchdog and records `vakya_error`.
+- **vidyut — dictionary, derivation, meter; weak sandhi.** Its splitter is the weakest generator measured: reference-consistent chains for 33 of 63 curated padas, against sanskrit_parser's pool containing one for 54 of 64. `_is_quality_split()` suppresses noise by demanding parts ≥ 4 characters with ≥ 2 kosha entries — and with them real words such as `iva`, `yā`, `tu`. So vidyut's splits stay in `<base>.raw.json` as a third opinion and never enter the pada-by-pada comparison. Its other gaps are documented where they occur: no prakriya for avyayas, no anuṣṭubh in meters.tsv (`vrtta: null`, shape still visible as `aksharas_per_pada`), and `Splitter.split_at(word, i)` takes a **byte** offset — passing a Python character index mis-splits non-ASCII words, so `run_vidyut()` converts.
+- **Avagraha (`ऽ`) is left inside the token.** Three variants were tried on Raghuvaṃśa 1.4 (`वंशेऽस्मिन्पूर्वसूरिभिः`): keeping it, deleting it, and restoring the elided `अ`. Deleting strands `स्मिन्` and makes sanskrit_parser return nothing; restoring adds a syllable that vidyut then counts, so the meter came back as `[17, 8, 8]` instead of `[8, 8, 8, 8]`. With the avagraha untouched, sanskrit_parser splits the fused token correctly by itself: `vaṃśe | asmin | pūrvasūribhis`.
+
+**Measured splitting quality.** `tests/data/sandhi_truth.json` holds 64 padas of the pinned verses split the way a reader splits them (Dharmamitra's boundaries, corrected against the published Raghuvaṃśa padaccheda). Against it `_best_word_split()` reproduces the reading for **40/64** padas; morphology-only ranking — the fallback when no kosha is available — manages 36/64, and sanskrit_parser's candidate pool contains a reference-consistent split for 54/64, which bounds any ranking. `tests/test_sandhi_accuracy.py` pins a floor of 38 and prints every missed pada on failure. The remaining misses are context problems (samāsa, case government) that no per-word method can solve — that is the role Dharmamitra plays in the output.
 
 ## Architecture
 
@@ -138,7 +149,7 @@ options:
 
 Precedence: `-i FILE` → `input.txt` → the mode-specific file. `-i -` reads stdin.
 
-Input files may hold Devanagari or any romanization vidyut lipi detects; the detected script is recorded as `input.script` and the text is canonicalized to Devanagari before analysis. Preprocessing then turns every separator — dandas (`।` `॥`), ASCII pipes, dots, commas, hyphens, slashes — into a space and collapses runs of whitespace inside each line, so `vāc-artha`, `vāc artha.` and `vāc  artha` analyze identically. Line structure is preserved; only the padding around a line is trimmed.
+Input files may hold Devanagari or any romanization vidyut lipi detects; the text is canonicalized to Devanagari before analysis and both working scripts are recorded under `input` (the script the user typed is an input detail, not part of the analysis). Preprocessing then turns every separator — dandas (`।` `॥`), ASCII pipes, dots, commas, hyphens, slashes — *and* every digit into a space: pasted verse numbers such as `॥ 66॥` or Devanagari `॥६६॥` disappear before any engine sees the text. Runs of whitespace inside each line collapse to one, so `vāc-artha`, `vāc artha.` and `vāc  artha` analyze identically; line structure is preserved and only the padding around a line is trimmed.
 
 ## Output Schema
 
@@ -147,7 +158,6 @@ The output is a JSON object with the following structure:
 ```json
 {
   "input": {
-    "script": "Devanagari",
     "devanagari": "वागर्थाविव संपृक्तौ...",
     "iast": "vāgarthāviva saṃpṛktau..."
   },
@@ -338,7 +348,7 @@ gets one stderr line: `Warning:` for Dharmamitra, `Error:` for the two local eng
 ```bash
 $ uv run python app.py shloka -i tests/data/raghuvamsha-1.1.txt -o results/raghuvamsha-1.1
 {
-  "input": { "script": "Devanagari", "devanagari": "वागर्थाविव …", "iast": "vāgarthāviva …" },
+  "input": { "devanagari": "वागर्थाविव …", "iast": "vāgarthāviva …" },
   "chandas": { "vrtta": null, "candidates": ["madalekhā", "śuddhavirāṭ"], … }
 }                                    # stdout: exactly these two objects
 $ ls results/
@@ -433,7 +443,7 @@ linguistic content of both comparison engines.
 ```json
 {
   "mode": "shloka",
-  "input": {"script": "Devanagari", "devanagari": "वागर्थाविव संपृक्तौ वागर्थप्रतिपत्तये ।\nजगतः पितरौ वन्दे पार्वतीपरमेश्वरौ ॥", "iast": "vāgarthāviva saṃpṛktau vāgarthapratipattaye \njagataḥ pitarau vande pārvatīparameśvarau"},
+  "input": {"devanagari": "वागर्थाविव संपृक्तौ वागर्थप्रतिपत्तये\nजगतः पितरौ वन्दे पार्वतीपरमेश्वरौ", "iast": "vāgarthāviva saṃpṛktau vāgarthapratipattaye\njagataḥ pitarau vande pārvatīparameśvarau"},
   "padaccheda": {
     "dharmamitra": "vāc | arthau | iva | saṃpṛktau | vāc | artha | pratipattaye | jagantaḥ | pitarau | vande | pārvatī | parameśvarau",
     "sanskrit_parser": "vāgarthās | viva | sampṛktau | vāgartha | pratipattaye | jagatas | pitarau | vande | pārvatī | parameśvarau"
@@ -450,7 +460,7 @@ linguistic content of both comparison engines.
 }
 ```
 
-Devanagari appears only in `input.devanagari`; everything else is IAST. `input.script` records which script the user actually typed — an IAST file yields `"script": "Iast"` with the same analysis. Each pada shows both engines' word splits side by side, with lemmas for every split token and the disagreement regions flagged explicitly.
+Devanagari appears only in `input.devanagari`; everything else is IAST. Both fields hold the *cleaned* text, so dandas and verse numbers never reach an engine or a pada list — an IAST file yields the same pair of fields with the same analysis. Each pada shows both engines' word splits side by side, with lemmas for every split token and the disagreement regions flagged explicitly.
 
 ## Determinism, Not Source Priority
 
@@ -468,7 +478,7 @@ runs produce byte-identical `<base>.result.json` for the same raw input.
 
 ```bash
 uv run pytest -q                        # offline, deterministic; never calls the Dharmamitra API
-SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_golden_outputs.py   # real engines again (~3 min)
+SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_golden_outputs.py   # real engines again (~6 min, nine verses)
 ```
 
 `tests/conftest.py` pins `VIDYUT_DATA_DIR` to the bundled `data-0.4.0/` and puts
@@ -478,11 +488,7 @@ classification, chain scoring), the exit-code policy with every engine stubbed o
 (a local engine down → 1, Dharmamitra alone down → 0), output-base naming (default
 `results/<stem>`, created directories, stripped suffixes) and the stdout contract
 (`input` + `chandas` only), plus the whole of `postprocess_analysis.py` against
-hand-written raw fixtures. Four verses — Raghuvaṃśa 1.1 and 1.2, Abhijñānaśākuntala 1.1,
-Bhagavad Gītā 18.66 — live in `tests/data/`, each with an IAST twin that must preprocess to
-exactly the same text, and each with a **pinned output pair** under `tests/data/results/`:
-`<stem>.raw.json` (what the engines produced) and `<stem>.result.json` (the reading document it
-postprocesses into).
+Nine verses — Raghuvaṃśa 1.1–1.7, Abhijñānaśākuntala 1.1, Bhagavad Gītā 18.66 — live in `tests/data/`, each with an IAST twin that must canonicalize to exactly the same text, and each with a **pinned output pair** under `tests/data/results/`: `<stem>.raw.json` (what the engines produced) and `<stem>.result.json` (the reading document it postprocesses into).
 
 `tests/test_golden_outputs.py` checks offline that `postprocess()` turns each pinned raw document
 into exactly its pinned reading document — including identical bytes after re-serialization — and
@@ -493,6 +499,8 @@ against `māme | akam`). With `SAMSKRTA_LIVE_GOLDEN=1` it also regenerates every
 fixture: Dharmamitra and vidyut must come back byte-identically, as must the reading document's
 Dharmamitra column, pada sequence and metre summary, while the sanskrit_parser side is left free to
 vary (see DOCUMENTATION.md §3).
+
+Splitting quality is tested separately. `tests/data/sandhi_truth.json` records how a reader splits 64 padas of those verses; `tests/test_sandhi_accuracy.py` asserts eight curated cases always (a finite verb must survive whole, an elided conjunction must be separated, attested words must not dissolve into fragments) and, under the same `SAMSKRTA_LIVE_GOLDEN=1` switch, scores all 64 against `_best_word_split()` with a pinned floor of 38. A pada counts as correct when the part count agrees and each part pairs with an expected part sharing a kosha lemma stem — spelling is not compared, because sandhi changes it and the splitter writes word-final visarga as `s`.
 
 Regenerate a golden after an intentional change:
 

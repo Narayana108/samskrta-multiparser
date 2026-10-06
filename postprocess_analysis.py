@@ -8,7 +8,7 @@ Output structure::
 
     {
       "mode": "shloka",
-      "input": {"script": "Iast", "devanagari": "...", "iast": "..."},
+      "input": {"devanagari": "...", "iast": "..."},
       "padaccheda": {                       # flat word sequence per engine
         "dharmamitra": "vāc | arthau | iva | ...",
         "sanskrit_parser": "vāgarthās | viva | ..."

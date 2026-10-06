@@ -1,0 +1,253 @@
+{
+  "mode": "shloka",
+  "input": {
+    "devanagari": "सोऽहमाजन्मशुद्धानामाफलोदयकर्मणाम्\nआसमुद्रक्षितीशानामानाकरथवर्त्मनाम्",
+    "iast": "so'hamājanmaśuddhānāmāphalodayakarmaṇām\nāsamudrakṣitīśānāmānākarathavartmanām"
+  },
+  "padaccheda": {
+    "dharmamitra": "saḥ | aham | ājanma | śuddhānām | āphala | udaya | karmaṇām | ā | samudra | kṣitīśānām | ānāka | ratha | vartmanām",
+    "sanskrit_parser": "sohamā | ajanma | śuddhānām | āphalodayakarmaṇām | āsam | udra | kṣitīśānām | ānākarathavartmanām"
+  },
+  "padas": [
+    {
+      "pada": "so'hamājanmaśuddhānāmāphalodayakarmaṇām",
+      "dharmamitra": {
+        "padaccheda": [
+          "saḥ",
+          "aham",
+          "ājanma",
+          "śuddhānām",
+          "āphala",
+          "udaya",
+          "karmaṇām",
+          "ā",
+          "samudra",
+          "kṣitīśānām",
+          "ānāka",
+          "ratha"
+        ],
+        "words": [
+          {
+            "form": "saḥ",
+            "lemma": [
+              "sa",
+              "sā"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "aham",
+            "lemma": [
+              "ah",
+              "aha"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "ājanma",
+            "lemma": "ājanma",
+            "type": "avyayam"
+          },
+          {
+            "form": "śuddhānām",
+            "lemma": [
+              "śuddha",
+              "śuddhā",
+              "śudh"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "āphala"
+          },
+          {
+            "form": "udaya",
+            "lemma": "udaya",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "karmaṇām",
+            "lemma": [
+              "karman",
+              "karmanāman"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "ā",
+            "lemma": [
+              "a",
+              "ā"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "samudra",
+            "lemma": [
+              "samudra",
+              "samudrā"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "kṣitīśānām",
+            "lemma": "kṣitīśa",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "ānāka"
+          },
+          {
+            "form": "ratha",
+            "lemma": "ratha",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "sohamā",
+          "ajanma",
+          "śuddhānām",
+          "āphalodayakarmaṇām"
+        ],
+        "words": [
+          {
+            "form": "sohamā",
+            "root": "soham",
+            "vibhakti": "tṛtīyā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "ajanma",
+            "root": "ajanman",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "napuṃsakaliṅgam"
+          },
+          {
+            "form": "śuddhānām",
+            "root": "śuddhā",
+            "vibhakti": "ṣaṣṭhī",
+            "vacana": "bahu",
+            "linga": "strīliṅgam"
+          },
+          {
+            "form": "āphalodayakarmaṇām",
+            "root": "āphalodayakarman",
+            "vibhakti": "ṣaṣṭhī",
+            "vacana": "bahu",
+            "linga": "puṃlliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "sohamā",
+            "ajanma"
+          ],
+          "dharmamitra": [
+            "saḥ",
+            "aham",
+            "ājanma"
+          ]
+        },
+        {
+          "sanskrit_parser": [
+            "āphalodayakarmaṇām"
+          ],
+          "dharmamitra": [
+            "āphala",
+            "udaya",
+            "karmaṇām",
+            "ā",
+            "samudra",
+            "kṣitīśānām",
+            "ānāka",
+            "ratha"
+          ]
+        }
+      ]
+    },
+    {
+      "pada": "āsamudrakṣitīśānāmānākarathavartmanām",
+      "dharmamitra": {
+        "padaccheda": [
+          "vartmanām"
+        ],
+        "words": [
+          {
+            "form": "vartmanām",
+            "lemma": "vartman",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "āsam",
+          "udra",
+          "kṣitīśānām",
+          "ānākarathavartmanām"
+        ],
+        "words": [
+          {
+            "form": "āsam",
+            "root": "āsa#2",
+            "vibhakti": "dvitīyā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "udra",
+            "root": "udra",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "kṣitīśānām",
+            "root": "kṣitīśa",
+            "vibhakti": "ṣaṣṭhī",
+            "vacana": "bahu",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "ānākarathavartmanām",
+            "root": "ānākarathavartman",
+            "vibhakti": "ṣaṣṭhī",
+            "vacana": "bahu",
+            "linga": "strīliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "āsam",
+            "udra",
+            "kṣitīśānām",
+            "ānākarathavartmanām"
+          ],
+          "dharmamitra": [
+            "vartmanām"
+          ]
+        }
+      ]
+    }
+  ],
+  "chandas": {
+    "vrtta": null,
+    "candidates": [],
+    "pada_count": 4,
+    "classified_pada_count": 0,
+    "aksharas_per_pada": [
+      8,
+      8,
+      8,
+      8
+    ]
+  }
+}

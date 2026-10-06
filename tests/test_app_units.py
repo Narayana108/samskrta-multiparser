@@ -37,6 +37,17 @@ def test_preprocess_is_idempotent():
     assert app.preprocess_input(once) == once
 
 
+def test_preprocess_drops_verse_numbers_and_devanagari_digits():
+    # Pasted verse numbering must never reach an engine or a pada list.
+    assert app.preprocess_input(
+        "सर्वधर्मान्परित्यज्य मामेकं शरणं व्रज ।\n"
+        "अहं त्वां सर्वपापेभ्यो मोक्षयिष्यामि मा शुचः ॥ 66॥"
+    ) == ("सर्वधर्मान्परित्यज्य मामेकं शरणं व्रज\n"
+          "अहं त्वां सर्वपापेभ्यो मोक्षयिष्यामि मा शुचः")
+    assert app.preprocess_input("अ ब ॥६६॥") == "अ ब"
+    assert app.preprocess_input("1. अग्निम ईले 2.") == "अग्निम ईले"
+
+
 @pytest.mark.parametrize(
     "typed",
     ["vāc-artha", "vāc artha.", "vāc  artha,", "vāc/artha", "vāc\\artha", "vāc artha"],
@@ -476,7 +487,17 @@ def test_enrich_dharmamitra_lemmas_fills_in_lemma_and_type(kosha):
 # ---------------------------------------------------------------------------
 
 INPUT_DIR = Path(__file__).resolve().parent / "data"
-VERSES = ["raghuvamsha-1.1", "raghuvamsha-1.2", "abhijnaana_shakuntala-1.1"]
+VERSES = [
+    "raghuvamsha-1.1",
+    "raghuvamsha-1.2",
+    "raghuvamsha-1.3",
+    "raghuvamsha-1.4",
+    "raghuvamsha-1.5",
+    "raghuvamsha-1.6",
+    "raghuvamsha-1.7",
+    "bhagavad_gita-18.66",
+    "abhijnaana_shakuntala-1.1",
+]
 
 
 def _input(verse: str, suffix: str = ".txt") -> str:
@@ -774,7 +795,7 @@ def test_stdout_carries_exactly_input_and_chandas(tmp_path, monkeypatch, capsys)
     )
     assert list(printed) == ["input", "chandas"]
     assert printed["chandas"] == CHANDA == result["chandas"]
-    assert printed["input"]["script"] == "Iast"
+    assert list(printed["input"]) == ["devanagari", "iast"]
     assert printed["input"]["iast"] == result["input"]["iast"]
 
 

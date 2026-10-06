@@ -1,0 +1,1255 @@
+{
+  "input": {
+    "devanagari": "यथाविधिहुताग्नीनां यथाकामार्चितार्थिनाम्\nयथापराधदण्डानां यथाकालप्रबोधिनाम्",
+    "iast": "yathāvidhihutāgnīnāṃ yathākāmārcitārthinām\nyathāparādhadaṇḍānāṃ yathākālaprabodhinām"
+  },
+  "mode": "shloka",
+  "engine_outputs": {
+    "sanskrit_parser": {
+      "mode": "shloka",
+      "input": "yathāvidhihutāgnīnāṃ yathākāmārcitārthinām\nyathāparādhadaṇḍānāṃ yathākālaprabodhinām",
+      "sandhi_splits": [
+        {
+          "split_index": 0,
+          "split": [
+            "yathāvidhi",
+            "hutāgnīnām",
+            "yathākāmārcitārthinām",
+            "yathāparādhadaṇḍānām",
+            "yathākālaprabodhinām"
+          ],
+          "items": [
+            {
+              "pada": "yathāvidhi",
+              "morphological_tags": [
+                {
+                  "root": "yathāvidhi",
+                  "tags": [
+                    "avyayam"
+                  ]
+                },
+                {
+                  "root": "yathāvidha",
+                  "tags": [
+                    "ekavacanam",
+                    "saṃbodhanavibhaktiḥ",
+                    "strīliṅgam"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "hutāgnīnām",
+              "morphological_tags": [
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathākāmārcitārthinām",
+              "morphological_tags": [
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathāparādhadaṇḍānām",
+              "morphological_tags": [
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathākālaprabodhinām",
+              "morphological_tags": [
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            }
+          ],
+          "vakya_parses": []
+        },
+        {
+          "split_index": 1,
+          "split": [
+            "yathā",
+            "vidhi",
+            "hutāgnīnām",
+            "yathākāmārcitārthinām",
+            "yathāparādhadaṇḍānām",
+            "yathākālaprabodhinām"
+          ],
+          "items": [
+            {
+              "pada": "yathā",
+              "morphological_tags": [
+                {
+                  "root": "yathā",
+                  "tags": [
+                    "avyayam",
+                    "saṃyojakaḥ"
+                  ]
+                },
+                {
+                  "root": "yathā",
+                  "tags": [
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "vidhi",
+              "morphological_tags": [
+                {
+                  "root": "vidhi",
+                  "tags": [
+                    "samāsapūrvapadanāmapadam",
+                    "strīliṅgam"
+                  ]
+                },
+                {
+                  "root": "vidhi",
+                  "tags": [
+                    "puṃlliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "vidh#2",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saptamīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "vidh#2",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saptamīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "vidh#2",
+                  "tags": [
+                    "bahuvacanam",
+                    "dvitīyāvibhaktiḥ",
+                    "napuṃsakaliṅgam"
+                  ]
+                },
+                {
+                  "root": "vidh#2",
+                  "tags": [
+                    "ekavacanam",
+                    "saptamīvibhaktiḥ",
+                    "strīliṅgam"
+                  ]
+                },
+                {
+                  "root": "vidh#2",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "prathamāvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "vidh",
+                  "tags": [
+                    "ekavacanam",
+                    "saptamīvibhaktiḥ",
+                    "strīliṅgam"
+                  ]
+                },
+                {
+                  "root": "vidh",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saptamīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "vidh",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saptamīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "vidhā",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saptamīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "hutāgnīnām",
+              "morphological_tags": [
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathākāmārcitārthinām",
+              "morphological_tags": [
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathāparādhadaṇḍānām",
+              "morphological_tags": [
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathākālaprabodhinām",
+              "morphological_tags": [
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            }
+          ],
+          "vakya_parses": []
+        },
+        {
+          "split_index": 2,
+          "split": [
+            "yathāvidhi",
+            "hutāgni",
+            "īnām",
+            "yathākāmārcitārthinām",
+            "yathāparādhadaṇḍānām",
+            "yathākālaprabodhinām"
+          ],
+          "items": [
+            {
+              "pada": "yathāvidhi",
+              "morphological_tags": [
+                {
+                  "root": "yathāvidhi",
+                  "tags": [
+                    "avyayam"
+                  ]
+                },
+                {
+                  "root": "yathāvidha",
+                  "tags": [
+                    "ekavacanam",
+                    "saṃbodhanavibhaktiḥ",
+                    "strīliṅgam"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "hutāgni",
+              "morphological_tags": [
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "puṃlliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "dvitīyāvibhaktiḥ",
+                    "ekavacanam",
+                    "napuṃsakaliṅgam"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "prathamāvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "napuṃsakaliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "samāsapūrvapadanāmapadam",
+                    "strīliṅgam"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "īnām",
+              "morphological_tags": [
+                {
+                  "root": "ī",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "ī",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "i",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathākāmārcitārthinām",
+              "morphological_tags": [
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathāparādhadaṇḍānām",
+              "morphological_tags": [
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathākālaprabodhinām",
+              "morphological_tags": [
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            }
+          ],
+          "vakya_parses": []
+        },
+        {
+          "split_index": 3,
+          "split": [
+            "yathāvidhi",
+            "hutāgnīnām",
+            "yathākāmārcitārthi",
+            "nām",
+            "yathāparādhadaṇḍānām",
+            "yathākālaprabodhinām"
+          ],
+          "items": [
+            {
+              "pada": "yathāvidhi",
+              "morphological_tags": [
+                {
+                  "root": "yathāvidhi",
+                  "tags": [
+                    "avyayam"
+                  ]
+                },
+                {
+                  "root": "yathāvidha",
+                  "tags": [
+                    "ekavacanam",
+                    "saṃbodhanavibhaktiḥ",
+                    "strīliṅgam"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "hutāgnīnām",
+              "morphological_tags": [
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathākāmārcitārthi",
+              "morphological_tags": [
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "puṃlliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "dvitīyāvibhaktiḥ",
+                    "ekavacanam",
+                    "napuṃsakaliṅgam"
+                  ]
+                },
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "prathamāvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "napuṃsakaliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "nām",
+              "morphological_tags": [
+                {
+                  "root": "nā",
+                  "tags": [
+                    "dvitīyāvibhaktiḥ",
+                    "ekavacanam",
+                    "strīliṅgam"
+                  ]
+                },
+                {
+                  "root": "na",
+                  "tags": [
+                    "dvitīyāvibhaktiḥ",
+                    "ekavacanam",
+                    "strīliṅgam"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathāparādhadaṇḍānām",
+              "morphological_tags": [
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathākālaprabodhinām",
+              "morphological_tags": [
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            }
+          ],
+          "vakya_parses": []
+        },
+        {
+          "split_index": 4,
+          "split": [
+            "yathāvidhi",
+            "hutāgnīnām",
+            "yathākāmārcitārthinām",
+            "yathāparādhadaṇḍān",
+            "ām",
+            "yathākālaprabodhinām"
+          ],
+          "items": [
+            {
+              "pada": "yathāvidhi",
+              "morphological_tags": [
+                {
+                  "root": "yathāvidhi",
+                  "tags": [
+                    "avyayam"
+                  ]
+                },
+                {
+                  "root": "yathāvidha",
+                  "tags": [
+                    "ekavacanam",
+                    "saṃbodhanavibhaktiḥ",
+                    "strīliṅgam"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "hutāgnīnām",
+              "morphological_tags": [
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "hutāgni",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathākāmārcitārthinām",
+              "morphological_tags": [
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākāmārcitārthin",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathāparādhadaṇḍān",
+              "morphological_tags": [
+                {
+                  "root": "yathāparādhadaṇḍa",
+                  "tags": [
+                    "bahuvacanam",
+                    "dvitīyāvibhaktiḥ",
+                    "puṃlliṅgam"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "ām",
+              "morphological_tags": [
+                {
+                  "root": "ām",
+                  "tags": [
+                    "avyayam"
+                  ]
+                },
+                {
+                  "root": "ā",
+                  "tags": [
+                    "dvitīyāvibhaktiḥ",
+                    "ekavacanam",
+                    "strīliṅgam"
+                  ]
+                },
+                {
+                  "root": "ā",
+                  "tags": [
+                    "dvitīyāvibhaktiḥ",
+                    "ekavacanam",
+                    "puṃlliṅgam"
+                  ]
+                },
+                {
+                  "root": "ā",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "o",
+                  "tags": [
+                    "dvitīyāvibhaktiḥ",
+                    "ekavacanam",
+                    "puṃlliṅgam"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "yathākālaprabodhinām",
+              "morphological_tags": [
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "yathākālaprabodhin",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            }
+          ],
+          "vakya_parses": []
+        }
+      ],
+      "word_decompositions": {
+        "yathāvidhihutāgnīnām": [
+          "yathāvidhi",
+          "hutāgnīnām"
+        ],
+        "yathākāmārcitārthinām": [
+          "yathākāmārcitārthinām"
+        ],
+        "yathāparādhadaṇḍānām": [
+          "yathāparādhadaṇḍānām"
+        ],
+        "yathākālaprabodhinām": [
+          "yathākālaprabodhinām"
+        ]
+      }
+    },
+    "dharmamitra": {
+      "api_endpoint": "https://dharmamitra.org/api/tagging/",
+      "mode": "unsandhied-lemma-morphosyntax",
+      "input_lines": [
+        "yathāvidhihutāgnīnāṃ yathākāmārcitārthinām",
+        "yathāparādhadaṇḍānāṃ yathākālaprabodhinām"
+      ],
+      "raw_output": "yathāvidhi_huta_agnīnām_yathākāma_arcita_arthinām_yathā_aparādha_daṇḍānām_yathā_kāla_prabodhinām_",
+      "tokens": [
+        {
+          "form": "yathāvidhi",
+          "lemma": "yathāvidhi",
+          "kosha_type": "avyayam"
+        },
+        {
+          "form": "huta",
+          "lemma": [
+            "hu",
+            "huta"
+          ],
+          "kosha_type": "sūnantāḥ"
+        },
+        {
+          "form": "agnīnām",
+          "lemma": "agni",
+          "kosha_type": "sūnantāḥ"
+        },
+        {
+          "form": "yathākāma",
+          "lemma": "yathākāma",
+          "kosha_type": "sūnantāḥ"
+        },
+        {
+          "form": "arcita",
+          "lemma": [
+            "arc",
+            "arci"
+          ],
+          "kosha_type": "sūnantāḥ"
+        },
+        {
+          "form": "arthinām",
+          "lemma": [
+            "arthi",
+            "arthin"
+          ],
+          "kosha_type": "sūnantāḥ"
+        },
+        {
+          "form": "yathā",
+          "lemma": "yathā",
+          "kosha_type": "avyayam"
+        },
+        {
+          "form": "aparādha",
+          "lemma": [
+            "aparādh",
+            "aparādha"
+          ],
+          "kosha_type": "sūnantāḥ"
+        },
+        {
+          "form": "daṇḍānām",
+          "lemma": [
+            "daṇḍa",
+            "daṇḍā"
+          ],
+          "kosha_type": "sūnantāḥ"
+        },
+        {
+          "form": "yathā",
+          "lemma": "yathā",
+          "kosha_type": "avyayam"
+        },
+        {
+          "form": "kāla",
+          "lemma": [
+            "kal",
+            "kāla",
+            "kālā"
+          ],
+          "kosha_type": "sūnantāḥ"
+        },
+        {
+          "form": "prabodhinām",
+          "lemma": "prabodhi",
+          "kosha_type": "sūnantāḥ"
+        }
+      ]
+    },
+    "vidyut": {
+      "kosha": [
+        {
+          "iast": "yathāvidhihutāgnīnāṃ",
+          "is_compound": false,
+          "unknown": true
+        },
+        {
+          "iast": "yathākāmārcitārthinām",
+          "is_compound": false,
+          "grammatical_entries": [
+            {
+              "type": "sūnantāḥ",
+              "pratipadika": "yathākāmārcitārthin",
+              "linga": "napuṃsakaliṅgam",
+              "vibhakti": "ṣaṣṭhī",
+              "vacana": "bahuvacanam"
+            },
+            {
+              "type": "sūnantāḥ",
+              "pratipadika": "yathākāmārcitārthin",
+              "linga": "puṃlliṅgam",
+              "vibhakti": "ṣaṣṭhī",
+              "vacana": "bahuvacanam"
+            }
+          ],
+          "is_verb": false
+        },
+        {
+          "iast": "yathāparādhadaṇḍānāṃ",
+          "is_compound": false,
+          "grammatical_entries": [
+            {
+              "type": "sūnantāḥ",
+              "pratipadika": "yathāparādhadaṇḍa",
+              "linga": "puṃlliṅgam",
+              "vibhakti": "dvitīyā",
+              "vacana": "bahuvacanam"
+            }
+          ],
+          "is_verb": false
+        },
+        {
+          "iast": "yathākālaprabodhinām",
+          "is_compound": false,
+          "grammatical_entries": [
+            {
+              "type": "sūnantāḥ",
+              "pratipadika": "yathākālaprabodhin",
+              "linga": "napuṃsakaliṅgam",
+              "vibhakti": "ṣaṣṭhī",
+              "vacana": "bahuvacanam"
+            },
+            {
+              "type": "sūnantāḥ",
+              "pratipadika": "yathākālaprabodhin",
+              "linga": "puṃlliṅgam",
+              "vibhakti": "ṣaṣṭhī",
+              "vacana": "bahuvacanam"
+            }
+          ],
+          "is_verb": false
+        }
+      ],
+      "prakriya": {
+        "dhatus": [],
+        "pratipadikas": [
+          {
+            "lemma": "yathākālaprabodhin",
+            "steps": [
+              {
+                "step": 1,
+                "sutra": "1.2.45",
+                "source": "Ashtadhyayi",
+                "terms_iast": "yathākālaprabodhin",
+                "changed_iast": [
+                  "yathākālaprabodhin"
+                ]
+              },
+              {
+                "step": 2,
+                "sutra": "8.4.68",
+                "source": "Ashtadhyayi",
+                "terms_iast": "yathākālaprabodhin",
+                "changed_iast": [
+                  "yathākālaprabodhin"
+                ]
+              }
+            ]
+          },
+          {
+            "lemma": "yathākāmārcitārthin",
+            "steps": [
+              {
+                "step": 1,
+                "sutra": "1.2.45",
+                "source": "Ashtadhyayi",
+                "terms_iast": "yathākāmārcitārthin",
+                "changed_iast": [
+                  "yathākāmārcitārthin"
+                ]
+              },
+              {
+                "step": 2,
+                "sutra": "8.4.68",
+                "source": "Ashtadhyayi",
+                "terms_iast": "yathākāmārcitārthin",
+                "changed_iast": [
+                  "yathākāmārcitārthin"
+                ]
+              }
+            ]
+          },
+          {
+            "lemma": "yathāparādhadaṇḍa",
+            "steps": [
+              {
+                "step": 1,
+                "sutra": "1.2.45",
+                "source": "Ashtadhyayi",
+                "terms_iast": "yathāparādhadaṇḍa",
+                "changed_iast": [
+                  "yathāparādhadaṇḍa"
+                ]
+              },
+              {
+                "step": 2,
+                "sutra": "8.4.68",
+                "source": "Ashtadhyayi",
+                "terms_iast": "yathāparādhadaṇḍa",
+                "changed_iast": [
+                  "yathāparādhadaṇḍa"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "meter": [
+        {
+          "line_iast": "yathāvidhihutāgnīnāṃ yathākāmārcitārthinām",
+          "padas": [
+            {
+              "iast": "yathāvidhihutāgnīnāṃ",
+              "meter": "upasthita",
+              "akshara_count": 8,
+              "weight_pattern": "LGLLLGGG"
+            },
+            {
+              "iast": "yathākāmārcitārthinām",
+              "meter": null,
+              "akshara_count": 8,
+              "weight_pattern": "LGGGLGLG"
+            }
+          ]
+        },
+        {
+          "line_iast": "yathāparādhadaṇḍānāṃ yathākālaprabodhinām",
+          "padas": [
+            {
+              "iast": "yathāparādhadaṇḍānāṃ",
+              "meter": null,
+              "akshara_count": 8,
+              "weight_pattern": "LGLGLGGG"
+            },
+            {
+              "iast": "yathākālaprabodhinām",
+              "meter": null,
+              "akshara_count": 8,
+              "weight_pattern": "LGGGLGLG"
+            }
+          ]
+        }
+      ],
+      "chandas": {
+        "vrtta": null,
+        "candidates": [
+          "upasthita"
+        ],
+        "pada_count": 4,
+        "classified_pada_count": 1,
+        "aksharas_per_pada": [
+          8,
+          8,
+          8,
+          8
+        ]
+      }
+    }
+  }
+}

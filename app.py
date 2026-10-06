@@ -94,21 +94,31 @@ DATA_DIR = os.environ.get(
 # ---------------------------------------------------------------------------
 # Functions that clean input of any script and convert it to Devanagari.
 
-# Word and verse separators people type in either script: the dandas (। ॥), the
-# ASCII pipes and dots romanized input uses for them, hyphens such as the one in
-# 'vāc-artha', commas, slashes. Sanskrit text needs no ASCII punctuation at all,
-# so every one of these becomes whitespace.
+# Word and verse separators people type in either script: the dandas (। ॥), the ASCII pipes
+# and dots romanized input uses for them, hyphens such as the one in 'vāc-artha', commas,
+# slashes. Sanskrit text needs no ASCII punctuation at all, so every one of these becomes
+# whitespace. The avagraha (ऽ) is deliberately NOT among them: it writes a syllable that a
+# sandhi rule elided ('वंशेऽस्मिन्' for वंशे अस्मिन्), and the vowel it stands for is not
+# pronounced, so deleting it or restoring 'अ' in its place changes the akshara count of the
+# pāda and the meter vidyut reports. sanskrit_parser reads such a fused token by itself:
+# वंशेऽस्मिन्पूर्वसूरिभिः → vaṃśe | asmin | pūrvasūribhiḥ.
 _SEPARATORS = str.maketrans({char: " " for char in string.punctuation + "।॥"})
+
+# Verse and line numbers pasted along with the text ('… व्रज ।\n… शुचः ॥ 66॥', Devanagari
+# digits such as '॥६६॥'). A Sanskrit word never contains a digit, so whatever is left after
+# transliteration is numbering noise and becomes whitespace too.
+_DIGITS = str.maketrans({char: " " for char in "0123456789०१२३४५६७८९"})
 
 
 def preprocess_input(text: str) -> str:
     """Clean raw input: replace separators with spaces, collapse whitespace.
 
     Applies to any script — Devanagari after `to_devanagari`, or a romanization
-    handed to it directly. Every separator in `_SEPARATORS` becomes a space and
-    runs of whitespace inside a line collapse to one, so 'vāc-artha', 'vāc artha.'
-    and 'vāc  artha' analyze identically. Line structure is preserved: only the
-    padding around each line is trimmed.
+    handed to it directly. Every separator in `_SEPARATORS` becomes a space and digits are
+    dropped the same way (verse numbers like '॥ 66॥'); runs of whitespace inside a line collapse
+    to one, so 'vāc-artha', 'vāc artha.' and 'vāc  artha' analyze identically. The avagraha is
+    left exactly where it stands — see the note on `_SEPARATORS`.
+    Line structure is preserved: only the padding around each line is trimmed.
 
     Args:
         text: Raw input text
@@ -116,7 +126,7 @@ def preprocess_input(text: str) -> str:
     Returns:
         Cleaned text, ready for the engines
     """
-    cleaned = text.translate(_SEPARATORS)
+    cleaned = text.translate(_SEPARATORS).translate(_DIGITS)
     return "\n".join(" ".join(line.split()) for line in cleaned.split("\n")).strip()
 
 
@@ -423,6 +433,58 @@ def _build_vakya_graph(graph: List[Any]) -> List[Dict[str, Any]]:
     return ordered_nodes
 
 
+# ---------------------------------------------------------------------------
+# Candidate validation against vidyut's kosha
+# ---------------------------------------------------------------------------
+# Ranking sandhi candidates needs a dictionary check that is stricter than stem
+# stripping: an exactly attested form rules out the plausible-looking fragments
+# sanskrit_parser loves to produce. The kosha is loaded once per process and is
+# optional — without it `_best_word_split` degrades to morphology-only ranking.
+
+_KOSHA_CACHE: Optional[Any] = None
+_KOSHA_UNAVAILABLE = False
+
+
+def load_kosha() -> Optional[Any]:
+    """Load vidyut's kosha once per process, caching the result.
+
+    Returns:
+        Kosha instance, or None when vidyut or its data directory is unavailable.
+    """
+    global _KOSHA_CACHE, _KOSHA_UNAVAILABLE
+    if _KOSHA_CACHE is not None or _KOSHA_UNAVAILABLE:
+        return _KOSHA_CACHE
+    try:
+        from vidyut.kosha import Kosha
+
+        _KOSHA_CACHE = Kosha(Path(DATA_DIR) / "kosha")
+    except Exception:
+        _KOSHA_UNAVAILABLE = True
+    return _KOSHA_CACHE
+
+
+def _kosha_exact(kosha, dev_word: str) -> Tuple[bool, int]:
+    """Look a Devanagari form up in the kosha with and without stem stripping.
+
+    Args:
+        kosha: Kosha instance from `load_kosha`
+        dev_word: Devanagari word form
+
+    Returns:
+        (exact_hit, entry_count) where exact_hit is True when the surface form
+        itself is a kosha key and entry_count counts entries found with the
+        stem-stripping fallback of `kosha_lookup`.
+    """
+    from indic_transliteration import sanscript
+
+    slp1 = sanscript.transliterate(dev_word, sanscript.DEVANAGARI, sanscript.SLP1)
+    try:
+        exact = bool(kosha.get(slp1))
+    except KeyError:
+        exact = False
+    return exact, len(kosha_lookup(kosha, slp1))
+
+
 def _is_standalone_word(parser, word_obj) -> bool:
     """Check if a word has standalone morphology (case+number or avyaya)."""
     tags = parser.sandhi_analyzer.getMorphologicalTags(word_obj, tmap=True)
@@ -438,18 +500,28 @@ def _is_standalone_word(parser, word_obj) -> bool:
     return False
 
 
-def _best_word_split(parser, dev_word: str) -> List[str]:
-    """Pick a deterministic, morphology-validated split of one Devanagari word.
+def _best_word_split(parser, dev_word: str, kosha: Optional[Any] = None) -> List[str]:
+    """Pick a deterministic, validated split of one Devanagari word.
 
-    parser.split() candidate order varies between processes, so rank all
-    candidates instead of trusting splits[0]. Prefer splits whose every part
-    has standalone morphology (case+number or avyaya), then complete words
-    (longest shortest part), then fewer parts; the sorted part list is the
-    final tie-break so output stays byte-stable across runs.
+    parser.split() candidate order varies between processes, so all candidates are
+    ranked instead of trusting splits[0]. With a kosha the ranking keys are, in order:
+
+    1. every part is an exactly attested kosha form — this rejects fragments such as
+       ``gam | iṣi | āmī`` or ``ava | tu``, so finite verbs stay whole (``mokṣayiṣyāmi``);
+    2. fewer parts — a compound the dictionary knows as one word is left alone;
+    3. every part has standalone morphology (case+number, or avyaya);
+    4. the rarest part is as common as possible (most kosha entries for its scarcest part);
+    5. longest shortest part, then the sorted part list, keeping output byte-stable.
+
+    Measured on the 64 curated padas of ``tests/data/sandhi_truth.json`` (see
+    ``tests/test_sandhi_accuracy.py``): this rule reproduces the reference reading for 40 of
+    them, morphology-only ranking — the fallback used when no kosha is available — for 36, and
+    the candidate pool contains a reference-consistent split for 54.
 
     Args:
         parser: sanskrit_parser Parser instance
         dev_word: Devanagari word to decompose
+        kosha: optional Kosha from `load_kosha` for dictionary validation
 
     Returns:
         List of IAST parts; [dev_word] when no split is found.
@@ -466,14 +538,24 @@ def _best_word_split(parser, dev_word: str) -> List[str]:
             continue
         seen.add(parts)
         standalone = all(_is_standalone_word(parser, w_obj) for w_obj in s.split)
+        min_part_len = min(len(p) for p in parts)
+        if kosha is None:
+            candidates.append((standalone, min_part_len, -len(parts), sorted(parts), parts))
+            continue
+        exact_flags, entry_counts = [], []
+        for w_obj in s.split:
+            exact_hit, entry_count = _kosha_exact(kosha, w_obj.devanagari())
+            exact_flags.append(exact_hit)
+            entry_counts.append(entry_count)
         candidates.append(
-            (standalone, min(len(p) for p in parts), -len(parts), sorted(parts), parts)
+            (all(exact_flags), -len(parts), standalone, min(entry_counts), min_part_len,
+             sorted(parts), parts)
         )
 
     if not candidates:
         return [devanagari_to_iast(dev_word)]
-    best = max(candidates, key=lambda c: (c[0], c[1], c[2], c[3]))
-    return list(best[4])
+    best = max(candidates, key=lambda c: c[:-1])
+    return list(best[-1])
 
 
 def _vakya_timeout_handler(signum, frame):
@@ -502,7 +584,10 @@ def run_sanskrit_parser(input_text: str, mode: str) -> Dict[str, Any]:
     parser = Parser(output_encoding=sanscript.DEVANAGARI)
 
     limit = 10 if mode == "pada" else 5
-    splits = parser.split(input_text, limit=limit)
+    # sanskrit_parser returns None — not an empty list — when it cannot split the text at all,
+    # which happens whenever a token is not a word it knows (a typo, or a mangled avagraha).
+    # Record that as no candidates instead of crashing the engine.
+    splits = parser.split(input_text, limit=limit) or []
 
     sandhi_splits = []
     for split_idx, split in enumerate(splits):
@@ -555,11 +640,12 @@ def run_sanskrit_parser(input_text: str, mode: str) -> Dict[str, Any]:
     # Per-word decompositions: split each input word on its own so results do
     # not depend on whole-line candidate ordering (which varies per process).
     word_decompositions: Dict[str, List[str]] = {}
+    kosha = load_kosha()
     for wdev in input_text.split():
         if not any('\u0900' <= c <= '\u097F' for c in wdev):
             continue
         key = devanagari_to_iast(wdev).replace("\u1e43", "m")
-        word_decompositions[key] = _best_word_split(parser, wdev)
+        word_decompositions[key] = _best_word_split(parser, wdev, kosha)
 
     return {
         "mode": mode,
@@ -1007,12 +1093,13 @@ def _split_into_padas(slp1_line: str) -> List[str]:
     padas must be cut where its cumulative akshara count reaches exactly half the
     line total; a character-count proxy misplaces that cut. The scan walks vowel
     code points rather than tokens because sandhi routinely joins words across a
-    pāda boundary (मोहाद् + उडुपेन written मोहादुडुपेन), so the midpoint can fall
-    inside a token — harmless here, since these halves feed only the classifier.
-    A line whose total is odd (the 21-akshara pādas of Abhijñānaśākuntalam 1.1) or
-    too short to be a pair of pādas is returned whole instead of being cut at the
-    nearest boundary, which would hand vidyut half-verses no meter has. The line
-    arrives free of verse punctuation: `preprocess_input` removed it already.
+    pāda boundary (मोहाद् + उडुपेन written मोहादुडुपेन) and a whole pāda can be a single
+    compound ('आसमुद्रक्षितीशानाम्'), so the midpoint can fall inside a token — harmless here,
+    since these halves feed only the classifier. Token count is no guard for that reason: two
+    fused compounds still hold four pādas. A line whose total is odd (the 21-akshara pādas of
+    Abhijñānaśākuntalam 1.1) or too short to be a pair of pādas is returned whole instead of
+    being cut at the nearest boundary, which would hand vidyut half-verses no meter has. The
+    line arrives free of verse punctuation: `preprocess_input` removed it already.
 
     Args:
         slp1_line: SLP1-encoded line of text
@@ -1021,9 +1108,6 @@ def _split_into_padas(slp1_line: str) -> List[str]:
         List of SLP1 halves (single element when the line cannot be split)
     """
     tokens = slp1_line.split()
-    if len(tokens) < 3:
-        return [slp1_line]
-
     total = sum(_count_aksharas(t) for t in tokens)
     if total <= 12 or total % 2:
         return [slp1_line]
@@ -1582,7 +1666,7 @@ def main() -> int:
         print(f"Error reading input: {e}", file=sys.stderr)
         return 1
 
-    source_script, devanagari_text = to_devanagari(raw_text)
+    _, devanagari_text = to_devanagari(raw_text)
 
     # Preprocess
     cleaned = preprocess_input(devanagari_text)
@@ -1591,10 +1675,11 @@ def main() -> int:
     iast_lines = [devanagari_to_iast(line) for line in lines]
 
     # Build output structure
+    # The documents record the text in both working scripts only; which romanization the user
+    # typed is an input detail, not part of the analysis.
     output = {
         "input": {
-            "script": source_script,
-            "devanagari": devanagari_text,
+            "devanagari": cleaned,
             "iast": iast_text,
         },
         "mode": args.mode,

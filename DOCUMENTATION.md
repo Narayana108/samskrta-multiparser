@@ -12,7 +12,7 @@ reading pass can also be re-run on its own over an existing raw document:
 
 ```
 any-script text
-      │  detect_script() → name; to_devanagari() → Devanagari; preprocess_input() → separators as spaces
+      │  detect_script() → name; to_devanagari() → Devanagari; preprocess_input() → separators and digits as spaces
       ▼
  app.py ──────────────────────────────► <base>.raw.json             (engine dump)
  │   ├── run_sanskrit_parser()   local  (fatal when unavailable)
@@ -73,8 +73,8 @@ prakriya and sandhi paths.
 ## 2. Transliteration pipeline
 
 Three scripts are in play; every conversion is explicit about which one it uses.
-Input may arrive in any of them — `detect_script()` asks vidyut lipi which, and the
-answer is recorded verbatim as `input.script` (`"Devanagari"`, `"Iast"`, `"Slp1"`, …).
+Input may arrive in any of them — `detect_script()` asks vidyut lipi which, but the answer only drives the
+conversion: the documents record `input.devanagari` and `input.iast`, never the script name.
 
 | Script | Used by | Notes |
 |---|---|---|
@@ -141,10 +141,7 @@ tokens, pass through unsplit rather than being cut at a false boundary.
 The reading pass is reproducible: the same `<base>.raw.json` always yields a
 byte-identical `<base>.result.json`. The rules that buy that stability:
 
-- **Ranked, never first-seen.** SP split candidates go through `_best_word_split`;
-  morphology groups through `_morph_rank` (a complete case reading outranks a
-  fragment such as one tagged only `samāsapūrvapadanāmapadam`). Vidyut split chains
-  are scored by `_chain_score` = (kosha-attested parts, −len(chain)).
+- **Ranked, never first-seen.** SP split candidates go through `_best_word_split`, which ranks all ten with the vidyut kosha in hand: exact dictionary attestation of every part first (this is what keeps `mokṣayiṣyāmi` one word and rejects fragments such as `ava | tu`), then fewest parts, then standalone morphology for every part, then rarity of the scarcest part, then longest shortest part, then the sorted list. Without a kosha it falls back to the older morphology-first keys. Morphology groups go through `_morph_rank` (a complete case reading outranks a fragment such as one tagged only `samāsapūrvapadanāmapadam`). Vidyut split chains are scored by `_chain_score` = (kosha-attested parts, −len(chain)).
 - **Anusvara-normalized keys.** `saṃpṛktau` and `sampṛktau` must collide onto one
   key; `postprocess_analysis._norm_anusvara` does that, and the *key* is normalized at
   collection time so collisions resolve by rank rather than by dict insertion
@@ -168,11 +165,7 @@ traverses, that noise usually cancels — but when sanskrit_parser proposes a ge
 different candidate set, `<base>.result.json` legitimately changes with it. Pin the raw
 document (and hence the reading one) if you need archival reproducibility.
 
-The pinned pairs in `tests/data/results/` (§7) exist because of this. Re-running Bhagavad Gītā
-18.66 reproduced the dharmamitra and vidyut subtrees byte-for-byte but ranked mokṣayiṣyāmi as
-`mokṣe | iṣi | āmi` where the stored document has `mokṣe | iṣyā | āmi` — a tied per-word ranking in
-sanskrit_parser's candidate list, not a postprocessing difference. That is why the live golden test
-compares the Dharmamitra half of the reading document and leaves the splitter column alone.
+The pinned pairs in `tests/data/results/` (§7) exist because of this. Re-running Bhagavad Gītā 18.66 used to reproduce the dharmamitra and vidyut subtrees byte-for-byte while sanskrit_parser's tied per-word ranking put `mokṣe | iṣi | āmi` where the stored document had `mokṣe | iṣyā | āmi`. Dictionary-validated ranking removed that particular tie — every candidate that cut the finite verb now loses to the whole attested word, so the splitter column is stable in practice. The live golden test still compares only the Dharmamitra and vidyut subtrees plus the reading document's Dharmamitra column, pada sequence and metre summary: the *candidate set* `parser.split()` enumerates for a line is not specified to be stable, so pinning the splitter column would test sanskrit_parser's internals rather than this tool.
 
 ## 4. Lemma provenance (Dharmamitra tokens)
 
@@ -253,6 +246,10 @@ uv run pytest -q                        # offline suite
   The offline half of `tests/test_golden_outputs.py` then proves `postprocess()` still reproduces
   the reading document exactly; the live half re-runs all three engines, needs network access, and
   is skipped unless `SAMSKRTA_LIVE_GOLDEN=1`.
+- `tests/test_sandhi_accuracy.py` scores splitting against the curated padaccheda of §9. Eight
+  curated padas run offline (kosha + sanskrit_parser, ~3 s); the corpus-wide score needs both engines
+  and runs under the same `SAMSKRTA_LIVE_GOLDEN=1` switch (~10 s). It is the test to consult before
+  touching `_best_word_split`, `_is_standalone_word` or `load_kosha`.
 - Output naming: `-o BASE` writes `BASE.raw.json` and `BASE.result.json`; with no `-o`
   the base is `results/<input stem>` (`results/shloka` / `results/pada` for stdin
   input). Parent directories are created on demand, and a trailing `.json`, `.raw` or
@@ -302,3 +299,46 @@ Ordered by how likely they are to bite:
    token; that loop dominates runtime of the vidyut engine. `_kosha_entry_info` /
    `_kosha_info_from_entries` exist so a single lookup feeds count, standalone test and lemma —
    do not reintroduce separate lookups per predicate.
+
+9. **`parser.split()` returns `None`, not an empty list,** when it finds no split for a word at all.
+   `_best_word_split` guards this with `or []`; without the guard the raw pass died with
+   `TypeError: 'NoneType' object is not iterable` (observed on a Raghuvaṃśa 1.4 token whose
+   avagraha had been replaced by a space).
+10. **Avagraha (`ऽ`) is deliberately left inside the token.** Three treatments were tried on
+    `वंशेऽस्मिन्पूर्वसूरिभिः`: leave it (sanskrit_parser returns `vaṃśe | asmin | pūrvasūribhis`),
+    delete it (strands `स्मिन्`, and `split()` then returns `None`), or restore the elided `अ`
+    (words fine, but vidyut counts the extra syllable and 1.4 reported aksharas `[17, 8, 8]`
+    instead of `[8, 8, 8, 8]`). Only the first keeps both splitting and metre correct, so
+    `_SEPARATORS` does not touch `ऽ`.
+
+## 9. Splitting quality: how it is measured
+
+Per-word sandhi splitting has no oracle inside the tool, so one was built outside it.
+
+- **Reference.** `tests/data/sandhi_truth.json`: 64 rows of `{stem, pada, devanagari, parts}`, one
+  per pada of the nine pinned verses, split as a reader splits it. Provenance: Dharmamitra's
+  boundaries first (it has sentence context), then hand correction against the published padaccheda
+  tables for Raghuvaṃśa 1.1–1.7 — its output contains base stems (`vāc` where the pada reads वाक्),
+  its own misreadings (`jagantaḥ` for जगतः) and invented tokens (`upahāsya | tām`), so it is a start
+  point, never the answer key.
+- **Metric.** A pada matches when the part count agrees *and* the parts pair one-to-one such that
+  each pair shares at least one kosha lemma stem (SLP1). Spellings are not compared: sandhi changes
+  them (`vāc`/`vāk`) and sanskrit_parser writes word-final visarga as `s`, anusvara as `m`. Plain
+  stem-set equality was rejected as too permissive (an unattested fragment falls back to itself, so
+  garbage sets collide), and folding surface forms onto stems before comparison as too brittle.
+- **Measured, on that fixture.** vidyut's `recursive_split` chains contained a reference-consistent
+  reading for 33 of the 63 padas they covered; sanskrit_parser's ten-candidate pool contains one for
+  **54/64** — the ceiling any ranking can reach. Ranking by morphology alone reaches **36/64**;
+  dictionary-validated ranking (`_best_word_split` with `load_kosha()`) reaches **40/64**. The gated
+  test floors the score at 38 so that tie-breaking drift between processes cannot fail it while any
+  real regression does.
+- **What the misses are.** Almost all remaining ones need context: samāsa resolution
+  (`yathākālaprabodhinām`, `prāṃśulabhye` stay whole), case government across a pada, and a handful
+  where sandhi joined two words so that the join is indistinguishable from an inflection
+  (`māme | akam`). No per-word method fixes these; they are why Dharmamitra's column stays in
+  `<base>.result.json` next to the offline one instead of being scored away.
+- **Re-measuring.** `SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_sandhi_accuracy.py` prints
+  every missed pada by name on failure. Rule changes can be re-scored in seconds by generating each
+  pada's candidate pool once and re-running the ranking over it; the pool, not the ranking, is the
+  expensive part. When a verse is added to the corpus, regenerate its golden pair with the command in
+  §7 rather than editing JSON by hand.

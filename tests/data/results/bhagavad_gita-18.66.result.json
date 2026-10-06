@@ -1,13 +1,12 @@
 {
   "mode": "shloka",
   "input": {
-    "script": "Devanagari",
-    "devanagari": "सर्वधर्मान्परित्यज्य मामेकं शरणं व्रज ।\nअहं त्वां सर्वपापेभ्यो मोक्षयिष्यामि मा शुचः ॥",
+    "devanagari": "सर्वधर्मान्परित्यज्य मामेकं शरणं व्रज\nअहं त्वां सर्वपापेभ्यो मोक्षयिष्यामि मा शुचः",
     "iast": "sarvadharmānparityajya māmekaṃ śaraṇaṃ vraja\nahaṃ tvāṃ sarvapāpebhyo mokṣayiṣyāmi mā śucaḥ"
   },
   "padaccheda": {
     "dharmamitra": "sarva | dharmān | parityajya | mām | ekam | śaraṇam | vraja | aham | tvām | sarva | pāpebhyaḥ | mokṣayiṣyāmi | mā | śucaḥ",
-    "sanskrit_parser": "sarva | dharmān | parityajya | māme | akam | śaraṇam | vraja | aham | tvām | sarvapā | āpebhyas | mokṣe | iṣi | āmi | mā | śucas"
+    "sanskrit_parser": "sarva | dharmān | parityajya | māme | akam | śaraṇam | vraja | aham | tvām | sarva | pāpebhyas | mokṣayiṣyāmi | mā | śucas"
   },
   "padas": [
     {
@@ -63,7 +62,11 @@
             "linga": "puṃlliṅgam"
           },
           {
-            "form": "dharmān"
+            "form": "dharmān",
+            "root": "dharma",
+            "vibhakti": "dvitīyā",
+            "vacana": "bahu",
+            "linga": "puṃlliṅgam"
           },
           {
             "form": "parityajya",
@@ -104,18 +107,10 @@
         ],
         "words": [
           {
-            "form": "māme",
-            "root": "māma",
-            "vibhakti": "saptamī",
-            "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "form": "māme"
           },
           {
-            "form": "akam",
-            "root": "aka",
-            "vibhakti": "prathamā",
-            "vacana": "eka",
-            "linga": "napuṃsakaliṅgam"
+            "form": "akam"
           }
         ]
       },
@@ -287,20 +282,20 @@
       },
       "sanskrit_parser": {
         "padaccheda": [
-          "sarvapā",
-          "āpebhyas"
+          "sarva",
+          "pāpebhyas"
         ],
         "words": [
           {
-            "form": "sarvapā",
-            "root": "sarvapā",
-            "vibhakti": "prathamā",
+            "form": "sarva",
+            "root": "sarva",
+            "vibhakti": "saṃbodhana",
             "vacana": "eka",
-            "linga": "strīliṅgam"
+            "linga": "puṃlliṅgam"
           },
           {
-            "form": "āpebhyas",
-            "root": "āpa",
+            "form": "pāpebhyas",
+            "root": "pāpa",
             "vibhakti": "pañcamī",
             "vacana": "bahu",
             "linga": "puṃlliṅgam"
@@ -310,11 +305,9 @@
       "differences": [
         {
           "sanskrit_parser": [
-            "sarvapā",
-            "āpebhyas"
+            "pāpebhyas"
           ],
           "dharmamitra": [
-            "sarva",
             "pāpebhyaḥ"
           ]
         }
@@ -345,31 +338,26 @@
       },
       "sanskrit_parser": {
         "padaccheda": [
-          "mokṣe",
-          "iṣi",
-          "āmi"
+          "mokṣayiṣyāmi"
         ],
         "words": [
           {
-            "form": "mokṣe"
-          },
-          {
-            "form": "iṣi"
-          },
-          {
-            "form": "āmi"
+            "form": "mokṣayiṣyāmi",
+            "root": "mokṣ",
+            "vacana": "eka",
+            "tags": [
+              "lṛṭ",
+              "parasmaipadam",
+              "prāthamikaḥ",
+              "uttamapuruṣaḥ"
+            ]
           }
         ]
       },
       "differences": [
         {
-          "sanskrit_parser": [
-            "mokṣe",
-            "iṣi",
-            "āmi"
-          ],
+          "sanskrit_parser": null,
           "dharmamitra": [
-            "mokṣayiṣyāmi",
             "mā"
           ]
         }

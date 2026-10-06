@@ -1,13 +1,12 @@
 {
   "mode": "shloka",
   "input": {
-    "script": "Devanagari",
-    "devanagari": "या सृष्टिः स्रष्टुराद्या वहति विधिहुतं या हविर्या च होत्री\nये द्वे कालं विधत्तः श्रुतिविषयगुणा या स्थिता व्याप्य विश्वम् ।\nयामाहुः सर्वबीजप्रकृतिरिति यया प्राणिनः प्राणवन्तः\nप्रत्यक्षाभिः प्रपन्नस्तनुभिरवतु वस्ताभिरष्टाभिरीशः ॥",
+    "devanagari": "या सृष्टिः स्रष्टुराद्या वहति विधिहुतं या हविर्या च होत्री\nये द्वे कालं विधत्तः श्रुतिविषयगुणा या स्थिता व्याप्य विश्वम्\nयामाहुः सर्वबीजप्रकृतिरिति यया प्राणिनः प्राणवन्तः\nप्रत्यक्षाभिः प्रपन्नस्तनुभिरवतु वस्ताभिरष्टाभिरीशः",
     "iast": "yā sṛṣṭiḥ sraṣṭurādyā vahati vidhihutaṃ yā haviryā ca hotrī\nye dve kālaṃ vidhattaḥ śrutiviṣayaguṇā yā sthitā vyāpya viśvam\nyāmāhuḥ sarvabījaprakṛtiriti yayā prāṇinaḥ prāṇavantaḥ\npratyakṣābhiḥ prapannastanubhiravatu vastābhiraṣṭābhirīśaḥ"
   },
   "padaccheda": {
     "dharmamitra": "yā | sṛṣṭiḥ | sraṣṭuḥ | ādyā | vahati | vidhi | hutam | yā | haviḥ | yā | ca | hotrī | ye | dve | kālam | vidhattaḥ | śruti | viṣaya | guṇā | yā | sthitā | vyāpya | viśvam | yām | āhuḥ | sarva | bīja | prakṛtiḥ | iti | yayā | prāṇinaḥ | prāṇavantaḥ | pratyakṣābhiḥ | prapannaḥ | tanubhiḥ | avatu | vaḥ | tābhiḥ | aṣṭābhiḥ | īśaḥ",
-    "sanskrit_parser": "yā | sṛṣṭis | sraṣṭur | ādyā | vahati | vidhi | hutam | yā | havi | ryā | ca | hotrī | ye | dve | kālam | vidha | ttas | śrutiviṣayaguṇā | yā | sthitā | vyāpya | viśvam | yāmā | ahus | sarvabīja | prakṛti | riti | yayā | prāṇinas | prāṇavantas | pratyakṣābhis | prapannas | tanubhis | ava | tu | vastā | ābhis | aṣṭābhis | īśas"
+    "sanskrit_parser": "yā | sṛṣṭis | sraṣṭur | ādyā | vahati | vidhi | hutam | yā | havis | yā | ca | hotrī | ye | dve | kālam | vidhat | tas | śrutiviṣayaguṇā | yā | sthitā | vyāpya | viśvam | yāmā | ahus | sarvabīja | prakṛti | riti | yayā | prāṇinas | prāṇavantas | pratyakṣābhis | prapannas | tanubhis | avatu | vastā | ābhis | aṣṭābhis | īśas"
   },
   "padas": [
     {
@@ -288,20 +287,20 @@
       },
       "sanskrit_parser": {
         "padaccheda": [
-          "havi",
-          "ryā"
+          "havis",
+          "yā"
         ],
         "words": [
           {
-            "form": "havi",
-            "root": "hava",
-            "vibhakti": "saṃbodhana",
+            "form": "havis",
+            "root": "havis",
+            "vibhakti": "prathamā",
             "vacana": "eka",
             "linga": "strīliṅgam"
           },
           {
-            "form": "ryā",
-            "root": "ṛ",
+            "form": "yā",
+            "root": "ī",
             "vibhakti": "tṛtīyā",
             "vacana": "eka",
             "linga": "strīliṅgam"
@@ -311,12 +310,10 @@
       "differences": [
         {
           "sanskrit_parser": [
-            "havi",
-            "ryā"
+            "havis"
           ],
           "dharmamitra": [
-            "haviḥ",
-            "yā"
+            "haviḥ"
           ]
         }
       ]
@@ -506,31 +503,35 @@
       },
       "sanskrit_parser": {
         "padaccheda": [
-          "vidha",
-          "ttas"
+          "vidhat",
+          "tas"
         ],
         "words": [
           {
-            "form": "vidha",
-            "root": "vidhā#2",
+            "form": "vidhat",
+            "root": "vidhat",
             "vibhakti": "saṃbodhana",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "puṃlliṅgam",
+            "tags": [
+              "kartari",
+              "śatṛ"
+            ]
           },
           {
-            "form": "ttas",
-            "root": "tta",
-            "vibhakti": "prathamā",
+            "form": "tas",
+            "root": "tas",
+            "vibhakti": "saṃbodhana",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "strīliṅgam"
           }
         ]
       },
       "differences": [
         {
           "sanskrit_parser": [
-            "vidha",
-            "ttas"
+            "vidhat",
+            "tas"
           ],
           "dharmamitra": [
             "vidhattaḥ"
@@ -586,11 +587,7 @@
         ],
         "words": [
           {
-            "form": "śrutiviṣayaguṇā",
-            "root": "śrutiviṣayaguṇa",
-            "vibhakti": "prathamā",
-            "vacana": "eka",
-            "linga": "strīliṅgam"
+            "form": "śrutiviṣayaguṇā"
           }
         ]
       },
@@ -654,17 +651,7 @@
         ],
         "words": [
           {
-            "form": "sthitā",
-            "root": "sthita",
-            "vibhakti": "prathamā",
-            "vacana": "eka",
-            "linga": "strīliṅgam",
-            "tags": [
-              "karmaṇi",
-              "kta",
-              "kṛdantaḥ",
-              "prāthamikaḥ"
-            ]
+            "form": "sthitā"
           }
         ]
       }
@@ -1074,8 +1061,7 @@
         "padaccheda": [
           "prapannas",
           "tanubhis",
-          "ava",
-          "tu"
+          "avatu"
         ],
         "words": [
           {
@@ -1093,10 +1079,16 @@
             "linga": "strīliṅgam"
           },
           {
-            "form": "ava"
-          },
-          {
-            "form": "tu"
+            "form": "avatu",
+            "root": "av",
+            "vacana": "eka",
+            "tags": [
+              "kartari",
+              "loṭ",
+              "parasmaipadam",
+              "prathamapuruṣaḥ",
+              "prāthamikaḥ"
+            ]
           }
         ]
       },
@@ -1105,8 +1097,7 @@
           "sanskrit_parser": [
             "prapannas",
             "tanubhis",
-            "ava",
-            "tu"
+            "avatu"
           ],
           "dharmamitra": null
         }
@@ -1139,7 +1130,11 @@
         ],
         "words": [
           {
-            "form": "vastā"
+            "form": "vastā",
+            "root": "vastṛ",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
           },
           {
             "form": "ābhis"
