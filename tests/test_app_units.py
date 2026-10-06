@@ -16,6 +16,7 @@ import pytest
 
 import app
 import postprocess_analysis
+from vidyut.chandas import Chandas
 
 
 # ---------------------------------------------------------------------------
@@ -170,8 +171,6 @@ def test_akshara_count_matches_vidyuts_scan_of_the_same_word():
     # pinned: `akshara_count` is defined as what vidyut classified, so changing one set without the
     # other makes the meter section contradict itself.
     from pathlib import Path
-
-    from vidyut.chandas import Chandas
 
     chandas = Chandas(Path(app.DATA_DIR) / "chandas" / "meters.tsv")
     for word in ("saMpaRktau", "karma", "vAgarTAviva"):
