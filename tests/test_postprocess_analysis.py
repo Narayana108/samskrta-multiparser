@@ -6,6 +6,9 @@ convention. No engine is ever invoked: Dharmamitra is a remote API and stays
 untouched here.
 """
 
+import json
+import sys
+
 import pytest
 
 import postprocess_analysis
@@ -608,3 +611,84 @@ def test_postprocess_records_vidyut_error_and_omits_chandas():
     processed = postprocess_analysis.postprocess(raw)
     assert processed["engine_errors"]["vidyut"] == "Vidyut data directory not found"
     assert "chandas" not in processed
+
+
+# ---------------------------------------------------------------------------
+# CLI: output base naming, directory creation, stdout contract
+# ---------------------------------------------------------------------------
+
+def _run_cli(monkeypatch, *argv):
+    monkeypatch.setattr(sys, "argv", ("postprocess_analysis.py",) + argv)
+    return postprocess_analysis.main()
+
+
+@pytest.mark.parametrize("suffix", ["", ".json", ".raw.json", ".result.json"])
+def test_output_base_forms_all_name_the_same_pair(tmp_path, monkeypatch, suffix):
+    base = tmp_path / "nested" / "analysis"
+    postprocess_analysis.write_document(
+        postprocess_analysis.raw_path(str(base)), _clean_raw()
+    )
+    assert _run_cli(monkeypatch, "-o", str(base) + suffix) == 0
+    result = json.loads(
+        (tmp_path / "nested" / "analysis.result.json").read_text(encoding="utf-8")
+    )
+    assert [p["pada"] for p in result["padas"]] == ["agnim", "īḷe"]
+
+
+def test_cli_derives_the_result_sibling_from_the_raw_file(tmp_path, monkeypatch):
+    base = tmp_path / "analysis"
+    raw_file = postprocess_analysis.raw_path(str(base))
+    postprocess_analysis.write_document(raw_file, _clean_raw())
+    assert _run_cli(monkeypatch, "-i", str(raw_file)) == 0
+    assert postprocess_analysis.result_path(str(base)).exists()
+
+
+def test_cli_creates_missing_output_directories(tmp_path, monkeypatch):
+    base = tmp_path / "a" / "b" / "c" / "analysis"
+    postprocess_analysis.write_document(
+        postprocess_analysis.raw_path(str(base)), _clean_raw()
+    )
+    assert _run_cli(monkeypatch, "-o", str(base)) == 0
+    assert postprocess_analysis.result_path(str(base)).exists()
+
+
+def test_cli_stdout_is_only_input_and_chandas(tmp_path, monkeypatch, capsys):
+    base = tmp_path / "analysis"
+    raw = _clean_raw()
+    chanda = {
+        "vrtta": None,
+        "candidates": ["anuṣṭubh"],
+        "pada_count": 2,
+        "classified_pada_count": 0,
+        "aksharas_per_pada": [8, 8],
+    }
+    raw["engine_outputs"]["vidyut"] = {"chandas": chanda}
+    postprocess_analysis.write_document(postprocess_analysis.raw_path(str(base)), raw)
+
+    assert _run_cli(monkeypatch, "-o", str(base)) == 0
+    printed = json.loads(capsys.readouterr().out)
+    assert list(printed) == ["input", "chandas"]
+    assert printed["chandas"] == chanda
+    assert printed["input"] == {"iast": "agnim īḷe"}
+
+
+def test_cli_never_prints_padas_or_engine_sections(tmp_path, monkeypatch, capsys):
+    base = tmp_path / "analysis"
+    postprocess_analysis.write_document(
+        postprocess_analysis.raw_path(str(base)), _clean_raw()
+    )
+    assert _run_cli(monkeypatch, "-o", str(base)) == 0
+    out = capsys.readouterr().out
+    for marker in ("padas", "padaccheda", "engine_outputs", "differences"):
+        assert marker not in out
+
+
+def test_cli_requires_a_base_or_a_raw_document(monkeypatch, capsys):
+    assert _run_cli(monkeypatch) == 1
+    assert "give an output base" in capsys.readouterr().err
+
+
+def test_cli_reports_a_missing_raw_document(tmp_path, monkeypatch, capsys):
+    base = tmp_path / "gone"
+    assert _run_cli(monkeypatch, "-o", str(base)) == 1
+    assert f"'{postprocess_analysis.raw_path(str(base))}' not found" in capsys.readouterr().err

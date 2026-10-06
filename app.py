@@ -3,8 +3,8 @@
 
 Runs three independent engines (sanskrit_parser, Dharmamitra API, vidyut)
 on the same input — Devanagari or any romanization vidyut lipi detects (IAST,
-SLP1, Harvard-Kyoto, ITRANS) — and produces structured JSON results under
-distinct top-level keys in a single output file.
+SLP1, Harvard-Kyoto, ITRANS) — and writes a pair of JSON documents under one base
+name: the raw engine dump and its condensed reading.
 
 Architecture:
     app.py (CLI entry point)
@@ -14,10 +14,12 @@ Architecture:
     ├── run_sanskrit_parser()       # Local: sandhi + morphology + vakya
     ├── run_dharmamitra()           # Remote: API-based lemma tags
     ├── run_vidyut()                # Local: kosha + prakriya + meter + sandhi
-    └── main()                      # Orchestrates all engines, writes JSON
+    └── main()                      # Engines, then both documents of the output pair
 
-postprocess_analysis.py is a separate CLI pass that condenses this raw output into
-the compact comparison file; it imports nothing from this module.
+The condensed pass lives in postprocess_analysis.py (stdlib only). app.py calls its
+postprocess() to write '<base>.result.json' next to '<base>.raw.json'; that module is
+also a standalone CLI for re-processing an existing raw document and imports nothing
+from this one.
 
 Engine capabilities:
     - sanskrit_parser: Sandhi splitting, morphological tags, vakya (sentence) parsing
@@ -31,9 +33,10 @@ Usage:
     python app.py shloka -i -                # read from stdin
 
 Output:
-    - stdout by default (or FILE with -o): raw JSON for all three engines,
-      conventionally saved as multi-engine-analysis.json
-    - postprocess_analysis.py condenses that into processed-analysis.json (see README.md)
+    - '<base>.raw.json': complete engine output; base defaults to results/<input stem>
+      (override with -o BASE — a trailing '.json' is stripped, directories are created)
+    - '<base>.result.json': the condensed comparison document for the same base
+    - stdout: only the result document's top-level 'input' and 'chandas' objects
 
 Error policy:
     Dharmamitra is a remote service and therefore optional: when it cannot be
@@ -51,6 +54,8 @@ import sys
 import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
+import postprocess_analysis  # second pass: '<base>.result.json' from the raw document
 
 # Suppress sanskrit_parser debug logging
 import logging
@@ -1516,14 +1521,17 @@ def _run_local_engine(run: Callable[[], Dict[str, Any]]) -> Dict[str, Any]:
 
 def main() -> int:
     """Main entry point.
-    
-    Parses CLI arguments, reads input, runs all three engines,
-    and writes the combined JSON output.
-    
+
+    Parses CLI arguments, reads input, runs all three engines, writes both documents
+    of the output pair ('<base>.raw.json' and '<base>.result.json', creating the
+    directory when needed), and prints only the result document's top-level 'input'
+    and 'chandas' objects to stdout.
+
     Returns:
         0 on success; 1 when a local engine (sanskrit_parser or vidyut) could not
-        run, or when the output file could not be written. A missing Dharmamitra
-        service only logs a warning and still returns 0.
+        run, or when an output file could not be written — in both cases the documents
+        that were produced are still on disk. A missing Dharmamitra service only logs
+        a warning and still returns 0.
     """
     parser = argparse.ArgumentParser(
         description="samskrta-multi-parser-raw — Unified multi-engine Sanskrit analyzer"
@@ -1540,8 +1548,9 @@ def main() -> int:
     )
     parser.add_argument(
         "-o", "--output",
-        default="-",
-        help="Output file path; '-' (default) prints JSON to stdout only",
+        default=None,
+        help="Output base path; writes '<base>.raw.json' and '<base>.result.json' "
+             "(a trailing '.json' is stripped). Default: results/<input stem>",
     )
     parser.add_argument(
         "-f", "--format",
@@ -1632,16 +1641,32 @@ def main() -> int:
             print(f"Warning: Dharmamitra lemma enrichment failed: {exc}", file=sys.stderr)
 
     indent = 2 if args.format == "pretty" else None
-    json_str = json.dumps(output, indent=indent, ensure_ascii=False)
 
-    if args.output == "-":
-        print(json_str)
+    # One input, one base path, two documents. Without -o the base comes from the
+    # input file's name under results/; stdin has no name, so the mode is used.
+    if args.output:
+        base = postprocess_analysis.output_base(args.output)
     else:
-        try:
-            Path(args.output).write_text(json_str, encoding="utf-8")
-        except OSError as exc:
-            print(f"Error writing output: {exc}", file=sys.stderr)
-            return 1
+        stem = Path(input_file).stem if input_file != "-" else args.mode
+        base = str(Path("results") / stem)
+    raw_file = postprocess_analysis.raw_path(base)
+    result_file = postprocess_analysis.result_path(base)
+
+    try:
+        processed = postprocess_analysis.postprocess(output)
+    except ValueError as exc:
+        print(f"Error building the result document: {exc}", file=sys.stderr)
+        return 1
+
+    try:
+        postprocess_analysis.write_document(raw_file, output, indent)
+        postprocess_analysis.write_document(result_file, processed, indent)
+    except OSError as exc:
+        print(f"Error writing output: {exc}", file=sys.stderr)
+        return 1
+
+    # stdout stays machine-readable: exactly the two objects, nothing else.
+    postprocess_analysis.print_input_and_chandas(result_file, indent)
 
     if failed_local_engines:
         print(

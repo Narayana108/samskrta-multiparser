@@ -6,27 +6,33 @@ quirks that forced specific workarounds, and what to watch when maintaining it.
 
 ## 1. Architecture
 
-Two independent command-line passes over the same text, which may be written in
-Devanagari or any romanization vidyut lipi detects (IAST, SLP1, Harvard-Kyoto,
-ITRANS):
+One command-line pass over text in any script vidyut lipi detects (Devanagari, IAST,
+SLP1, Harvard-Kyoto, ITRANS) writes a **pair** of documents under one base name; the
+reading pass can also be re-run on its own over an existing raw document:
 
 ```
 any-script text
       │  detect_script() → name; to_devanagari() → Devanagari; preprocess_input() → separators as spaces
       ▼
- app.py ──────────────────────────────► multi-engine-analysis.json   (raw pass)
+ app.py ──────────────────────────────► <base>.raw.json             (engine dump)
  │   ├── run_sanskrit_parser()   local  (fatal when unavailable)
  │   ├── run_dharmamitra()       remote HTTP, + kosha lemma enrichment (tolerated)
  │   └── run_vidyut()            local  (fatal when unavailable; emits chandas)
-      │
- postprocess_analysis.py ─────────────► processed-analysis.json      (reading pass)
+      │  postprocess_analysis.postprocess() — called in-process by main()
+      ▼
+ <base>.result.json                                               (reading document)
+
+ postprocess_analysis.py -o BASE   → rewrites the reading pass alone, offline
 ```
 
-`app.py` never imports `postprocess_analysis.py`. The reading pass compares the two
-splitting engines (`sanskrit_parser`, `dharmamitra`) word by word and copies vidyut's
-verse-level `chandas` summary across; everything else vidyut produces stays in the raw
-document. The split exists because the raw dumps are ~90 KB of engine-specific noise
-while the processed reading is ~7 KB; keeping both makes parser disagreements auditable.
+`app.py` imports `postprocess_analysis` and calls its `postprocess()`, so a single run
+produces both documents. That module is stdlib-only, imports nothing back, and stays
+available as a standalone command for re-processing an existing raw file. The reading
+pass compares the two splitting engines (`sanskrit_parser`, `dharmamitra`) word by word
+and copies vidyut's verse-level `chandas` summary across; everything else vidyut
+produces stays in the raw document. The split exists because the raw dumps are ~90 KB of
+engine-specific noise while the reading document is ~7 KB; keeping both makes parser
+disagreements auditable.
 
 ### Error isolation
 
@@ -48,8 +54,8 @@ Three consequences worth knowing:
   run fails: `_run_local_engine` normalizes both shapes an engine can fail in (a raised
   exception, and vidyut's habit of *returning* `{"error": "Vidyut data directory not found"}`)
   into one error object, prints `Error: <engine>: …`, and `main()` exits 1 after writing
-  the document. A run that silently loses an engine is worse than a failing one.
-- **`engine_errors` in `processed-analysis.json`.** `postprocess()` scans all three
+  both documents. A run that silently loses an engine is worse than a failing one.
+- **`engine_errors` in `<base>.result.json`.** `postprocess()` scans all three
   engine dicts for an `error` key and emits `"engine_errors": {engine: message}` only
   when at least one engine failed. Without it, a crashed engine is indistinguishable
   from a text that genuinely produced no analysis.
@@ -59,9 +65,10 @@ Three consequences worth knowing:
   best-effort: it cannot interrupt native parser code (see §8).
 
 Library chatter that would otherwise pollute the pipeline is reported through
-`_warn_once(site, exc)`: one line per distinct site to **stderr**, so stdout stays
-valid JSON while swallowed library errors remain visible. This replaced several
-bare `except Exception: pass` blocks in the vidyut prakriya and sandhi paths.
+`_warn_once(site, exc)`: one line per distinct site to **stderr**, so the `input` +
+`chandas` summary on stdout stays parseable while swallowed library errors remain
+visible. This replaced several bare `except Exception: pass` blocks in the vidyut
+prakriya and sandhi paths.
 
 ## 2. Transliteration pipeline
 
@@ -131,8 +138,8 @@ tokens, pass through unsplit rather than being cut at a false boundary.
 
 ## 3. Determinism
 
-The processed pass is reproducible: the same `multi-engine-analysis.json` always yields
-a byte-identical `processed-analysis.json`. The rules that buy that stability:
+The reading pass is reproducible: the same `<base>.raw.json` always yields a
+byte-identical `<base>.result.json`. The rules that buy that stability:
 
 - **Ranked, never first-seen.** SP split candidates go through `_best_word_split`;
   morphology groups through `_morph_rank` (a complete case reading outranks a
@@ -158,13 +165,13 @@ specify, so two `app.py shloka` runs differ in `engine_outputs.sanskrit_parser`
 not depending on which parse crossed the 5 s watchdog). The dharmamitra and vidyut
 subtrees were byte-identical across those runs. Because postprocess re-ranks rather than
 traverses, that noise usually cancels — but when sanskrit_parser proposes a genuinely
-different candidate set, `processed-analysis.json` legitimately changes with it. Pin the raw file
-(and hence the processed one) if you need archival reproducibility.
+different candidate set, `<base>.result.json` legitimately changes with it. Pin the raw
+document (and hence the reading one) if you need archival reproducibility.
 
 ## 4. Lemma provenance (Dharmamitra tokens)
 
 The Dharmamitra API returns surface forms only — no lemmas. `enrich_dharmamitra_lemmas`
-fills them from the **local vidyut kosha**, so lemma claims in `processed-analysis.json`
+fills them from the **local vidyut kosha**, so lemma claims in `<base>.result.json`
 are vidyut's, not the API's.
 
 Lookup path: IAST form → Devanagari → SLP1 via *sanscript* (not vidyut lipi:
@@ -223,19 +230,25 @@ candidate; vidyut's data simply does not know the śloka vṛtta.
 
 ```bash
 uv sync                                   # runtime deps + pytest (dev group)
-uv run python app.py shloka -o multi-engine-analysis.json   # ~20 s; hits the DM API
-uv run python postprocess_analysis.py                       # offline, instant
-uv run pytest -q                          # offline suite
+uv run python app.py shloka             # ~20 s; hits the DM API → results/shloka_input.{raw,result}.json
+uv run python postprocess_analysis.py -o results/shloka_input   # offline, instant
+uv run pytest -q                        # offline suite
 ```
 
 - `tests/conftest.py` pins `VIDYUT_DATA_DIR` to the bundled data and puts the project
   root on `sys.path`. Tests are deterministic and never call the Dharmamitra API;
   kosha-backed tests use a module-scoped fixture over the local data.
-- Both passes write to stdout by default (`-o -`). Piping is therefore explicit:
-  `uv run python app.py shloka > multi-engine-analysis.json`. postprocess_analysis.py
-  prints its size summary to stderr so stdout redirection stays clean.
+- Output naming: `-o BASE` writes `BASE.raw.json` and `BASE.result.json`; with no `-o`
+  the base is `results/<input stem>` (`results/shloka` / `results/pada` for stdin
+  input). Parent directories are created on demand, and a trailing `.json`, `.raw` or
+  `.result` on the base is stripped — feeding a generated file back into `-o`/`-i`
+  reproduces its sibling pair.
+- stdout carries only the reading document's top-level `input` and `chandas` objects,
+  re-read from the file that was just written; warnings, errors and the postprocessor's
+  size summary all go to stderr. Piping an analysis run therefore yields a small JSON
+  object, never the full dump.
 - Exit codes: `app.py` exits 1 when a local engine (sanskrit_parser, vidyut) could not
-  run at all — the error object is still written to the output file first; an offline
+  run at all — both documents, error objects included, are written first; an offline
   Dharmamitra API only produces a warning and exit 0.
 - On import, sanskrit_parser sets its own logger to DEBUG and attaches a stderr
   handler; suppression must be applied *after* importing it, otherwise every run

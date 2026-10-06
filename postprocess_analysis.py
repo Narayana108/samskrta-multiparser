@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Post-process raw multi-engine Sanskrit analysis output into a readable form.
 
-Reads:  multi-engine-analysis.json (raw engine outputs from app.py)
-Writes: processed-analysis.json
+Reads:  <base>.raw.json    (raw engine outputs written by app.py)
+Writes: <base>.result.json (the condensed reading document)
 
 Output structure::
 
@@ -53,6 +53,60 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+
+# ---------------------------------------------------------------------------
+# Output naming and writing (shared by both CLIs)
+# ---------------------------------------------------------------------------
+# One input yields a pair of documents under one base path:
+#   raghuvamsha-1.1.txt → results/raghuvamsha-1.1.raw.json
+#                       → results/raghuvamsha-1.1.result.json
+
+RAW_SUFFIX = ".raw.json"
+RESULT_SUFFIX = ".result.json"
+
+
+def output_base(path_str: str) -> str:
+    """Normalize a user-supplied -o value into an output base path.
+
+    A trailing '.json' is dropped, as are the generated '.raw'/'.result' infixes, so
+    'results/foo', 'results/foo.json' and 'results/foo.result.json' all name the same
+    pair of documents.
+    """
+    base = path_str.removesuffix(".json")
+    return base.removesuffix(".raw").removesuffix(".result")
+
+
+def raw_path(base: str) -> Path:
+    """Raw document belonging to an output base."""
+    return Path(f"{base}{RAW_SUFFIX}")
+
+
+def result_path(base: str) -> Path:
+    """Result document belonging to an output base."""
+    return Path(f"{base}{RESULT_SUFFIX}")
+
+
+def write_document(path: Path, payload: Dict[str, Any], indent: Optional[int] = 2) -> None:
+    """Write a JSON document, creating the parent directory when it is missing."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=indent, ensure_ascii=False), encoding="utf-8")
+
+
+def print_input_and_chandas(path: Path, indent: Optional[int] = 2) -> None:
+    """Print only the top-level 'input' and 'chandas' objects of a result document.
+
+    The file is re-read from disk so stdout shows exactly what was written. Nothing
+    else reaches stdout: padas, engine data and size summaries stay in the files or on
+    stderr. A document without a chanda summary (pada mode) prints null for it.
+    """
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    print(
+        json.dumps(
+            {"input": doc.get("input"), "chandas": doc.get("chandas")},
+            indent=indent,
+            ensure_ascii=False,
+        )
+    )
 
 # ---------------------------------------------------------------------------
 # Normalization helpers
@@ -382,23 +436,48 @@ def postprocess(raw: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def main() -> int:
+    """CLI entry point for the processed pass.
+
+    Resolves an output base from -o (or from the raw file given with -i), rewrites
+    '<base>.raw.json' into '<base>.result.json' — creating parent directories as
+    needed — and prints only that document's top-level 'input' and 'chandas' objects
+    to stdout.
+
+    Returns:
+        0 on success; 1 when no base could be resolved, the raw file is missing or
+        unreadable, or its JSON is not a raw analysis document.
+    """
     parser = argparse.ArgumentParser(
         description="Post-process raw multi-engine Sanskrit analysis output"
     )
     parser.add_argument(
-        "-i", "--input", default="multi-engine-analysis.json",
-        help="Input JSON file (default: multi-engine-analysis.json)",
+        "-i", "--input", default=None,
+        help="Raw JSON document ('<base>.raw.json'); used to derive the base when -o is absent",
     )
     parser.add_argument(
-        "-o", "--output", default="processed-analysis.json",
-        help="Output JSON file (default: processed-analysis.json; '-' writes to stdout only)",
+        "-o", "--output", default=None,
+        help="Output base path; writes '<base>.result.json' (a trailing '.json' is stripped)",
     )
     args = parser.parse_args()
 
+    if args.output:
+        base = output_base(args.output)
+    elif args.input:
+        base = output_base(args.input)
+    else:
+        print(
+            "Error: give an output base with -o BASE, or a raw document with -i <base>.raw.json",
+            file=sys.stderr,
+        )
+        return 1
+
+    input_file = raw_path(base)
+    output_file = result_path(base)
+
     try:
-        raw_text = Path(args.input).read_text(encoding="utf-8")
+        raw_text = input_file.read_text(encoding="utf-8")
     except FileNotFoundError:
-        print(f"Error: Input file '{args.input}' not found", file=sys.stderr)
+        print(f"Error: Input file '{input_file}' not found", file=sys.stderr)
         return 1
     except OSError as exc:
         print(f"Error reading input: {exc}", file=sys.stderr)
@@ -407,29 +486,26 @@ def main() -> int:
     try:
         raw = json.loads(raw_text)
     except json.JSONDecodeError as exc:
-        print(f"Error parsing JSON from '{args.input}': {exc}", file=sys.stderr)
+        print(f"Error parsing JSON from '{input_file}': {exc}", file=sys.stderr)
         return 1
 
     try:
         processed = postprocess(raw)
     except ValueError as exc:
-        print(f"Error: {exc} (is '{args.input}' a raw app.py output?)", file=sys.stderr)
+        print(f"Error: {exc} (is '{input_file}' a raw app.py output?)", file=sys.stderr)
         return 1
 
-    json_str = json.dumps(processed, indent=2, ensure_ascii=False)
-
-    if args.output == "-":
-        print(json_str)
-    else:
-        Path(args.output).write_text(json_str, encoding="utf-8")
+    write_document(output_file, processed)
 
     raw_size = len(raw_text.encode("utf-8"))
-    processed_size = len(json_str.encode("utf-8"))
+    processed_size = output_file.stat().st_size
     reduction = (1 - processed_size / raw_size) * 100 if raw_size else 0.0
     print(
         f"\nRaw: {raw_size:,} bytes → processed: {processed_size:,} bytes ({reduction:.1f}% smaller)",
         file=sys.stderr,
     )
+
+    print_input_and_chandas(output_file)
     return 0
 
 

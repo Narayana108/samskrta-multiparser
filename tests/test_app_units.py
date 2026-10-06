@@ -15,6 +15,7 @@ from types import SimpleNamespace
 import pytest
 
 import app
+import postprocess_analysis
 
 
 # ---------------------------------------------------------------------------
@@ -599,17 +600,23 @@ def test_chandas_summary_of_no_classified_padas():
 
 @pytest.fixture()
 def cli(tmp_path, monkeypatch):
-    """Run ``app.main()`` offline on a tiny file with the given engine stubs."""
+    """Run ``app.main()`` offline on a tiny file with the given engine stubs.
+
+    Returns the exit code and the raw document (``<base>.raw.json``); ``-o`` is always
+    passed so no test ever writes into the project's own ``results/`` directory.
+    """
     def run(**engines):
         for name, impl in engines.items():
             monkeypatch.setattr(app, name, impl)
         src = tmp_path / "in.txt"
         src.write_text("agnim īḷe", encoding="utf-8")
-        out = tmp_path / "out.json"
+        base = str(tmp_path / "analysis")
         monkeypatch.setattr(
-            sys, "argv", ["app.py", "shloka", "-i", str(src), "-o", str(out)]
+            sys, "argv", ["app.py", "shloka", "-i", str(src), "-o", base]
         )
-        return app.main(), json.loads(out.read_text(encoding="utf-8"))
+        code = app.main()
+        raw_file = postprocess_analysis.raw_path(base)
+        return code, json.loads(raw_file.read_text(encoding="utf-8"))
     return run
 
 
@@ -655,3 +662,139 @@ def test_run_exits_0_when_only_dharmamitra_is_down(cli, capsys):
     assert doc["engine_outputs"]["dharmamitra"] == {
         "error": "Dharmamitra engine failed: connection refused"
     }
+
+
+# ---------------------------------------------------------------------------
+# Output pair naming and the stdout contract (all engines stubbed)
+# ---------------------------------------------------------------------------
+
+CHANDA = {
+    "vrtta": None,
+    "candidates": ["anuṣṭubh"],
+    "pada_count": 2,
+    "classified_pada_count": 0,
+    "aksharas_per_pada": [8, 8],
+}
+
+
+def _stub_engines(monkeypatch, chanda=None):
+    """Replace every engine with an instant offline stub."""
+    vidyut = {"kosha": [], "prakriya": {}, "meter": []}
+    if chanda is not None:
+        vidyut["chandas"] = chanda
+    for name, impl in {
+        "run_sanskrit_parser": lambda *a: {"word_decompositions": {}},
+        "run_dharmamitra": lambda *a: {"tokens": []},
+        "run_vidyut": lambda *a: dict(vidyut),
+    }.items():
+        monkeypatch.setattr(app, name, impl)
+
+
+def _src(tmp_path, name="in.txt", text="agnim īḷe"):
+    (tmp_path / name).write_text(text, encoding="utf-8")
+    return str(tmp_path / name)
+
+
+def test_default_output_base_writes_the_pair_under_results(tmp_path, monkeypatch):
+    _stub_engines(monkeypatch, chanda=CHANDA)
+    src = _src(tmp_path, "raghuvamsha-1.1.txt")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["app.py", "shloka", "-i", src])
+    assert app.main() == 0
+    assert sorted(p.name for p in (tmp_path / "results").iterdir()) == [
+        "raghuvamsha-1.1.raw.json",
+        "raghuvamsha-1.1.result.json",
+    ]
+
+
+def test_stdin_input_names_the_pair_after_the_mode(tmp_path, monkeypatch):
+    _stub_engines(monkeypatch)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "stdin", io.StringIO("agnim īḷe"))
+    monkeypatch.setattr(sys, "argv", ["app.py", "pada", "-i", "-"])
+    assert app.main() == 0
+    assert sorted(p.name for p in (tmp_path / "results").iterdir()) == [
+        "pada.raw.json",
+        "pada.result.json",
+    ]
+
+
+def test_custom_base_creates_missing_directories_and_both_documents(
+    tmp_path, monkeypatch
+):
+    _stub_engines(monkeypatch)
+    src = _src(tmp_path)
+    base = str(tmp_path / "deep" / "nested" / "analysis")
+    monkeypatch.setattr(sys, "argv", ["app.py", "shloka", "-i", src, "-o", base])
+    assert app.main() == 0
+    written = sorted(p.name for p in (tmp_path / "deep" / "nested").iterdir())
+    assert written == ["analysis.raw.json", "analysis.result.json"]
+
+
+@pytest.mark.parametrize("suffix", ["", ".json", ".raw.json", ".result.json"])
+def test_suffix_is_stripped_from_the_output_base(tmp_path, monkeypatch, suffix):
+    _stub_engines(monkeypatch)
+    src = _src(tmp_path)
+    base = str(tmp_path / "analysis") + suffix
+    monkeypatch.setattr(sys, "argv", ["app.py", "shloka", "-i", src, "-o", base])
+    assert app.main() == 0
+    assert sorted(p.name for p in tmp_path.iterdir() if p.suffix == ".json") == [
+        "analysis.raw.json",
+        "analysis.result.json",
+    ]
+
+
+def test_both_documents_are_written_even_when_a_local_engine_fails(tmp_path, monkeypatch):
+    _stub_engines(monkeypatch)
+    monkeypatch.setattr(
+        app, "run_vidyut", lambda *a: {"error": "Vidyut data directory not found"}
+    )
+    src = _src(tmp_path)
+    base = str(tmp_path / "analysis")
+    monkeypatch.setattr(sys, "argv", ["app.py", "shloka", "-i", src, "-o", base])
+    assert app.main() == 1
+    written = sorted(p.name for p in tmp_path.iterdir() if p.suffix == ".json")
+    assert written == ["analysis.raw.json", "analysis.result.json"]
+    raw = json.loads(postprocess_analysis.raw_path(base).read_text(encoding="utf-8"))
+    assert raw["engine_outputs"]["vidyut"] == {
+        "error": "Vidyut data directory not found"
+    }
+
+
+def test_stdout_carries_exactly_input_and_chandas(tmp_path, monkeypatch, capsys):
+    _stub_engines(monkeypatch, chanda=CHANDA)
+    src = _src(tmp_path)
+    base = str(tmp_path / "analysis")
+    monkeypatch.setattr(sys, "argv", ["app.py", "shloka", "-i", src, "-o", base])
+    assert app.main() == 0
+
+    printed = json.loads(capsys.readouterr().out)
+    result = json.loads(
+        postprocess_analysis.result_path(base).read_text(encoding="utf-8")
+    )
+    assert list(printed) == ["input", "chandas"]
+    assert printed["chandas"] == CHANDA == result["chandas"]
+    assert printed["input"]["script"] == "Iast"
+    assert printed["input"]["iast"] == result["input"]["iast"]
+
+
+def test_stdout_never_carries_padas_or_engine_sections(tmp_path, monkeypatch, capsys):
+    _stub_engines(monkeypatch, chanda=CHANDA)
+    src = _src(tmp_path)
+    base = str(tmp_path / "analysis")
+    monkeypatch.setattr(sys, "argv", ["app.py", "shloka", "-i", src, "-o", base])
+    assert app.main() == 0
+    out = capsys.readouterr().out
+    for marker in ("padas", "padaccheda", "engine_outputs", "word_decompositions"):
+        assert marker not in out
+
+
+def test_pada_mode_prints_null_chandas_on_stdout(tmp_path, monkeypatch, capsys):
+    _stub_engines(monkeypatch)  # vidyut stub has no chanda summary at all
+    src = _src(tmp_path)
+    base = str(tmp_path / "analysis")
+    monkeypatch.setattr(sys, "argv", ["app.py", "pada", "-i", src, "-o", base])
+    assert app.main() == 0
+    printed = json.loads(capsys.readouterr().out)
+    assert list(printed) == ["input", "chandas"]
+    assert printed["chandas"] is None

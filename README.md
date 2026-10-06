@@ -1,6 +1,6 @@
 # samskrta-multi-parser-raw
 
-Unified multi-engine Sanskrit analyzer. Runs three independent engines on the same input — Devanagari or any romanization vidyut's lipi can detect (IAST, SLP1, Harvard-Kyoto, ITRANS) — and produces structured JSON results under distinct top-level keys in a single output file.
+Unified multi-engine Sanskrit analyzer. Runs three independent engines — [sanskrit_parser](https://github.com/kmadathil/sanskrit_parser), [Dharmamitra](https://dharmamitra.org) and [vidyut](https://github.com/ambuda-org/vidyut) — on the same input (Devanagari, or any romanization vidyut's lipi can detect: IAST, SLP1, Harvard-Kyoto, ITRANS) and writes a pair of JSON documents under one base name: `<base>.raw.json`, holding everything each engine produced, and `<base>.result.json`, the condensed word-by-word reading.
 
 ## Overview
 
@@ -8,11 +8,21 @@ This tool analyzes Sanskrit text (single words or full shloka lines) through thr
 
 | Engine | Source | Capabilities |
 |--------|--------|-------------|
-| `sanskrit_parser` | Local Python package | Sandhi splitting, morphological tags, vakya (sentence) parsing |
-| `dharmamitra` | Remote API (dharmamitra.org) | Sandhi splitting with lemma morphosyntax tags |
-| `vidyut` | Local Python package | Kosha dictionary lookup, dhatu/pratipadika prakriya (derivation), meter classification, recursive sandhi splitting |
+| [`sanskrit_parser`](https://github.com/kmadathil/sanskrit_parser) | Local Python package | Sandhi splitting, morphological tags, vakya (sentence) parsing |
+| [`dharmamitra`](https://dharmamitra.org) | Remote HTTP API | Sandhi splitting with lemma morphosyntax tags |
+| [`vidyut`](https://github.com/ambuda-org/vidyut) | Local Python package | Kosha dictionary lookup, dhatu/pratipadika prakriya (derivation), meter classification, recursive sandhi splitting |
 
 Each engine runs independently: if one fails its key holds `{"error": "..."}` and the others still run. Dharmamitra is a remote service, so an unreachable API only costs that section — a `Warning:` line on stderr and exit code 0. `sanskrit_parser` and `vidyut` are local dependencies: when either cannot run at all the same error object is recorded, an `Error:` line goes to stderr, and the process exits 1.
+
+## Why Three Engines
+
+The engines overlap on purpose; none of them is good at everything.
+
+- **Sandhi splitting — sanskrit_parser.** This is the splitter the reading document trusts. It proposes candidate splits for each pada, `app.py` ranks them (`_best_word_split`) so a complete case reading beats a fragment, and the morphological tags (root, vibhakti, vacana, linga) come from the same parse; it can also attempt a full vakya (sentence) parse of the pāda.
+- **An independent second opinion — Dharmamitra.** The remote tagging API unsandhies the same text through an entirely different route and returns surface forms with lemma and kosha-type tags. Nothing is merged: `<base>.result.json` keeps both word sequences side by side under `padaccheda` and lists every region where they disagree under `differences`, so the reader — not a scoring heuristic — decides which split to accept for a given pada.
+- **Everything else — vidyut.** [vidyut](https://github.com/ambuda-org/vidyut) carries the rest of the grammar: kosha lookup (lemma plus `sūnantāḥ` / `tīnantāḥ` / `avyayam` classification), dhatu and pratipadika prakriya — the step-by-step derivation of an inflected form from its stem, krdantas included — and chandas: per-pāda syllable counts plus the verse-level vṛtta candidates. Its kosha also supplies the lemmas attached to Dharmamitra's tokens (`enrich_dharmamitra_lemmas`), because that API returns surface forms only.
+
+vidyut does ship a sandhi splitter, and `run_vidyut()` uses it — but its DFS over sandhi rules and the kosha has to be filtered hard before it is usable (`_is_quality_split`: both parts ≥ 4 aksharas, at least two kosha entries each, at least one non-derived entry per part; chains then scored by `_chain_score`), because unfiltered splitting runs well past the real word boundary. Its `sandhi_splits` therefore stay in `<base>.raw.json` as a third opinion for debugging and heuristic work; the pada-by-pada comparison in `<base>.result.json` is between sanskrit_parser and Dharmamitra, and vidyut's contribution there is the `chandas` summary.
 
 ## Architecture
 
@@ -28,17 +38,20 @@ app.py (CLI entry point — raw pass)
 │   └── enrich_dharmamitra_lemmas()  # Adds vidyut kosha lemmas to DM tokens
 ├── run_vidyut()                # Local: kosha + prakriya + meter + sandhi
 │   └── _summarize_chandas()    # Verse-level vṛtta summary from pāda matches
-└── main()                      # Runs the engines, writes one JSON document
+└── main()                      # Runs the engines, writes both output documents
 
-postprocess_analysis.py (CLI entry point — processed pass)
-└── postprocess()               # multi-engine-analysis.json → processed-analysis.json
+postprocess_analysis.py (second pass; also a standalone CLI)
+├── postprocess()               # '<base>.raw.json' → '<base>.result.json'
+└── output_base(), raw_path(), result_path(), write_document()   # naming helpers
 ```
 
-The two passes are separate commands: `app.py` never imports `postprocess_analysis.py`.
-For the word-by-word comparison `postprocess()` reads the `sanskrit_parser` and
-`dharmamitra` engines plus the raw input, and it carries vidyut's verse-level
-`chandas` summary across; vidyut's per-word kosha/prakriya detail stays in the raw
-document only.
+`app.py` runs both passes in one command: once the engines finish it calls
+`postprocess_analysis.postprocess()` and writes the reading document next to the raw
+one. That module is stdlib-only, imports nothing from `app.py`, and can still be run by
+itself to re-process an existing raw document. For the word-by-word comparison
+`postprocess()` reads the `sanskrit_parser` and `dharmamitra` engines plus the raw
+input, and it carries vidyut's verse-level `chandas` summary across; vidyut's per-word
+kosha/prakriya detail stays in the raw document only.
 
 Within vidyut, recursive compound sandhi splitting uses DFS over the kosha and
 sandhi rules, with quality filtering to prevent spurious splits.
@@ -65,24 +78,27 @@ pip install sanskrit-parser indic-transliteration "vidyut>=0.4.0" requests
 ## Quick Start
 
 ```bash
-# Shloka mode — raw JSON goes to stdout by default
-uv run python app.py shloka > multi-engine-analysis.json
+# Shloka mode — both documents land under results/, named after the input file
+uv run python app.py shloka          # → results/shloka_input.raw.json + .result.json
+
+# Pick the base yourself; missing directories are created, a trailing '.json' is stripped
+uv run python app.py shloka -i my_shloka.txt -o results/my_shloka
 
 # Pada mode (single-word analysis)
-uv run python app.py pada > multi-engine-analysis.json
-
-# Write the raw pass straight to a file instead of piping
-uv run python app.py shloka -i my_shloka.txt -o multi-engine-analysis.json
+uv run python app.py pada            # → results/pada_input.{raw,result}.json
 
 # IAST input analyzes exactly like the Devanagari one
-uv run python app.py shloka -i my_shloka.iast.txt -o multi-engine-analysis.json
+uv run python app.py shloka -i my_shloka.iast.txt -o results/my_shloka
 
-# Read from stdin
-echo "वागर्थाविव संपृक्तौ वागर्थप्रतिपत्तये" | uv run python app.py shloka > raw.json
+# Read from stdin — with no file name the pair is named after the mode
+echo "वागर्थाविव संपृक्तौ वागर्थप्रतिपत्तये" | uv run python app.py shloka
 
-# Second pass: compact, deduplicated reading (defaults to the two file names above)
-uv run python postprocess_analysis.py
+# Second pass alone, on an existing raw document (offline, instant)
+uv run python postprocess_analysis.py -o results/my_shloka
 ```
+
+stdout carries only the result document's top-level `input` and `chandas` objects — no
+padas, no engine data, no logs. Warnings, errors and size summaries go to stderr.
 
 ## CLI Arguments
 
@@ -96,7 +112,9 @@ options:
   -h, --help           Show this help message
   -i, --input INPUT    Input file (use '-' for stdin); defaults to input.txt, then the
                        mode-specific file (see Input Files)
-  -o, --output OUTPUT  Output file; '-' (default) prints JSON to stdout only
+  -o, --output OUTPUT  Output base path; writes '<base>.raw.json' and
+                       '<base>.result.json' (a trailing '.json' is stripped).
+                       Default: results/<input stem>
   -f, --format FORMAT  Output format: 'json' (compact) or 'pretty' (indented, default)
 ```
 
@@ -132,7 +150,7 @@ The output is a JSON object with the following structure:
 }
 ```
 
-### sanskrit_parser output
+### [`sanskrit_parser`](https://github.com/kmadathil/sanskrit_parser) output
 
 ```json
 {
@@ -170,7 +188,7 @@ The output is a JSON object with the following structure:
 `vakya_parses[].graph` is omitted for a pāda whose vakya parse exceeded the
 5-second watchdog; that split then carries `vakya_error` instead.
 
-### dharmamitra output
+### [`dharmamitra`](https://dharmamitra.org) output
 
 ```json
 {
@@ -188,7 +206,7 @@ The output is a JSON object with the following structure:
 `lemma` is a list when the vidyut kosha has several stems for that surface form;
 a token with no kosha match keeps only `form`.
 
-### vidyut output
+### [`vidyut`](https://github.com/ambuda-org/vidyut) output
 
 ```json
 {
@@ -303,21 +321,27 @@ gets one stderr line: `Warning:` for Dharmamitra, `Error:` for the two local eng
 ### Dharmamitra API quirks
 
 - The API silently truncates its response after any line ending with trailing whitespace before a newline. `run_dharmamitra()` strips per-line whitespace before sending to work around this.
-- Words the API cannot tag come back as empty underscore fields (`____iva_`); `_parse_tokens()` drops only those empty segments, so an untagged word simply yields no token for that pada. A pada with no Dharmamitra tokens appears as `"dharmamitra": null` in `processed-analysis.json` rather than as an error.
+- Words the API cannot tag come back as empty underscore fields (`____iva_`); `_parse_tokens()` drops only those empty segments, so an untagged word simply yields no token for that pada. A pada with no Dharmamitra tokens appears as `"dharmamitra": null` in `<base>.result.json` rather than as an error.
 
 ## Example Output
 
 ```bash
-$ uv run python app.py shloka -o multi-engine-analysis.json   # silent; the JSON is in the file
-$ uv run python postprocess_analysis.py
-Raw: 85,903 bytes → processed: 7,361 bytes (91.4% smaller)
-```
+$ uv run python app.py shloka -i tests/data/raghuvamsha-1.1.txt -o results/raghuvamsha-1.1
+{
+  "input": { "script": "Devanagari", "devanagari": "वागर्थाविव …", "iast": "vāgarthāviva …" },
+  "chandas": { "vrtta": null, "candidates": ["madalekhā", "śuddhavirāṭ"], … }
+}                                    # stdout: exactly these two objects
+$ ls results/
+raghuvamsha-1.1.raw.json  raghuvamsha-1.1.result.json
+
+$ uv run python postprocess_analysis.py -o results/raghuvamsha-1.1    # second pass only
+Raw: 85,903 bytes → processed: 7,361 bytes (91.4% smaller)            # stderr
 
 ## Two-Output Architecture
 
-The system produces two outputs:
+The system writes two documents under one base path — by default `results/<input stem>`:
 
-### `multi-engine-analysis.json` (raw)
+### `<base>.raw.json` (raw)
 Complete raw output from all three engines. Used for:
 - Debugging
 - Investigating parser failures
@@ -325,8 +349,9 @@ Complete raw output from all three engines. Used for:
 
 Typically ~90 KB for a śloka.
 
-### `processed-analysis.json` (processed)
-Generated by running `uv run python postprocess_analysis.py` on `multi-engine-analysis.json`.
+### `<base>.result.json` (processed)
+Written by the same `app.py` run, or regenerated on its own with
+`uv run python postprocess_analysis.py -o BASE`.
 
 Contains:
 - `padaccheda`: each engine's full word sequence for the śloka as one pipe-joined line
@@ -335,8 +360,8 @@ Contains:
 - `chandas`: vidyut's verse-level meter summary (`vrtta`, `candidates`, per-pāda akshara counts)
 - `differences`: aligned regions where the two engines split a pada differently (only present when they disagree)
 
-Typically ~7 KB for a śloka (~91% reduction). `processed-analysis.json` is byte-stable **for a given
-`multi-engine-analysis.json`**: SP split candidates and morphology groups are re-ranked
+Typically ~7 KB for a śloka (~91% reduction). `<base>.result.json` is byte-stable **for a
+given `<base>.raw.json`**: SP split candidates and morphology groups are re-ranked
 deterministically, never taken in first-seen order. The raw pass itself is not
 reproducible — sanskrit_parser enumerates candidate splits and vakya parses in an
 unspecified order; see [DOCUMENTATION.md](DOCUMENTATION.md) §3.
@@ -373,7 +398,7 @@ unspecified order; see [DOCUMENTATION.md](DOCUMENTATION.md) §3.
 ## Processing Pipeline
 
 ```
-raw engine outputs (multi-engine-analysis.json)
+raw engine outputs (<base>.raw.json)
     ↓
 sanskrit_parser per-word split ranking (_best_word_split, app.py)
     ↓
@@ -387,7 +412,7 @@ difflib region diff between engines
     ↓
 vidyut chandas summary copied to the verse level (_summarize_chandas, app.py)
     ↓
-processed output (padaccheda + engine-keyed padas + chandas)
+result document (<base>.result.json: padaccheda + engine-keyed padas + chandas)
 ```
 
 This turns a ~90 KB raw document into a ~7 KB reading while preserving the
@@ -427,7 +452,7 @@ vidyut only the verse-level `chandas` summary is carried over.
 
 Determinism comes from ranking instead of insertion order: SP split candidates
 and morphology groups are scored (`_morph_rank`, `_best_word_split`) so repeated
-runs produce byte-identical `processed-analysis.json` for the same raw input.
+runs produce byte-identical `<base>.result.json` for the same raw input.
 
 ## Testing
 
@@ -439,10 +464,12 @@ uv run pytest -q          # offline, deterministic; never calls the Dharmamitra 
 the project root on `sys.path`. The suite covers both CLIs: pure helpers
 (preprocessing, script detection, akshara counting, pada splitting, kosha
 classification, chain scoring), the exit-code policy with every engine stubbed out
-(a local engine down → 1, Dharmamitra alone down → 0), and the whole of
-`postprocess_analysis.py` against hand-written raw fixtures. Three real verses
-(Raghuvaṃśa 1.1/1.2, Abhijñānaśākuntala 1.1) live in `tests/data/`, each with an IAST
-twin that must preprocess to exactly the same text.
+(a local engine down → 1, Dharmamitra alone down → 0), output-base naming (default
+`results/<stem>`, created directories, stripped suffixes) and the stdout contract
+(`input` + `chandas` only), plus the whole of `postprocess_analysis.py` against
+hand-written raw fixtures. Three real verses (Raghuvaṃśa 1.1/1.2,
+Abhijñānaśākuntala 1.1) live in `tests/data/`, each with an IAST twin that must
+preprocess to exactly the same text.
 
 ## License
 
