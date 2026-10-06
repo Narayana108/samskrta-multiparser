@@ -97,7 +97,7 @@ def print_input_and_chandas(path: Path, indent: Optional[int] = 2) -> None:
 
     The file is re-read from disk so stdout shows exactly what was written. Nothing
     else reaches stdout: padas, engine data and size summaries stay in the files or on
-    stderr. A document without a chanda summary (pada mode) prints null for it.
+    stderr. A document with no chanda summary prints null for it.
     """
     doc = json.loads(path.read_text(encoding="utf-8"))
     print(
