@@ -320,6 +320,18 @@ Ordered by how likely they are to bite:
     `run_sanskrit_parser` can tag them; `tests/test_golden_outputs.py::test_every_chosen_word_carries_an_analysis`
     fails if that link is broken again.
 
+12. **vidyut's metre layer is coarser than it looks, in three ways that matter here.** (a) Its
+    scanner does not treat SLP1 `R`/`RR` (ṛ ṝ) as vowels — `AC = "aAiIuUfFxXeEoO"` in
+    `vidyut-chandas/src/sounds.rs:4`, and `vidyut-sandhi/src/sounds.rs:24` has the same set — so
+    `saṃpṛktau` scans as four aksharas (`saM pa Rkta u`) instead of two, and a pāda containing ṛ gets
+    both its weight string and its length wrong. Our `_count_aksharas` uses the same set on purpose:
+    `akshara_count` is defined as "what vidyut classified", so the two stay consistent; changing one
+    without the other would make `chandas` contradict itself. (b) Guru-ness ignores position: every
+    anusvara/visarga-final syllable is heavy and nothing else in a cluster counts, which is why
+    raghuvaṃśa 1.1's first pāda scans `GGGLLGGG` where the traditional reading is `– – – u u – – –`.
+    (c) The bundled table carries yatis (`|`) that `VrttaPada::try_match` parses and then never uses,
+    has no anuṣṭubh/triṣṭubh row and no jāti rows at all. Treat `weight_pattern` as vidyut's scan of
+    the text, not as a scansion of the verse.
 
 ## 9. Splitting quality: how it is measured
 
@@ -353,6 +365,33 @@ Per-word sandhi splitting has no oracle inside the tool, so one was built outsid
   pick, and costs 12 s per corpus pass; it is not shipped. The gate above is the only deeper-splitting
   rule that paid: +3 padas over all nine verses for exactly five changed words, all compounds read as
   their members.
+- **Metre was tried as a splitter input and lost.** Three keys were measured over this fixture.
+  (a) *Pāda-edge alignment*: a line of `2n` aksharas ends a pāda at `n`, so a split that breaks a word
+  there is metrically coherent. As an extra key it changed exactly one pick out of 64 and scored
+  **44/64 → 44/64**; as the first key it also scored 44 but only by moving `so'hamājanma…` from one
+  wrong reading to another. The reason is coverage: of the 64 curated padas, exactly two span more
+  than one pāda (`so'hamājanmaśuddhānāmāphalodayakarmaṇām`, `āsamudrakṣitīśānāmānākarathavartmanām`),
+  so the constraint is satisfied by 63/64 reference splits and discriminates almost nothing. Worse, it
+  is not even true of the reference: the first of those two padas has its word boundaries at aksharas
+  1, 3, 6, 9, 12, 15 — none at the pāda edge 8 (the anuṣṭubh pathya caesura falls after 4 or 6/7 of a
+  *half*, not at the midpoint our `_split_into_padas` assumes).
+  (b) *Guru-laghu pattern fit*: score each candidate by how few positions its weight string contradicts
+  an anuṣṭubh `LLLLGGLL?`. That scored **44/64 → 39/64**, five breaks and no fixes. Word cuts do change
+  vidyut's weights — it marks every anusvara/visarga-final syllable heavy unconditionally, so `māmekaṃ`
+  reads `GGG` fused and `GGL` split (`vidyut-chandas/src/akshara.rs:105-118`) — but that is a modelling
+  artefact of the scanner, not metre, and ranking on it prefers junk such as `gṛhamedhinā | ām`. Note
+  also that vidyut's own table cannot supply either pattern: `data-0.4.0/chandas/meters.tsv` has 145 rows, all
+  `vrtta`, with **no anuṣṭubh/triṣṭubh entry and no jāti rows at all** (so āryā is unclassifiable too).
+  The table does mark caesurae with `|` — parsed into `VrttaPada::yati` and then never consulted by
+  `try_match` — which is why every plain śloka in the corpus reports `vrtta: null`. Inside one pāda a
+  weight pattern cannot rank word order at all, since weights are scanned straight across word
+  boundaries. (c) *Caesura alignment* — the one metrical rule that does constrain word order inside a
+  pāda, preferring a word break after akshara 4 or 6 of an eight-syllable pāda — was measured on the 46
+  raghuvaṃśa rows alone: **32/46 → 23/46**. Nor can it be kept as a final tie-breaker: keys 1-6 of
+  `_rank_with_kosha` leave a tie on just two padas of the whole fixture, and no pāda edge separates
+  either. Metre therefore stays a reported property (`chandas`, per-pāda `weight_pattern`) and never an
+  input to `_best_word_split`; `vidyut-sandhi` contains no reference to chandas either, so there is no
+  upstream metre-aware splitter to borrow.
 - **What the misses are.** Almost all remaining ones need context: samāsa resolution
   (`yathākālaprabodhinām`, `prāṃśulabhye` stay whole), case government across a pada, and a handful
   where sandhi joined two words so that the join is indistinguishable from an inflection

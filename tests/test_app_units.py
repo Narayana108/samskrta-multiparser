@@ -164,6 +164,21 @@ def test_count_aksharas_ignores_marks_and_counts_clusters_once():
     assert app._count_aksharas("fxxeO") == 5  # vocalic r/l and digraphs count once
 
 
+def test_akshara_count_matches_vidyuts_scan_of_the_same_word():
+    # vidyut's chandas scanner uses the same vowel set as `_count_aksharas` — SLP1 `R`/`RR` (ṛ ṝ) are
+    # not vowels there either, so `saṃpṛktau` scans as four groups. Both sides of that agreement are
+    # pinned: `akshara_count` is defined as what vidyut classified, so changing one set without the
+    # other makes the meter section contradict itself.
+    from pathlib import Path
+
+    from vidyut.chandas import Chandas
+
+    chandas = Chandas(Path(app.DATA_DIR) / "chandas" / "meters.tsv")
+    for word in ("saMpaRktau", "karma", "vAgarTAviva"):
+        scanned = [a.text for group in chandas.classify(word).aksharas for a in group]
+        assert len(scanned) == app._count_aksharas(word), scanned
+
+
 def test_split_anustubh_line_at_akshara_midpoint():
     # 5 + 3 | 8 aksharas: the cut lands where the running total reaches half (8).
     line = "vAgarTAviva saMpfktO vAgarTapratipattaye"
