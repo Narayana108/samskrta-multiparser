@@ -512,6 +512,16 @@ VERSES = [
     "raghuvamsha-1.7",
     "bhagavad_gita-18.66",
     "abhijnaana_shakuntala-1.1",
+    # Bhagavad Gītā metres beyond anuṣṭubh: jagatī-family pādas (indravajra/upajāti) and the
+    # avagraha-heavy 2.22/2.47.
+    "bhagavad_gita-2.22",
+    "bhagavad_gita-2.47",
+    "bhagavad_gita-11.15",
+    "bhagavad_gita-15.5",
+    "bhagavad_gita-15.15",
+    # Abhijñānaśākuntala: sragdharā (21 aksharas) and mālinī (15), both long-compound verses.
+    "abhijnaana_shakuntala-1.7",
+    "abhijnaana_shakuntala-1.18",
 ]
 
 
@@ -553,13 +563,35 @@ def test_preprocess_cleans_devanagari_and_roman_input_alike():
     assert app.preprocess_input("vāc-arthau, iva.") == "vāc arthau iva"
 
 
+def test_preprocess_closes_a_hyphenated_line_break_into_one_word():
+    """Printed editions hyphenate a word that runs over the pāda junction; both halves are one sandhi word.
+
+    Leaving ``…संज्ञैर्-`` as its own token hands every engine a virama-final fragment it cannot decompose, and
+    reports the verse with an extra pāda.
+    """
+    assert app.preprocess_input("सुखदुःखसंज्ञैर्-\nगच्छन्त्यमूढाः") == "सुखदुःखसंज्ञैर्गच्छन्त्यमूढाः"
+    assert app.preprocess_input("jīrṇāny-\nanyāni") == "jīrṇānyanyāni"
+
+
 @pytest.mark.parametrize(
     ("verse", "totals"),
     [
         ("raghuvamsha-1.1", [16, 16]),
         ("raghuvamsha-1.2", [16, 16]),
-        # Four 21-akshara pādas: no even-meter split exists for this verse.
+        # Four 21-akshara pādas in sragdharā and four 15-akshara pādas in mālinī: no even-meter
+        # split exists for either verse, so each printed line stays one pāda.
         ("abhijnaana_shakuntala-1.1", [21, 21, 21, 21]),
+        ("abhijnaana_shakuntala-1.7", [21, 21, 21, 21]),
+        ("abhijnaana_shakuntala-1.18", [15, 15, 15, 15]),
+        # Jagatī-family verses: eleven aksharas per pāda is odd, so the lines go to vidyut whole.
+        ("bhagavad_gita-11.15", [11, 11, 11, 11]),
+        ("bhagavad_gita-15.15", [11, 11, 11, 11]),
+        # Bhagavad Gītā 2.47 is typed as two half-verses of sixteen aksharas each.
+        ("bhagavad_gita-2.47", [16, 16]),
+        # These two editions break a word at the pāda junction with a hyphen; closing that join makes
+        # one printed line twenty-two aksharas long, which splits into two equal eleven-akshara halves.
+        ("bhagavad_gita-2.22", [11, 11, 22]),
+        ("bhagavad_gita-15.5", [11, 11, 22]),
     ],
 )
 def test_verse_line_totals_and_pada_splitting(verse, totals):

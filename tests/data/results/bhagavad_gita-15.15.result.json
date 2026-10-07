@@ -1,0 +1,667 @@
+{
+  "input": {
+    "devanagari": "सर्वस्य चाहं हृदि सन्निविष्टो\nमत्तः स्मृतिर्ज्ञानमपोहनं च\nवेदैश्च सर्वैरहमेव वेद्यो\nवेदान्तकृद्वेदविदेव चाहम्",
+    "iast": "sarvasya cāhaṃ hṛdi sanniviṣṭo\nmattaḥ smṛtirjñānamapohanaṃ ca\nvedaiśca sarvairahameva vedyo\nvedāntakṛdvedavideva cāham"
+  },
+  "padaccheda": {
+    "dharmamitra": "sarvasya | ca | aham | hṛdi | sanniviṣṭaḥ | mattaḥ | smṛtiḥ | jñānam | apohanam | ca | vedaiḥ | ca | sarvaiḥ | aham | eva | vedyaḥ | vedānta | kṛt | veda | vid | eva | ca | aham",
+    "sanskrit_parser": "sarvasya | cās | ham | hṛdi | sanni | viṣṭas | mattas | smṛtis | jñānam | apohanam | ca | vedais | ca | sarvais | raham | eva | vedyas | vedāntakṛt | veda | videva | cās | ham"
+  },
+  "padas": [
+    {
+      "pada": "sarvasya",
+      "dharmamitra": {
+        "padaccheda": [
+          "sarvasya"
+        ],
+        "words": [
+          {
+            "form": "sarvasya",
+            "lemma": [
+              "sarv",
+              "sarva"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "sarvasya"
+        ],
+        "words": [
+          {
+            "form": "sarvasya",
+            "root": "sarva",
+            "vibhakti": "ṣaṣṭhī",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          }
+        ]
+      }
+    },
+    {
+      "pada": "cāhaṃ",
+      "dharmamitra": {
+        "padaccheda": [
+          "ca",
+          "aham",
+          "hṛdi"
+        ],
+        "words": [
+          {
+            "form": "ca",
+            "lemma": "ca",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "aham",
+            "lemma": [
+              "ah",
+              "aha"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "hṛdi",
+            "lemma": "hṛd",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "cās",
+          "ham"
+        ],
+        "words": [
+          {
+            "form": "cās",
+            "root": "ca",
+            "vibhakti": "saṃbodhana",
+            "vacana": "bahu",
+            "linga": "strīliṅgam"
+          },
+          {
+            "form": "ham",
+            "root": "ha",
+            "vibhakti": "dvitīyā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "cās",
+            "ham"
+          ],
+          "dharmamitra": [
+            "ca",
+            "aham",
+            "hṛdi"
+          ]
+        }
+      ]
+    },
+    {
+      "pada": "hṛdi",
+      "dharmamitra": null,
+      "sanskrit_parser": {
+        "padaccheda": [
+          "hṛdi"
+        ],
+        "words": [
+          {
+            "form": "hṛdi",
+            "root": "hṛdaya",
+            "vibhakti": "saptamī",
+            "vacana": "eka",
+            "linga": "napuṃsakaliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "hṛdi"
+          ],
+          "dharmamitra": null
+        }
+      ]
+    },
+    {
+      "pada": "sanniviṣṭo",
+      "dharmamitra": {
+        "padaccheda": [
+          "sanniviṣṭaḥ"
+        ],
+        "words": [
+          {
+            "form": "sanniviṣṭaḥ",
+            "lemma": "saṃniviś",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "sanni",
+          "viṣṭas"
+        ],
+        "words": [
+          {
+            "form": "sanni",
+            "root": "sanna",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "strīliṅgam"
+          },
+          {
+            "form": "viṣṭas",
+            "root": "viṣṭa#1",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam",
+            "tags": [
+              "karmaṇi",
+              "kta",
+              "kṛdantaḥ",
+              "prāthamikaḥ"
+            ]
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "sanni",
+            "viṣṭas"
+          ],
+          "dharmamitra": [
+            "sanniviṣṭaḥ"
+          ]
+        }
+      ]
+    },
+    {
+      "pada": "mattaḥ",
+      "dharmamitra": {
+        "padaccheda": [
+          "mattaḥ"
+        ],
+        "words": [
+          {
+            "form": "mattaḥ",
+            "lemma": [
+              "matta",
+              "mattā"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "mattas"
+        ],
+        "words": [
+          {
+            "form": "mattas",
+            "root": "asmad",
+            "vibhakti": "pañcamī",
+            "vacana": "eka",
+            "tags": [
+              "saṅkhyā"
+            ]
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "mattas"
+          ],
+          "dharmamitra": [
+            "mattaḥ"
+          ]
+        }
+      ]
+    },
+    {
+      "pada": "smṛtirjñānamapohanaṃ",
+      "dharmamitra": {
+        "padaccheda": [
+          "smṛtiḥ",
+          "jñānam",
+          "apohanam"
+        ],
+        "words": [
+          {
+            "form": "smṛtiḥ",
+            "lemma": [
+              "smṛ",
+              "smṛti"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "jñānam",
+            "lemma": [
+              "jñā",
+              "jñāna"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "apohanam",
+            "lemma": "apohana",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "smṛtis",
+          "jñānam",
+          "apohanam"
+        ],
+        "words": [
+          {
+            "form": "smṛtis",
+            "root": "smṛti",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "strīliṅgam"
+          },
+          {
+            "form": "jñānam",
+            "root": "jñāna",
+            "vibhakti": "dvitīyā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "apohanam",
+            "root": "apohana",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "napuṃsakaliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "smṛtis"
+          ],
+          "dharmamitra": [
+            "smṛtiḥ"
+          ]
+        }
+      ]
+    },
+    {
+      "pada": "ca",
+      "dharmamitra": {
+        "padaccheda": [
+          "ca"
+        ],
+        "words": [
+          {
+            "form": "ca",
+            "lemma": "ca",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "ca"
+        ],
+        "words": [
+          {
+            "form": "ca",
+            "root": "ca",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          }
+        ]
+      }
+    },
+    {
+      "pada": "vedaiśca",
+      "dharmamitra": {
+        "padaccheda": [
+          "vedaiḥ",
+          "ca"
+        ],
+        "words": [
+          {
+            "form": "vedaiḥ"
+          },
+          {
+            "form": "ca",
+            "lemma": "ca",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "vedais",
+          "ca"
+        ],
+        "words": [
+          {
+            "form": "vedais",
+            "root": "veda",
+            "vibhakti": "tṛtīyā",
+            "vacana": "bahu",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "ca",
+            "root": "ca",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "vedais"
+          ],
+          "dharmamitra": [
+            "vedaiḥ"
+          ]
+        }
+      ]
+    },
+    {
+      "pada": "sarvairahameva",
+      "dharmamitra": {
+        "padaccheda": [
+          "sarvaiḥ",
+          "aham",
+          "eva",
+          "vedyaḥ",
+          "vedānta"
+        ],
+        "words": [
+          {
+            "form": "sarvaiḥ",
+            "lemma": "sarv",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "aham",
+            "lemma": [
+              "ah",
+              "aha"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "eva",
+            "lemma": "eva",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "vedyaḥ",
+            "lemma": "vedyā",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "vedānta",
+            "lemma": "vedānta",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "sarvais",
+          "raham",
+          "eva"
+        ],
+        "words": [
+          {
+            "form": "sarvais",
+            "root": "sarva",
+            "vibhakti": "tṛtīyā",
+            "vacana": "bahu",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "raham",
+            "root": "raha",
+            "vibhakti": "dvitīyā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "eva",
+            "root": "eva",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "sarvais",
+            "raham"
+          ],
+          "dharmamitra": [
+            "sarvaiḥ",
+            "aham"
+          ]
+        },
+        {
+          "sanskrit_parser": null,
+          "dharmamitra": [
+            "vedyaḥ",
+            "vedānta"
+          ]
+        }
+      ]
+    },
+    {
+      "pada": "vedyo",
+      "dharmamitra": null,
+      "sanskrit_parser": {
+        "padaccheda": [
+          "vedyas"
+        ],
+        "words": [
+          {
+            "form": "vedyas",
+            "root": "vedī",
+            "vibhakti": "saṃbodhana",
+            "vacana": "bahu",
+            "linga": "strīliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "vedyas"
+          ],
+          "dharmamitra": null
+        }
+      ]
+    },
+    {
+      "pada": "vedāntakṛdvedavideva",
+      "dharmamitra": {
+        "padaccheda": [
+          "kṛt",
+          "veda",
+          "vid",
+          "eva"
+        ],
+        "words": [
+          {
+            "form": "kṛt",
+            "lemma": [
+              "kṛ",
+              "kṛt"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "veda",
+            "lemma": [
+              "veda",
+              "vedā"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "vid",
+            "lemma": [
+              "vid",
+              "vidh"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "eva",
+            "lemma": "eva",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "vedāntakṛt",
+          "veda",
+          "videva"
+        ],
+        "words": [
+          {
+            "form": "vedāntakṛt",
+            "root": "vedāntakṛt",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "veda",
+            "root": "veda",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          },
+          {
+            "form": "videva",
+            "root": "videva",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "vedāntakṛt"
+          ],
+          "dharmamitra": [
+            "kṛt"
+          ]
+        },
+        {
+          "sanskrit_parser": [
+            "videva"
+          ],
+          "dharmamitra": [
+            "vid",
+            "eva"
+          ]
+        }
+      ]
+    },
+    {
+      "pada": "cāham",
+      "dharmamitra": {
+        "padaccheda": [
+          "ca",
+          "aham"
+        ],
+        "words": [
+          {
+            "form": "ca",
+            "lemma": "ca",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "aham",
+            "lemma": [
+              "ah",
+              "aha"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
+      "sanskrit_parser": {
+        "padaccheda": [
+          "cās",
+          "ham"
+        ],
+        "words": [
+          {
+            "form": "cās",
+            "root": "ca",
+            "vibhakti": "saṃbodhana",
+            "vacana": "bahu",
+            "linga": "strīliṅgam"
+          },
+          {
+            "form": "ham",
+            "root": "ha",
+            "vibhakti": "dvitīyā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam"
+          }
+        ]
+      },
+      "differences": [
+        {
+          "sanskrit_parser": [
+            "cās",
+            "ham"
+          ],
+          "dharmamitra": [
+            "ca",
+            "aham"
+          ]
+        }
+      ]
+    }
+  ],
+  "chandas": {
+    "vrtta": null,
+    "candidates": [
+      "indravajrā",
+      "indravaṃśā"
+    ],
+    "pada_count": 4,
+    "classified_pada_count": 4,
+    "aksharas_per_pada": [
+      11,
+      11,
+      11,
+      11
+    ]
+  }
+}

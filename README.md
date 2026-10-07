@@ -149,7 +149,9 @@ options:
 
 Precedence: `-i FILE` → `input.txt` → the mode-specific file. `-i -` reads stdin.
 
-Input files may hold Devanagari or any romanization vidyut lipi detects; the text is canonicalized to Devanagari before analysis and both working scripts are recorded under `input` (the script the user typed is an input detail, not part of the analysis). Preprocessing then turns every separator — dandas (`।` `॥`), ASCII pipes, dots, commas, hyphens, slashes — *and* every digit into a space: pasted verse numbers such as `॥ 66॥` or Devanagari `॥६६॥` disappear before any engine sees the text. Runs of whitespace inside each line collapse to one, so `vāc-artha`, `vāc artha.` and `vāc  artha` analyze identically; line structure is preserved and only the padding around a line is trimmed.
+Your own verses belong in `input/`: the directory ships with nothing but `.gitkeep`, everything else in it is gitignored, so a file you type there can never be committed by accident — `-i input/my-shloka.txt` writes `results/my-shloka.raw.json` and `results/my-shloka.result.json`. The pinned test corpus lives separately under `tests/data/` (see Testing).
+
+Input files may hold Devanagari or any romanization vidyut lipi detects; the text is canonicalized to Devanagari before analysis and both working scripts are recorded under `input` (the script the user typed is an input detail, not part of the analysis). Preprocessing first closes a **hyphenated line break** — printed editions split one word across the pāda junction (`… विहाय जीर्णान्य्-` / `अन्यानि …`), and handing an engine half of that word leaves it a dangling virama it cannot decompose, so the two halves are joined before anything else happens. It then turns every separator — dandas (`।` `॥`), ASCII pipes, dots, commas, hyphens inside a line, slashes — *and* every digit into a space: pasted verse numbers such as `॥ 66॥` or Devanagari `॥६६॥` disappear before any engine sees the text. Runs of whitespace inside each line collapse to one, so `vāc-artha`, `vāc artha.` and `vāc  artha` analyze identically; line structure is preserved and only the padding around a line is trimmed.
 
 ## Output Schema
 
@@ -328,10 +330,10 @@ above 12; shorter or odd lines go to the classifier whole (DOCUMENTATION.md §8)
 
 ## Performance
 
-Measured on a 32-core box with `uv run python app.py shloka -f pretty`: one śloka end to end **~2 s**; nine verses (20 pada-lines, 82 tokens) **~7.6 s** with the two-worker pool, ~13.6 s single-process. Where that time goes:
+Measured on a 32-core box with `uv run python app.py shloka -f pretty`: one śloka end to end **~3 s** (interpreter and model load dominate); the sixteen-verse corpus in one run — 46 pada-lines — takes **~22 s** with the two-worker pool and ~53 s single-process. Where that time goes:
 
 - sanskrit_parser dominates — ≈0.24 s of sandhi graph search per pada-line and ≈70 ms of kosha ranking per word. The process pool divides exactly this work, which is why it only starts above `SAMSKRTA_MIN_PARALLEL_LINES`: a single śloka has two lines and gains nothing from it.
-- vidyut costs milliseconds (≈0.03 s for nine verses). Its kosha FST is built **once per process** by `load_kosha()` behind a lock, and shared by the dictionary lookups, the Dharmamitra lemma enrichment and every pool worker — building it three times per run was pure waste.
+- vidyut costs milliseconds, not seconds — its share of a corpus run is well under a second. Its kosha FST is built **once per process** by `load_kosha()` behind a lock, and shared by the dictionary lookups, the Dharmamitra lemma enrichment and every pool worker — building it three times per run was pure waste.
 - The Dharmamitra round-trip runs on a background thread underneath the local engines, so a slow API adds at most `DHARMAMITRA_TIMEOUT_SECS` to the wall clock instead of stacking on top of it; a fast one costs nothing.
 
 A pool worker holds its own Parser (~130 MB) and kosha index (~220 MB), which is why two is the default — on a memory-tight machine set `SAMSKRTA_WORKERS=1` rather than accept swapping.
@@ -487,7 +489,7 @@ runs produce byte-identical `<base>.result.json` for the same raw input.
 
 ```bash
 uv run pytest -q                        # offline, deterministic; never calls the Dharmamitra API
-SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_golden_outputs.py   # real engines again (~25 s, nine verses)
+SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_golden_outputs.py   # real engines again (~90 s, sixteen verses)
 ```
 
 `tests/conftest.py` pins `VIDYUT_DATA_DIR` to the bundled `data-0.4.0/` and puts
@@ -497,7 +499,7 @@ classification, chain scoring), the exit-code policy with every engine stubbed o
 (a local engine down → 1, Dharmamitra alone down → 0), output-base naming (default
 `results/<stem>`, created directories, stripped suffixes) and the stdout contract
 (`input` + `chandas` only), plus the whole of `postprocess_analysis.py` against
-Nine verses — Raghuvaṃśa 1.1–1.7, Abhijñānaśākuntala 1.1, Bhagavad Gītā 18.66 — live in `tests/data/`, each with an IAST twin that must canonicalize to exactly the same text, and each with a **pinned output pair** under `tests/data/results/`: `<stem>.raw.json` (what the engines produced) and `<stem>.result.json` (the reading document it postprocesses into).
+sixteen verses — Raghuvaṃśa 1.1–1.7, Abhijñānaśākuntala 1.1, 1.7 and 1.18, Bhagavad Gītā 2.22, 2.47, 11.15, 15.5, 15.15 and 18.66 — live in `tests/data/`, each with an IAST twin that must canonicalize to exactly the same text, and each with a **pinned output pair** under `tests/data/results/`: `<stem>.raw.json` (what the engines produced) and `<stem>.result.json` (the reading document it postprocesses into). They cover an eight-akshara pāda (anuṣṭubh), eleven-akshara jagatī pādas, a fifteen-akshara mālinī and a twenty-one-akshara sragdharā, avagraha elisions (`वंशेऽस्मिन्`, `मा ते सङ्गोऽस्त्वकर्मणि`) and printed hyphens at pāda junctions.
 
 `tests/test_golden_outputs.py` checks offline that `postprocess()` turns each pinned raw document
 into exactly its pinned reading document — including identical bytes after re-serialization — and

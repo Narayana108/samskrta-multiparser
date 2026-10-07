@@ -48,8 +48,10 @@ Error policy:
 import argparse
 import concurrent.futures
 import json
+import logging
 import multiprocessing
 import os
+import re
 import string
 import sys
 import threading
@@ -59,10 +61,19 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import postprocess_analysis  # second pass: '<base>.result.json' from the raw document
 
-# Suppress sanskrit_parser debug logging
-import logging
-logging.getLogger("sanskrit_parser").setLevel(logging.WARNING)
-logging.getLogger("sanskrit_util").setLevel(logging.WARNING)
+# ---------------------------------------------------------------------------
+# Library log levels
+# ---------------------------------------------------------------------------
+# sanskrit_parser configures logging for itself at import time: ``sanskrit_parser/__init__.py`` sets
+# its own logger to DEBUG and attaches a stderr StreamHandler, which buries the analysis under split
+# traces (3.5 MB of them for one śloka). Only that debug level is turned off — every warning and error
+# the library raises still reaches stderr — and it has to be re-applied after each import of it.
+
+
+def _quiet_library_logging() -> None:
+    """Set the sanskrit_parser/sanskrit_util loggers back to WARNING."""
+    logging.getLogger("sanskrit_parser").setLevel(logging.WARNING)
+    logging.getLogger("sanskrit_util").setLevel(logging.WARNING)
 
 
 # ---------------------------------------------------------------------------
@@ -114,9 +125,15 @@ _SEPARATORS = str.maketrans({char: " " for char in string.punctuation + "।॥"
 # transliteration is numbering noise and becomes whitespace too.
 _DIGITS = str.maketrans({char: " " for char in "0123456789०१२३४५६७८९"})
 
+# Printed editions mark a word that continues across a line break with a hyphen at the end of the
+# first line ('… विहाय जीर्णान्य्-' / 'अन्यानि संयाति …' in भगवद्गीता २.२२). Both halves belong to one word,
+# so the break is closed up before separators become spaces — otherwise the engines are handed a
+# virama-final fragment that no sandhi rule can split.
+_HYPHENATED_LINE_BREAK = re.compile(r"-\s*\n\s*")
+
 
 def preprocess_input(text: str) -> str:
-    """Clean raw input: replace separators with spaces, collapse whitespace.
+    """Clean raw input: close hyphenated line breaks, replace separators with spaces, collapse whitespace.
 
     Applies to any script — Devanagari after `to_devanagari`, or a romanization
     handed to it directly. Every separator in `_SEPARATORS` becomes a space and digits are
@@ -131,7 +148,11 @@ def preprocess_input(text: str) -> str:
     Returns:
         Cleaned text, ready for the engines
     """
-    cleaned = text.translate(_SEPARATORS).translate(_DIGITS)
+    # A hyphen at the end of a line is the printed-edition marker that the word continues on the next
+    # line (भगवद्गीता २.२२ prints "…जीर्णान्य्-" / "अन्यानि…"): join the two halves into one word instead
+    # of leaving a virama-final fragment for the engines to choke on.
+    joined = _HYPHENATED_LINE_BREAK.sub("", text)
+    cleaned = joined.translate(_SEPARATORS).translate(_DIGITS)
     return "\n".join(" ".join(line.split()) for line in cleaned.split("\n")).strip()
 
 
@@ -666,14 +687,24 @@ SP_PARALLEL_MIN_LINES = int(os.environ.get("SAMSKRTA_MIN_PARALLEL_LINES", "8"))
 _SP_PARSER = None
 
 
+def _make_sp_parser():
+    """Import sanskrit_parser and return a Devanagari-output Parser.
+
+    The package sets its own loggers to DEBUG with a stderr StreamHandler at import time, so the level
+    override has to run *after* it — without that call every run floods stderr with megabytes of split
+    traces (measured 3.5 MB for one śloka).
+    """
+    from indic_transliteration import sanscript
+    from sanskrit_parser.api import Parser
+
+    _quiet_library_logging()
+    return Parser(output_encoding=sanscript.DEVANAGARI)
+
+
 def _sp_worker_init() -> None:
     """Build this worker process's sanskrit_parser once, before its first line."""
     global _SP_PARSER
-    from sanskrit_parser.api import Parser
-    from indic_transliteration import sanscript
-
-    logging.getLogger("sanskrit_parser").setLevel(logging.WARNING)
-    _SP_PARSER = Parser(output_encoding=sanscript.DEVANAGARI)
+    _SP_PARSER = _make_sp_parser()
 
 
 def _sp_line_task(task: Tuple[int, str, int]) -> Dict[str, Any]:
@@ -728,13 +759,7 @@ def run_sanskrit_parser(input_text: str, mode: str) -> Dict[str, Any]:
                 pool.map(_sp_line_task, [(i, ln, limit) for i, ln in enumerate(lines)])
             )
     else:
-        from sanskrit_parser.api import Parser
-        from indic_transliteration import sanscript
-
-        # sanskrit_parser sets its own logger to DEBUG and attaches a stderr
-        # StreamHandler at import time; override after the import happens.
-        logging.getLogger("sanskrit_parser").setLevel(logging.WARNING)
-        parser = Parser(output_encoding=sanscript.DEVANAGARI)
+        parser = _make_sp_parser()
         kosha = load_kosha()
         line_results = [
             _analyze_line(parser, kosha, i, ln, limit) for i, ln in enumerate(lines)

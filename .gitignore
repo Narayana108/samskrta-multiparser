@@ -3,3 +3,7 @@ __pycache__/
 raw_output.json
 /results/
 output*.json
+
+# Your own verses live here; only the directory itself is tracked.
+/input/*
+!/input/.gitkeep

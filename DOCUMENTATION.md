@@ -166,7 +166,7 @@ byte-identical `<base>.result.json`. The rules that buy that stability:
   partial key silently collapsed every verb reading of a root into one.
 - **Parallel lines, ordered merge.** Long inputs analyze their pada-lines in a process pool;
   `pool.map` hands results back in input order and the engine concatenates them line by line, so
-  the pooled document equals the single-process one (verified on nine verses: identical reading
+  the pooled document equals the single-process one (verified on sixteen verses: identical reading
   documents, identical per-word decompositions).
 
 **What is *not* reproducible.** The raw pass re-hits the network and lets
@@ -240,6 +240,17 @@ anuṣṭubh/śloka entry**, so a classical śloka's pādas match lookalikes ins
 real shape in `aksharas_per_pada: [8, 8, 8, 8]`. Do not "fix" the null by promoting a
 candidate; vidyut's data simply does not know the śloka vṛtta.
 
+The catalogue does know the longer classical pādas the corpus now carries. Four eleven-akshara
+pādas classify as `indravajrā`/`indravaṃśā` (Bhagavad Gītā 2.22, 11.15, 15.5 and 15.15 — the jagatī
+family; 2.22 also matches `upendravajrā`/`vaṃśastha`), a fifteen-akshara pāda as `malinī` (Abhijñānaśākuntala
+1.18) and a twenty-one-akshara pāda as `sragdharā` (1.1 and 1.7). Eight-akshara pādas still return lookalikes
+(`candralekhā`, `vasumatī`) because anuṣṭubh is missing from the table, so `candidates` records the names vidyut
+actually matched and `vrtta` stays `null`.
+
+Where input lives is a convention, not code: `input/` holds the user's own śloka files — gitignored apart from
+`.gitkeep`, so nothing typed there is ever committed — while `tests/data/` holds the sixteen pinned corpus verses,
+their IAST twins and their goldens under `tests/data/results/`.
+
 ## 7. Development workflow
 
 ```bash
@@ -275,9 +286,20 @@ uv run pytest -q                        # offline suite
 - Exit codes: `app.py` exits 1 when a local engine (sanskrit_parser, vidyut) could not
   run at all — both documents, error objects included, are written first; an offline
   Dharmamitra API only produces a warning and exit 0.
-- On import, sanskrit_parser sets its own logger to DEBUG and attaches a stderr
-  handler; suppression must be applied *after* importing it, otherwise every run
-  emits ~180 MB of debug noise into whatever stream you redirected.
+- On import, sanskrit_parser sets its own logger to DEBUG and attaches a stderr handler.
+  `_quiet_library_logging()` raises those two loggers to WARNING *after* the import — before it the
+  handlers do not exist yet — otherwise every run writes ~3.5 MB of split traces per śloka into whatever
+  stream you redirected. That is log-level configuration only: no warning is filtered and nothing is
+  `logging.disable`d.
+- **Upstream warnings are shown, never silenced.** Every run prints the SQLAlchemy `SAWarning` from
+  `sanskrit_util/schema.py:545`, and the offline suite surfaces ~120 upstream warnings (that one plus
+  `MovedIn20Warning` from `schema.py:18` and `LegacyAPIWarning` from
+  `sanskrit_parser/util/sanskrit_data_wrapper.py:88`). All three are sanskrit_parser/sanskrit_util code
+  running against SQLAlchemy 2.0; pinning `sqlalchemy==1.4.54` leaves the same two classes in place, so no
+  dependency version removes them. The library also states on stderr that lexical scoring is disabled because
+  gensim/sentencepiece are absent — deliberately: installing both satisfies that notice but measurably
+  *worsens* the output (raghuvamsha-1.1's reading became `vāgarthās | viva`, raghuvamsha-1.5 lost the analysis
+  for its longest fused pada, and each run slowed by ~1.4 s). Fix what is ours to fix; report the rest.
 
 ## 8. Known issues and maintenance notes
 
@@ -346,6 +368,12 @@ Ordered by how likely they are to bite:
     (c) The bundled table carries yatis (`|`) that `VrttaPada::try_match` parses and then never uses,
     has no anuṣṭubh/triṣṭubh row and no jāti rows at all. Treat `weight_pattern` as vidyut's scan of
     the text, not as a scansion of the verse.
+
+13. **Printed editions hyphenate a word across the pāda junction.** Bhagavad Gītā 2.22 and 15.5 are pinned exactly
+    as printed (`… विहाय जीर्णान्य्-` / `अन्यानि …`) and `preprocess_input` closes such a break before any engine sees
+    it, so no engine is handed a dangling virama. Drop that join and those verses silently become five-pāda readings
+    with one unsplittable token each; the fixtures keep the printed line structure on purpose because preprocessing,
+    not the fixture, owns the repair.
 
 ## 9. Splitting quality: how it is measured
 

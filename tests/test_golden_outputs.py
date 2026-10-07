@@ -1,4 +1,4 @@
-"""Golden-document tests for the nine pinned verses in ``tests/data/results/``.
+"""Golden-document tests for the sixteen pinned verses in ``tests/data/results/``.
 
 Each verse has a pinned pair: ``<stem>.raw.json`` (everything the engines produced) and
 ``<stem>.result.json`` (the condensed reading document). Two halves of this module:
@@ -43,6 +43,16 @@ VERSES = [
     "raghuvamsha-1.5",
     "raghuvamsha-1.6",
     "raghuvamsha-1.7",
+    # Bhagavad Gītā: anuṣṭubh (2.47) and jagatī-family pādas of eleven aksharas (2.22, 11.15,
+    # 15.5, 15.15), with avagraha elisions and printed hyphens at the pāda junctions.
+    "bhagavad_gita-2.22",
+    "bhagavad_gita-2.47",
+    "bhagavad_gita-11.15",
+    "bhagavad_gita-15.5",
+    "bhagavad_gita-15.15",
+    # Abhijñānaśākuntala in sragdharā (21 aksharas per pāda) and mālinī (15).
+    "abhijnaana_shakuntala-1.7",
+    "abhijnaana_shakuntala-1.18",
 ]
 
 # What each verse must say. These are the reading document's own words, not a restatement
@@ -147,6 +157,129 @@ EXPECTED = {
         "dharmamitra_padaccheda": (
             "tyāgāya | saṃbhṛta | arthānām | satyāya | mita | bhāṣiṇām | yaśase | vijigīṣūṇām "
             "| prajāyai | gṛhamedhinām"
+        ),
+    },
+    # Bhagavad Gītā 2.22 and 15.5 are printed with a hyphen where the word runs over the pāda
+    # junction (… विहाय जीर्णान्य्- / अन्यानि …). `preprocess_input` closes that break, so the engines get
+    # one continuous sandhi word — which is what yields four 11-akshara pādas instead of leaving a
+    # virama-final fragment no rule can decompose. vidyut's 145-vṛtta table has no anuṣṭubh, so the
+    # candidates below are the jagatī-family metres its scanner accepts for these pādas.
+    "bhagavad_gita-2.22": {
+        "padas": 14,
+        "aksharas_per_pada": [11, 11, 11, 11],
+        "chandas_candidates": ["indravajrā", "indravaṃśā", "upendravajrā", "vaṃśastha"],
+        # Dharmamitra's token stream runs out before the first pada of the verse.
+        "dharmamitra_padaccheda": (
+            "yathā | vihāya | navāni | gṛhṇāti | naraḥ | aparāṇi | tathā | śarīrāṇi "
+            "| vihāya | jīrṇāni | anyāni | saṃyāti | navāni | dehī"
+        ),
+        # Both engines cut the joined word at the pāda boundary; only sanskrit_parser also cuts the
+        # finite verb sam + yāti.
+        "sanskrit_parser_padaccheda": (
+            "vāsāṃsi | jīrṇāni | yathā | vihāya | navāni | gṛhṇāti | naras | aparāṇi "
+            "| tathā | śarīrāṇi | vihāya | jīrṇāni | anyāni | sam | yāti | navāni | dehī"
+        ),
+    },
+    "bhagavad_gita-2.47": {
+        "padas": 8,
+        "aksharas_per_pada": [8, 8, 8, 8],
+        "chandas_candidates": ["candralekhā", "vasumatī"],
+        # सङ्गोऽस्त्वकर्मणि: both engines restore the elided 'a' as a separate word.
+        "dharmamitra_padaccheda": (
+            "mā | karmaṇi | eva | adhikāraḥ | te | mā | phaleṣu | kadācana | mā | karma "
+            "| phala | hetuḥ | bhūḥ | mā | te | saṅgaḥ | astu | akarmaṇi"
+        ),
+        # …and the first pāda is cut in the wrong place: karmaṇye | vā for karmaṇi + eva.
+        "sanskrit_parser_padaccheda": (
+            "karmaṇye | vā | adhikāras | te | mā | phaleṣu | kadā | cana | mā "
+            "| karmaphalahetus | bhūs | mā | te | saṅgas | astu | akarmaṇi"
+        ),
+    },
+    "bhagavad_gita-11.15": {
+        "padas": 11,
+        "aksharas_per_pada": [11, 11, 11, 11],
+        "chandas_candidates": ["indravajrā", "indravaṃśā", "upendravajrā"],
+        "dharmamitra_padaccheda": (
+            "paśyāmi | devān | tava | deva | dehe | sarvān | tathā | bhūta | viśeṣa "
+            "| saṅghān | brahmāṇam | īśam | kamalāsana | stham | ṛṣīn | ca | sarvān "
+            "| uragān | ca | divyān"
+        ),
+        # deva + dehe becomes devām | stava, and the karmadhāraya stays one word.
+        "sanskrit_parser_padaccheda": (
+            "paśyāmi | devām | stava | deva | dehe | sarvān | tathā | bhūta | viśeṣa "
+            "| saṅghān | brahmāṇam | īśam | kamalāsanastham | ṛṣīn | ca | sarvān | uragān "
+            "| ca | divyān"
+        ),
+    },
+    "bhagavad_gita-15.5": {
+        "padas": 8,
+        "aksharas_per_pada": [11, 11, 11, 11],
+        "chandas_candidates": ["indravajrā", "indravaṃśā"],
+        # The hyphenated junction leaves one long word; Dharmamitra walks it, sanskrit_parser
+        # fragments saṃjñaiḥ into san | jñais (counted as a miss by the accuracy floor).
+        "dharmamitra_padaccheda": (
+            "nirmāna | mohāḥ | jita | saṅga | doṣāḥ | adhyātma | nityāḥ | vinivṛtta "
+            "| kāmāḥ | dvandvaiḥ | vimuktāḥ | sukha | duḥkha | saṃjñaiḥ | gacchanti "
+            "| amūḍhāḥ | padam | avyayam | tat"
+        ),
+        "sanskrit_parser_padaccheda": (
+            "nirmānam | ohā | jitasaṅga | doṣā | adhyātma | nityā | vinivṛttakāmās "
+            "| dvandvais | vimuktās | sukhaduḥkha | san | jñais | gacchantī | amūḍhās "
+            "| padam | avyayam | tat"
+        ),
+    },
+    "bhagavad_gita-15.15": {
+        "padas": 12,
+        "aksharas_per_pada": [11, 11, 11, 11],
+        "chandas_candidates": ["indravajrā", "indravaṃśā"],
+        "dharmamitra_padaccheda": (
+            "sarvasya | ca | aham | hṛdi | sanniviṣṭaḥ | mattaḥ | smṛtiḥ | jñānam "
+            "| apohanam | ca | vedaiḥ | ca | sarvaiḥ | aham | eva | vedyaḥ | vedānta "
+            "| kṛt | veda | vid | eva | ca | aham"
+        ),
+        # ca + aham twice becomes cās | ham — the reading document keeps it visible.
+        "sanskrit_parser_padaccheda": (
+            "sarvasya | cās | ham | hṛdi | sanni | viṣṭas | mattas | smṛtis | jñānam "
+            "| apohanam | ca | vedais | ca | sarvais | raham | eva | vedyas | vedāntakṛt "
+            "| veda | videva | cās | ham"
+        ),
+    },
+    # Abhijñānaśākuntala 1.7 (sragdharā, 21 aksharas per pāda) and 1.18 (mālinī, 15): long
+    # kavya compounds on odd-length pādas that vidyut still classifies confidently.
+    "abhijnaana_shakuntala-1.7": {
+        "padas": 15,
+        "aksharas_per_pada": [21, 21, 21, 21],
+        "chandas_candidates": ["sragdharā"],
+        # Dharmamitra never reaches the opening compound; sanskrit_parser cuts grīvā + bhaṅgā.
+        "dharmamitra_padaccheda": (
+            "muhur | anupatati | syandane | baddha | dṛṣṭiḥ | paśca | ardhena | praviṣṭaḥ "
+            "| śara | patana | bhayāt | bhūyasā | pūrva | kāyam | darbhaiḥ | ardha "
+            "| avalīḍhaiḥ | śrama | vivṛta | mukha | bhraṃśibhiḥ | kīrṇa | vartmā | paśya "
+            "| udagra | pluta | tvāt | viyati | bahutaram | stokam | urvyām | prayāti"
+        ),
+        "sanskrit_parser_padaccheda": (
+            "grīvās | bhaṅgā | abhirāmam | muhur | anu | patati | syandane | baddha "
+            "| dṛṣṭis | paścārdhena | praviṣṭas | śara | patana | bhayāt | bhūyasā | pūrva "
+            "| kāyam | darbhais | ardhāvalīḍhais | śrama | vivṛtam | ukha | bhraṃśibhis "
+            "| kīrṇa | vartmā | paśya | udagraplutatvāt | viyati | bahutaram | stokam "
+            "| urvyām | prayāti"
+        ),
+    },
+    "abhijnaana_shakuntala-1.18": {
+        "padas": 15,
+        "aksharas_per_pada": [15, 15, 15, 15],
+        "chandas_candidates": ["malinī"],
+        # na + ākṛtīnām: Dharmamitra keeps the long vowel of the noun, sanskrit_parser moves it
+        # into the negation (nā | kṛtīnām).
+        "dharmamitra_padaccheda": (
+            "sarasijam | anuviddham | śaivalena | api | ramyam | malinam | api | himāṃśoḥ "
+            "| lakṣma | lakṣmīm | tanoti | iyam | adhika | manojñā | valkalena | api "
+            "| tanvī | kim | iva | hi | madhurāṇām | maṇḍanam | na | ākṛtīnām"
+        ),
+        "sanskrit_parser_padaccheda": (
+            "sarasijam | anuviddham | śaivale | anāpi | ramyam | malinam | api | himāṃśos "
+            "| lakṣma | lakṣmīm | tanoti | iyam | adhika | manojñā | valkale | anāpi | tanvī "
+            "| kim | iva | hi | madhurāṇām | maṇḍanam | nā | kṛtīnām"
         ),
     },
 }
@@ -313,6 +446,55 @@ def test_raghuvamsha_one_dot_four_splits_the_avagraha_token_without_restoring_th
     )
     pada = next(p for p in result["padas"] if p["pada"].startswith("vaṃśe"))
     assert pada["sanskrit_parser"]["padaccheda"] == ["vaṃśe", "asmin", "pūrvasūribhis"]
+
+
+def test_bhagavad_gita_two_twenty_two_closes_the_printed_pada_break():
+    """तथा शरीराणि विहाय जीर्णान्य्- / अन्यानि …: the edition's hyphen marks one word, not two fragments.
+
+    The fixture keeps the printed line break and `preprocess_input` closes it, so both engines see the
+    continuous sandhi form and cut it at the pāda boundary as ``jīrṇāni | anyāni``. Handing an engine a
+    virama-final ``जীর্ণान्य्`` instead would report five pādas for this verse and leave a token nothing
+    can decompose.
+    """
+    result = load_golden("bhagavad_gita-2.22", ".result.json")
+    assert result["chandas"]["pada_count"] == 4
+    assert result["chandas"]["aksharas_per_pada"] == [11, 11, 11, 11]
+    pada = next(p for p in result["padas"] if p["pada"] == "jīrṇānyanyāni")
+    assert pada["dharmamitra"]["padaccheda"] == ["jīrṇāni", "anyāni"]
+    assert pada["sanskrit_parser"]["padaccheda"] == ["jīrṇāni", "anyāni"]
+
+
+def test_bhagavad_gita_fifteen_five_keeps_the_junction_word_disagreement_visible():
+    """सुखदुःखसंज्ञैर्- / गच्छन्त्यमूढाः: Dharmamitra walks the joined word, sanskrit_parser breaks
+    saṃjñaiḥ into san | jñais. The wrong reading stays in the document instead of being smoothed over."""
+    result = load_golden("bhagavad_gita-15.5", ".result.json")
+    pada = next(p for p in result["padas"] if p["pada"] == "sukhaduḥkhasaṃjñairgacchantyamūḍhāḥ")
+    assert pada["dharmamitra"]["padaccheda"] == [
+        "sukha", "duḥkha", "saṃjñaiḥ", "gacchanti", "amūḍhāḥ"
+    ]
+    assert pada["sanskrit_parser"]["padaccheda"][:3] == ["sukhaduḥkha", "san", "jñais"]
+
+
+def test_bhagavad_gita_two_forty_seven_restores_the_avagraha_without_expanding_it():
+    """मा ते सङ्गोऽस्त्वकर्मणि: both engines give the elided 'a' of astu its own word, while the avagraha
+    itself stays unexpanded — which is why the pāda still counts eight aksharas."""
+    result = load_golden("bhagavad_gita-2.47", ".result.json")
+    assert "saṅgaḥ | astu | akarmaṇi" in result["padaccheda"]["dharmamitra"]
+    assert "saṅgas | astu | akarmaṇi" in result["padaccheda"]["sanskrit_parser"]
+    assert result["chandas"]["aksharas_per_pada"] == [8, 8, 8, 8]
+
+
+def test_shakuntala_malini_and_sragdhara_padas_are_classified_whole():
+    """Mālinī (15 aksharas) and sragdharā (21): vidyut names exactly one metre for each verse, so an odd
+    pāda length is a property of the metre, not a splitting failure."""
+    for stem, shape, vrtta in [
+        ("abhijnaana_shakuntala-1.7", [21, 21, 21, 21], "sragdharā"),
+        ("abhijnaana_shakuntala-1.18", [15, 15, 15, 15], "malinī"),
+    ]:
+        chandas = load_golden(stem, ".result.json")["chandas"]
+        assert chandas["pada_count"] == 4
+        assert chandas["aksharas_per_pada"] == shape
+        assert chandas["candidates"] == [vrtta]
 
 
 @pytest.mark.parametrize("stem", VERSES)
