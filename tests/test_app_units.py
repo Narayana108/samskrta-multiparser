@@ -9,6 +9,7 @@ pinned by ``tests/conftest.py``, and every assertion compares literal values
 import io
 import json
 import sys
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -698,6 +699,82 @@ def test_run_exits_0_when_only_dharmamitra_is_down(cli, capsys):
         "error": "Dharmamitra engine failed: connection refused"
     }
 
+
+# ---------------------------------------------------------------------------
+# Concurrency: the Dharmamitra wait overlaps the local engines, and its two
+# attempts share one bounded budget instead of a timeout each plus a sleep
+# ---------------------------------------------------------------------------
+
+def test_dharmamitra_wait_overlaps_the_local_engines(cli):
+    spans = {}
+
+    def timed(name, seconds, result):
+        def run(*_args):
+            start = time.monotonic()
+            time.sleep(seconds)
+            spans[name] = (start, time.monotonic())
+            return dict(result)
+        return run
+
+    code, _doc = cli(
+        run_sanskrit_parser=timed("sp", 0.25, {"word_decompositions": {}}),
+        run_dharmamitra=timed("dm", 0.15, {"tokens": []}),
+        run_vidyut=timed(
+            "vidyut", 0.0, {"kosha": [], "prakriya": {}, "meter": [], "chandas": {}}
+        ),
+    )
+    assert code == 0
+    # The request has to be in flight while sanskrit_parser works: a serial pipeline would
+    # start the API call only after the local engines finished.
+    assert spans["dm"][0] < spans["sp"][1], "the network wait must overlap the local work"
+    assert spans["dm"][1] > spans["sp"][0]
+
+
+def test_dharmamitra_retries_share_one_deadline(monkeypatch):
+    class Timeout(Exception):
+        pass
+
+    asked = []
+
+    def post(url, headers=None, json=None, timeout=None):  # noqa: A002 - API shape
+        asked.append(timeout)
+        time.sleep(0.2)
+        raise Timeout()
+
+    fake_requests = SimpleNamespace(
+        post=post,
+        exceptions=SimpleNamespace(Timeout=Timeout, RequestException=Timeout),
+    )
+    monkeypatch.setattr(app, "DHARMAMITRA_DEADLINE_SECS", 0.5)
+    monkeypatch.setitem(sys.modules, "requests", fake_requests)
+
+    started = time.monotonic()
+    result = app.run_dharmamitra("agnim īḷe", ["agnim īḷe"])
+    elapsed = time.monotonic() - started
+
+    # The first attempt gets the whole budget, the second only what is left of it, and no
+    # blind sleep is inserted between them.
+    assert asked[0] == pytest.approx(0.5, abs=0.05)
+    assert 0 < asked[1] < asked[0]
+    assert elapsed < 1.0
+    assert result == {"error": "Dharmamitra API request timed out after 0.5s"}
+
+
+def test_kosha_is_built_once_per_process(monkeypatch):
+    builds = []
+
+    class FakeKosha:
+        def __init__(self, path):
+            builds.append(path)
+
+    monkeypatch.setattr(app, "_KOSHA_CACHE", None)
+    monkeypatch.setattr(app, "_KOSHA_UNAVAILABLE", False)
+    monkeypatch.setitem(sys.modules, "vidyut.kosha", SimpleNamespace(Kosha=FakeKosha))
+
+    first = app.load_kosha()
+    second = app.load_kosha()
+    assert len(builds) == 1, "the ~200 MB kosha index must not be rebuilt per engine"
+    assert first is second
 
 # ---------------------------------------------------------------------------
 # Output pair naming and the stdout contract (all engines stubbed)

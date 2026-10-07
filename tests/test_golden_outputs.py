@@ -11,10 +11,10 @@ Each verse has a pinned pair: ``<stem>.raw.json`` (everything the engines produc
   subtrees must match byte-for-byte, and so must the reading document's Dharmamitra column,
   its metre summary and its pada sequence. ``engine_outputs.sanskrit_parser`` — and with it
   the reading document's sanskrit_parser column — is deliberately *not* compared: candidate
-  order for tied splits and the vakya watchdog are process-dependent (see DOCUMENTATION §3),
-  which a BG 18.66 regeneration showed (``mokṣe|iṣyā|āmi`` vs ``mokṣe|iṣi|āmi``). The live
-  half also checks that an IAST fixture yields the same dharmamitra/vidyut subtrees as its
-  Devanagari twin. It needs the Dharmamitra API, so it is excluded by default.
+  order for tied splits is process-dependent (see DOCUMENTATION §3), which a BG 18.66
+  regeneration showed (``mokṣe|iṣyā|āmi`` vs ``mokṣe|iṣi|āmi``). The live half also checks that
+  an IAST fixture yields the same dharmamitra/vidyut subtrees as its Devanagari twin.
+  It needs the Dharmamitra API, so it is excluded by default.
 
 Regenerate the goldens with:
 
@@ -391,6 +391,19 @@ def test_live_run_reproduces_the_golden_pair(stem, tmp_path, capsys):
 
     sp = generated_raw["engine_outputs"]["sanskrit_parser"]
     assert sp["sandhi_splits"], "the splitter must still produce line-level candidates"
+
+    # Candidates are produced one pada-line at a time, and vakya (sentence) parsing is gone:
+    # every entry names exactly one input line and carries no sentence-graph payload.
+    assert {k for e in sp["sandhi_splits"] for k in e} == {
+        "line_index",
+        "split_index",
+        "split",
+        "items",
+    }
+    assert len({e["line_index"] for e in sp["sandhi_splits"]}) > 1, (
+        "a multi-line verse must be split line by line, not as one string"
+    )
+
     # One decomposition per distinct pada of the golden reading document; the dict is keyed by
     # surface form, so repeated words (kva … kva) share one entry. Keys come from sanskrit_parser's
     # own transliteration, hence the anusvara normalization on both sides.

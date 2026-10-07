@@ -41,7 +41,7 @@ Every engine call is wrapped so a failure becomes data, never a crash:
 | Failure | Shape in raw output |
 |---|---|
 | Engine import missing | `{"error": "sanskrit_parser unavailable: ..."}` |
-| Dharmamitra unreachable / timeout / bad body | `{"error": "Dharmamitra API request timed out"}`, `{"error": "Dharmamitra API unavailable: ..."}`, `{"error": "Dharmamitra API returned non-JSON body: ..."}` |
+| Dharmamitra unreachable / timeout / bad body | `{"error": "Dharmamitra API request timed out after <N>s"}`, `{"error": "Dharmamitra API unavailable: ..."}`, `{"error": "Dharmamitra API returned non-JSON body: ..."}` |
 | Unexpected response shape | `{"error": "Dharmamitra API response shape unexpected: ..."}` |
 | Vidyut data missing | `{"error": "Vidyut data directory not found"}` |
 | Vidyut library init failure | `{"error": "Vidyut initialization failed: <exc>"}` |
@@ -59,10 +59,20 @@ Three consequences worth knowing:
   engine dicts for an `error` key and emits `"engine_errors": {engine: message}` only
   when at least one engine failed. Without it, a crashed engine is indistinguishable
   from a text that genuinely produced no analysis.
-- **The vakya watchdog.** sanskrit_parser's vakya (dependency) parsing can spin on
-  long pādas, so each parse runs under `signal.alarm(VAKYA_TIMEOUT_SECS)` (5 s). A
-  timeout records `"vakya_error"` on that split instead of a graph. The alarm is
-  best-effort: it cannot interrupt native parser code (see §8).
+- **One bounded remote deadline.** Both Dharmamitra attempts share a single monotonic budget
+  (`DHARMAMITRA_TIMEOUT_SECS`, default 20 s): the second attempt gets only the time the first one
+  left, and there is no sleep between them. The request also runs on a background thread, so its
+  network wait overlaps the local engines instead of stacking onto them (see below).
+
+**Engine scheduling.** `main()` submits the Dharmamitra request to a one-worker thread pool first,
+then runs sanskrit_parser and vidyut on the main thread, then joins the remote result. Inside
+`run_sanskrit_parser`, an input of `SAMSKRTA_MIN_PARALLEL_LINES` pada-lines or more runs its
+per-line analysis in a `concurrent.futures.ProcessPoolExecutor` (default 2 workers;
+`SAMSKRTA_WORKERS`), created with the **spawn** start method because forking here would copy a
+process that already has the Dharmamitra thread alive. Threads are no help for this work: vidyut's
+pyo3 bindings never release the GIL and sanskrit_parser holds it throughout, so only processes run
+it faster. The vidyut kosha is built once per process by `load_kosha()` behind a lock — three call
+sites share it (dictionary lookups, Dharmamitra lemma enrichment, every pool worker).
 
 Library chatter that would otherwise pollute the pipeline is reported through
 `_warn_once(site, exc)`: one line per distinct site to **stderr**, so the `input` +
@@ -154,12 +164,15 @@ byte-identical `<base>.result.json`. The rules that buy that stability:
   the whole formatted entry (`json.dumps(..., sort_keys=True)`) because verbs carry
   `dhatu`/`lakara`/`purusha` where nouns carry `pratipadika`/`linga`/`vibhakti`; a
   partial key silently collapsed every verb reading of a root into one.
+- **Parallel lines, ordered merge.** Long inputs analyze their pada-lines in a process pool;
+  `pool.map` hands results back in input order and the engine concatenates them line by line, so
+  the pooled document equals the single-process one (verified on nine verses: identical reading
+  documents, identical per-word decompositions).
 
 **What is *not* reproducible.** The raw pass re-hits the network and lets
-sanskrit_parser enumerate candidate splits and vakya parses in an order it does not
-specify, so two `app.py shloka` runs differ in `engine_outputs.sanskrit_parser`
-(observed: 5 different split candidates between runs, and `vakya_parses` appearing or
-not depending on which parse crossed the 5 s watchdog). The dharmamitra and vidyut
+sanskrit_parser enumerate candidate splits in an order it does not specify, so two `app.py shloka`
+runs differ in `engine_outputs.sanskrit_parser` (observed: 5 different split candidates between
+runs). The dharmamitra and vidyut
 subtrees were byte-identical across those runs. Because postprocess re-ranks rather than
 traverses, that noise usually cancels — but when sanskrit_parser proposes a genuinely
 different candidate set, `<base>.result.json` legitimately changes with it. Pin the raw
@@ -198,8 +211,8 @@ documented miss (e.g. `jagantaḥ`), not an error.
 - **Untagable words come back as empty underscore fields** (`____iva_`);
   `_parse_tokens` drops only those empty segments, so an untagable word produces no
   token rather than a bogus one.
-- Requests retry once (two attempts, 1 s apart) before reporting `unavailable`; the
-  timeout path returns immediately with its own error string.
+- Requests make two attempts that share one `DHARMAMITRA_TIMEOUT_SECS` budget (default 20 s) before
+  reporting `unavailable`; the second attempt receives only the remaining time.
 - The bundled `Authorization` header is the public demo credential, overridable via
   `DHARMAMITRA_AUTH`. It is committed on purpose so a fresh clone runs out of the box;
   see §8 before pointing this at anything sensitive.
@@ -231,7 +244,7 @@ candidate; vidyut's data simply does not know the śloka vṛtta.
 
 ```bash
 uv sync                                   # runtime deps + pytest (dev group)
-uv run python app.py shloka             # ~20 s; hits the DM API → results/shloka_input.{raw,result}.json
+uv run python app.py shloka             # ~2-3 s for one śloka; hits the DM API → results/shloka_input.{raw,result}.json
 uv run python postprocess_analysis.py -o results/shloka_input   # offline, instant
 uv run pytest -q                        # offline suite
 ```
@@ -273,9 +286,10 @@ Ordered by how likely they are to bite:
 1. **Committed demo credential.** `API_HEADERS["Authorization"]` falls back to the
    public Dharmamitra demo account so the tool runs unconfigured. Rotate/override with
    `DHARMAMITRA_AUTH`; do not reuse this repo's header for a private account.
-2. **SIGALRM is POSIX-only and native-blind.** The vakya watchdog cannot interrupt C
-   extensions (vidyut, sanskrit_parser internals) that never return to the Python
-   interpreter, and it does nothing on Windows. Treat 5 s as a guardrail, not a bound.
+2. **The pool trades memory and startup for wall time.** Each worker builds its own `Parser`
+   (~130 MB) and kosha FST (~220 MB), so the default of two workers adds ~700 MB resident on long
+   inputs — set `SAMSKRTA_WORKERS=1` instead of swapping. Spawn also costs about a second per
+   worker, which is why `_sp_worker_count` refuses to pool short inputs at all.
 3. **Unpinned upstreams vs hard-coded tag spellings.** `postprocess_analysis.py` matches IAST tag
    strings (`prathamāvibhaktiḥ`, `bahuvacanam`, `puṃlliṅgam`) and the residual tag
    `samāsapūrvapadanāmapadam`. `pyproject.toml` pins only `vidyut>=0.4.0`;
@@ -285,8 +299,8 @@ Ordered by how likely they are to bite:
 4. **`_norm_anusvara` is duplicated** between `app.py` and `postprocess_analysis.py`. Deliberate:
    the postprocessor stays stdlib-only so it can be run against any raw JSON without
    importing the heavy engine stack. Change one, remember the other.
-5. **Retry policy is minimal.** One retry for Dharmamitra connection errors; no backoff,
-   no caching, no resume. Re-running a shloka costs ~20 s and re-hits the API.
+5. **Retry policy is minimal.** Two Dharmamitra attempts share one `DHARMAMITRA_TIMEOUT_SECS`
+   budget; no backoff, no caching, no resume. Re-running a śloka costs ~2-3 s and re-hits the API.
 6. **Meter naming depends on splitting quality.** `_split_into_padas` is an akshara-midpoint
    heuristic: it handles anuṣṭubh-style 8+8 lines, but a line whose word boundaries do not
    straddle the midpoint (or a jagatī/triṣṭubh line) can still be cut in the wrong place,

@@ -46,11 +46,13 @@ Error policy:
 """
 
 import argparse
+import concurrent.futures
 import json
+import multiprocessing
 import os
-import signal
 import string
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -77,8 +79,11 @@ API_HEADERS = {
     "Content-Type": "application/json",
 }
 API_MODE = "unsandhied-lemma-morphosyntax"
-# Vakya (sentence) parsing is combinatorial; cap it per sandhi candidate.
-VAKYA_TIMEOUT_SECS = 5
+
+# Total wall-clock budget for the whole Dharmamitra exchange, both attempts included. The
+# request runs while the local engines work, so an unreachable API must not stretch the run
+# past this many seconds. Override with DHARMAMITRA_TIMEOUT_SECS=<seconds>.
+DHARMAMITRA_DEADLINE_SECS = float(os.environ.get("DHARMAMITRA_TIMEOUT_SECS", "20"))
 
 
 # Vidyut data directory — contains kosha, prakriya, chandas, sandhi, cheda subdirectories
@@ -358,81 +363,6 @@ def _morphological_tags_to_json(
     return result
 
 
-def _parse_node_to_json(node) -> Dict[str, Any]:
-    """Convert a ParseNode to a JSON-serializable dict.
-
-    Args:
-        node: ParseNode from sanskrit_parser vakya parsing (Devanagari output
-            encoding; main's wrapper converts the strings to IAST)
-
-    Returns:
-        Dict with pada, root, and tags
-    """
-    return {
-        "pada": node.pada,
-        "root": _slp1_to_iast(str(node.parse_tag.root)),
-        "tags": [str(t) for t in node.parse_tag.tags],
-    }
-
-
-def _parse_edge_to_json(edge) -> Dict[str, Any]:
-    """Convert a ParseEdge to a JSON-serializable dict with predecessor info.
-
-    Args:
-        edge: ParseEdge from sanskrit_parser vakya parsing
-
-    Returns:
-        Dict with pada, root, tags, predecessor, and sambandha
-    """
-    pred = edge.predecessor
-    node = edge.node
-    return {
-        "pada": node.pada,
-        "root": _slp1_to_iast(str(node.parse_tag.root)),
-        "tags": [str(t) for t in node.parse_tag.tags],
-        "predecessor": {
-            "pada": pred.pada,
-            "root": _slp1_to_iast(str(pred.parse_tag.root)),
-            "tags": [str(t) for t in pred.parse_tag.tags],
-        },
-        "sambandha": edge.label,
-    }
-
-
-def _build_vakya_graph(graph: List[Any]) -> List[Dict[str, Any]]:
-    """Build a vakya parse graph from an interleaved ParseNode/ParseEdge list.
-
-    Nodes are matched to their incoming edge by object identity rather than by
-    pada text: a line may repeat a word (anaphoric `tad … tad`), and keying by
-    text would merge those occurrences and attach the wrong predecessor.
-
-    Args:
-        graph: Interleaved list of ParseNode and ParseEdge objects
-
-    Returns:
-        Ordered list of node dicts with predecessor and sambandha attached
-    """
-    ordered_nodes: List[Dict[str, Any]] = []
-    node_by_id: Dict[int, Dict[str, Any]] = {}
-
-    for item in graph:
-        if type(item).__name__ == "ParseNode":
-            entry = _parse_node_to_json(item)
-            ordered_nodes.append(entry)
-            node_by_id[id(item)] = entry
-
-    for item in graph:
-        if type(item).__name__ != "ParseEdge":
-            continue
-        edge_json = _parse_edge_to_json(item)
-        target = node_by_id.get(id(item.node))
-        if target is not None:
-            target["predecessor"] = edge_json["predecessor"]
-            target["sambandha"] = edge_json["sambandha"]
-
-    return ordered_nodes
-
-
 # ---------------------------------------------------------------------------
 # Candidate validation against vidyut's kosha
 # ---------------------------------------------------------------------------
@@ -443,10 +373,14 @@ def _build_vakya_graph(graph: List[Any]) -> List[Dict[str, Any]]:
 
 _KOSHA_CACHE: Optional[Any] = None
 _KOSHA_UNAVAILABLE = False
+_KOSHA_LOCK = threading.Lock()
 
 
 def load_kosha() -> Optional[Any]:
     """Load vidyut's kosha once per process, caching the result.
+
+    The lock matters because the Dharmamitra request now runs on its own thread: two
+    callers must never build the same ~200 MB index twice.
 
     Returns:
         Kosha instance, or None when vidyut or its data directory is unavailable.
@@ -454,12 +388,15 @@ def load_kosha() -> Optional[Any]:
     global _KOSHA_CACHE, _KOSHA_UNAVAILABLE
     if _KOSHA_CACHE is not None or _KOSHA_UNAVAILABLE:
         return _KOSHA_CACHE
-    try:
-        from vidyut.kosha import Kosha
+    with _KOSHA_LOCK:
+        if _KOSHA_CACHE is not None or _KOSHA_UNAVAILABLE:
+            return _KOSHA_CACHE
+        try:
+            from vidyut.kosha import Kosha
 
-        _KOSHA_CACHE = Kosha(Path(DATA_DIR) / "kosha")
-    except Exception:
-        _KOSHA_UNAVAILABLE = True
+            _KOSHA_CACHE = Kosha(Path(DATA_DIR) / "kosha")
+        except Exception:
+            _KOSHA_UNAVAILABLE = True
     return _KOSHA_CACHE
 
 
@@ -643,39 +580,27 @@ def _best_word_split_with_items(parser, dev_word: str, kosha: Optional[Any] = No
     return list(best["parts"]), best["items"]
 
 
-def _vakya_timeout_handler(signum, frame):
-    raise TimeoutError("Vakya parsing timed out")
+def _analyze_line(parser, kosha, line_index: int, line: str, limit: int) -> Dict[str, Any]:
+    """Analyze one pada-line: whole-line sandhi candidates plus per-word decompositions.
 
+    Everything here is local to the line, which is what makes the work parallelizable —
+    see `_sp_line_task`.
 
-def run_sanskrit_parser(input_text: str, mode: str) -> Dict[str, Any]:
-    """Run sanskrit_parser engine on the input text.
-    
-    Returns structured results with sandhi splits, morphological tags,
-    and (for shloka mode) vakya parses.
-    
     Args:
-        input_text: Cleaned Devanagari text
-        mode: 'pada' for single-word or 'shloka' for full-line analysis
-    
+        parser: sanskrit_parser Parser with Devanagari output encoding
+        kosha: vidyut kosha for dictionary-verified ranking, or None
+        line_index: Position of this line in the input, recorded on every candidate
+        line: One cleaned pada-line of Devanagari text
+        limit: Candidate-pool size handed to the splitter
+
     Returns:
-        Dict with mode, input, and sandhi_splits list
+        Dict with line_index, sandhi_splits, word_decompositions and word_morphology
     """
-    from sanskrit_parser.api import Parser
-    from indic_transliteration import sanscript
-
-    # sanskrit_parser sets its own logger to DEBUG and attaches a stderr
-    # StreamHandler at import time; override after the import happens.
-    logging.getLogger("sanskrit_parser").setLevel(logging.WARNING)
-    parser = Parser(output_encoding=sanscript.DEVANAGARI)
-
-    limit = 10 if mode == "pada" else 5
-    # sanskrit_parser returns None — not an empty list — when it cannot split the text at all,
-    # which happens whenever a token is not a word it knows (a typo, or a mangled avagraha).
-    # Record that as no candidates instead of crashing the engine.
-    splits = parser.split(input_text, limit=limit) or []
-
-    sandhi_splits = []
-    for split_idx, split in enumerate(splits):
+    # sanskrit_parser returns None — not an empty list — when it cannot split the text at
+    # all, which happens whenever a token is not a word it knows (a typo, or a mangled
+    # avagraha). Record that as no candidates instead of crashing the engine.
+    sandhi_splits: List[Dict[str, Any]] = []
+    for split_idx, split in enumerate(parser.split(line, limit=limit) or []):
         items = split.split
         items_json = []
         for item in items:
@@ -686,51 +611,23 @@ def run_sanskrit_parser(input_text: str, mode: str) -> Dict[str, Any]:
                     "morphological_tags": _morphological_tags_to_json(tags),
                 }
             )
+        sandhi_splits.append(
+            {
+                "line_index": line_index,
+                "split_index": split_idx,
+                "split": [devanagari_to_iast(item.devanagari()) for item in items],
+                "items": items_json,
+            }
+        )
 
-        # Vakya (sentence) parsing is best-effort: it is combinatorial and can
-        # hang on long padas, so bound it with SIGALRM and record the failure
-        # instead of aborting the engine.
-        vakya_parses: List[Dict[str, Any]] = []
-        vakya_error: Optional[str] = None
-        if mode == "shloka":
-            old_handler = signal.signal(signal.SIGALRM, _vakya_timeout_handler)
-            signal.alarm(VAKYA_TIMEOUT_SECS)
-            try:
-                for parse_idx, parse in enumerate(split.parse(limit=3)):
-                    vakya_parses.append(
-                        {
-                            "parse_index": parse_idx,
-                            "cost": parse.cost,
-                            "graph": _build_vakya_graph(parse.graph),
-                        }
-                    )
-            except TimeoutError:
-                vakya_error = f"vakya parsing timed out after {VAKYA_TIMEOUT_SECS}s"
-            except Exception as exc:
-                vakya_error = f"vakya parsing failed: {exc}"
-            finally:
-                signal.alarm(0)
-                signal.signal(signal.SIGALRM, old_handler)
-
-        split_entry: Dict[str, Any] = {
-            "split_index": split_idx,
-            "split": [devanagari_to_iast(item.devanagari()) for item in items],
-            "items": items_json,
-            "vakya_parses": vakya_parses,
-        }
-        if vakya_error:
-            split_entry["vakya_error"] = vakya_error
-        sandhi_splits.append(split_entry)
-
-    # Per-word decompositions: split each input word on its own so results do
-    # not depend on whole-line candidate ordering (which varies per process). The chosen parts
-    # carry their morphological tags as well — `sandhi_splits` only covers whatever candidates the
-    # library sampled for the whole line, so a word this pass picked can be absent there and would
-    # lose its root/case/number in the reading document.
+    # Per-word decompositions: split each input word on its own so results do not depend on
+    # candidate ordering within a line (which varies per process). The chosen parts carry their
+    # morphological tags as well — `sandhi_splits` only covers whatever candidates the library
+    # sampled for one line, so a word this pass picked can be absent there and would lose its
+    # root/case/number in the reading document.
     word_decompositions: Dict[str, List[str]] = {}
     word_morphology: List[Dict[str, Any]] = []
-    kosha = load_kosha()
-    for wdev in input_text.split():
+    for wdev in line.split():
         if not any('\u0900' <= c <= '\u097F' for c in wdev):
             continue
         parts, items = _best_word_split_with_items(parser, wdev, kosha)
@@ -746,6 +643,112 @@ def run_sanskrit_parser(input_text: str, mode: str) -> Dict[str, Any]:
                     "morphological_tags": _morphological_tags_to_json(tags),
                 }
             )
+
+    return {
+        "line_index": line_index,
+        "sandhi_splits": sandhi_splits,
+        "word_decompositions": word_decompositions,
+        "word_morphology": word_morphology,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Long inputs: the per-line work in a process pool
+# ---------------------------------------------------------------------------
+# Both halves of the engine scale with the text — measured ~0.24 s of graph search per pada-line
+# and ~70 ms of kosha ranking per word, against ~3 s for one whole śloka — so the pool only kicks
+# in for longer inputs. It is a *process* pool because vidyut's Rust bindings never release the
+# GIL and sanskrit_parser is pure Python: threads cannot run any of this faster. Each worker
+# holds its own Parser (~130 MB) and kosha index (~220 MB), so workers stay few; SAMSKRTA_WORKERS
+# overrides the count (1 forces the single-process path).
+
+SP_PARALLEL_MIN_LINES = int(os.environ.get("SAMSKRTA_MIN_PARALLEL_LINES", "8"))
+_SP_PARSER = None
+
+
+def _sp_worker_init() -> None:
+    """Build this worker process's sanskrit_parser once, before its first line."""
+    global _SP_PARSER
+    from sanskrit_parser.api import Parser
+    from indic_transliteration import sanscript
+
+    logging.getLogger("sanskrit_parser").setLevel(logging.WARNING)
+    _SP_PARSER = Parser(output_encoding=sanscript.DEVANAGARI)
+
+
+def _sp_line_task(task: Tuple[int, str, int]) -> Dict[str, Any]:
+    """Pool entry point: analyze one line in a worker; the result is plain JSON data."""
+    line_index, line, limit = task
+    if _SP_PARSER is None:
+        _sp_worker_init()
+    return _analyze_line(_SP_PARSER, load_kosha(), line_index, line, limit)
+
+
+def _sp_worker_count(line_count: int) -> int:
+    """How many processes the per-line work is worth for an input this size."""
+    if line_count < SP_PARALLEL_MIN_LINES:
+        return 1
+    # Two by default: a worker costs ~350 MB of resident memory, and that is already enough to
+    # halve the per-line time on long inputs. SAMSKRTA_WORKERS raises it on bigger machines.
+    requested = int(os.environ.get("SAMSKRTA_WORKERS", "0")) or min(2, os.cpu_count() or 1)
+    return max(1, min(requested, line_count))
+
+
+def run_sanskrit_parser(input_text: str, mode: str) -> Dict[str, Any]:
+    """Run the sanskrit_parser engine on Devanagari text.
+
+    Line-level sandhi candidates are produced one pada-line at a time (the graph search is
+    superlinear in the number of words it spans), and every input word is additionally split
+    on its own with kosha-verified ranking. Long inputs run that per-line work in a small
+    process pool; short ones stay single-process.
+
+    Args:
+        input_text: Cleaned Devanagari text
+        mode: 'pada' for single-word or 'shloka' for full-line analysis
+
+    Returns:
+        Dict with mode, input, sandhi_splits, word_decompositions and word_morphology
+    """
+    limit = 10 if mode == "pada" else 5
+    # Split one pada-line at a time: the sandhi graph search is superlinear in the number of
+    # words it spans, so handing sanskrit_parser a whole verse (or file) as one string explodes
+    # the candidate pool. Per line keeps the work bounded, and independent lines are exactly what
+    # the process pool can run side by side.
+    lines = [ln for ln in input_text.split("\n") if ln.strip()] or [input_text]
+
+    workers = _sp_worker_count(len(lines))
+    if workers > 1:
+        # 'spawn' rather than the default fork: this engine runs while the Dharmamitra request is
+        # in flight on another thread, and forking under a live thread can inherit its locks.
+        context = multiprocessing.get_context("spawn")
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=workers, initializer=_sp_worker_init, mp_context=context
+        ) as pool:
+            line_results = list(
+                pool.map(_sp_line_task, [(i, ln, limit) for i, ln in enumerate(lines)])
+            )
+    else:
+        from sanskrit_parser.api import Parser
+        from indic_transliteration import sanscript
+
+        # sanskrit_parser sets its own logger to DEBUG and attaches a stderr
+        # StreamHandler at import time; override after the import happens.
+        logging.getLogger("sanskrit_parser").setLevel(logging.WARNING)
+        parser = Parser(output_encoding=sanscript.DEVANAGARI)
+        kosha = load_kosha()
+        line_results = [
+            _analyze_line(parser, kosha, i, ln, limit) for i, ln in enumerate(lines)
+        ]
+
+    # `pool.map` returns results in input order, so the merged document is identical to what the
+    # single-process path produces: every candidate keeps the line it came from.
+    sandhi_splits: List[Dict[str, Any]] = []
+    word_decompositions: Dict[str, List[str]] = {}
+    word_morphology: List[Dict[str, Any]] = []
+    for res in line_results:
+        sandhi_splits.extend(res["sandhi_splits"])
+        word_decompositions.update(res["word_decompositions"])
+        word_morphology.extend(res["word_morphology"])
 
     return {
         "mode": mode,
@@ -803,24 +806,30 @@ def run_dharmamitra(iast_text: str, iast_lines: List[str]) -> Dict[str, Any]:
         "output_format": "dict",
     }
 
-    # One retry: the API is occasionally briefly unreachable and a single blip
-    # otherwise costs that engine's whole contribution to the analysis.
+    # Both attempts share one wall-clock budget instead of a fixed timeout each plus a blind
+    # sleep between them: the API is occasionally briefly unreachable, but this call now runs
+    # alongside the local engines, so its waiting has to stay bounded.
+    deadline = time.monotonic() + DHARMAMITRA_DEADLINE_SECS
     response = None
-    for attempt in range(2):
+    last_failure = "Dharmamitra API request never completed"
+    for _ in range(2):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
         try:
-            response = requests.post(API_URL, headers=API_HEADERS, json=data, timeout=30)
+            response = requests.post(
+                API_URL, headers=API_HEADERS, json=data, timeout=remaining
+            )
             response.raise_for_status()
             break
         except requests.exceptions.Timeout:
-            if attempt == 0:
-                time.sleep(1)
-                continue
-            return {"error": "Dharmamitra API request timed out"}
+            last_failure = (
+                f"Dharmamitra API request timed out after {DHARMAMITRA_DEADLINE_SECS}s"
+            )
         except requests.exceptions.RequestException as exc:
-            if attempt == 0:
-                time.sleep(1)
-                continue
-            return {"error": f"Dharmamitra API unavailable: {exc}"}
+            last_failure = f"Dharmamitra API unavailable: {exc}"
+    if response is None:
+        return {"error": last_failure}
 
     try:
         payload = response.json()
@@ -916,11 +925,12 @@ def enrich_dharmamitra_lemmas(dharmamitra_results: Dict[str, Any]) -> None:
     Args:
         dharmamitra_results: Dharmamitra engine output dict with 'tokens' list
     """
-    from pathlib import Path
     from indic_transliteration import sanscript
-    from vidyut.kosha import Kosha
 
-    kosha = Kosha(Path(DATA_DIR) / "kosha")
+    kosha = load_kosha()
+    if kosha is None:
+        # No dictionary to enrich with; the Dharmamitra forms stand as they are.
+        return
 
     def finalize(infos):
         """Collapse matched entries into one lemma field (list when ambiguous)."""
@@ -1403,7 +1413,6 @@ def run_vidyut(devanagari_text: str) -> Dict[str, Any]:
         (verse-level summary) sections
     """
     from vidyut.lipi import transliterate, Scheme
-    from vidyut.kosha import Kosha
     from vidyut.prakriya import (
         Vyakarana, Dhatu, Pratipadika, Pada, Gana, Lakara, Purusha, Vacana, Prayoga
     )
@@ -1414,7 +1423,9 @@ def run_vidyut(devanagari_text: str) -> Dict[str, Any]:
     try:
         if not Path(DATA_DIR).exists():
             return {"error": "Vidyut data directory not found"}
-        kosha = Kosha(Path(DATA_DIR) / "kosha")
+        kosha = load_kosha()
+        if kosha is None:
+            return {"error": "Vidyut kosha could not be loaded"}
         vyakarana = Vyakarana()
         chandas = Chandas(Path(DATA_DIR) / "chandas" / "meters.tsv")
         splitter = Splitter.from_csv(Path(DATA_DIR) / "sandhi" / "rules.csv")
@@ -1792,32 +1803,41 @@ def main() -> int:
     # though the remaining engines still contribute their sections.
     failed_local_engines: List[str] = []
 
-    sp_results = _run_local_engine(
-        lambda: _convert_devanagari_to_iast(run_sanskrit_parser(cleaned, args.mode))
-    )
-    if sp_results.get("error"):
-        failed_local_engines.append("sanskrit_parser")
-        _log_engine_failure("sanskrit_parser", sp_results["error"], fatal=True)
-    output["engine_outputs"]["sanskrit_parser"] = sp_results
+    # Dharmamitra is a network call, so it runs on its own thread and overlaps the two local
+    # engines. Only I/O truly overlaps — vidyut's Rust bindings never release the GIL and
+    # sanskrit_parser is pure Python — but an unreachable API used to add up to a minute of
+    # purely serial waiting here. It stays a logged warning, not a failed run.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as dharmamitra_pool:
+        dharmamitra_future = dharmamitra_pool.submit(
+            run_dharmamitra, iast_text, iast_lines
+        )
 
-    # Run Dharmamitra engine; an unreachable API is a logged warning, not a failed run.
-    dharmamitra_results = {}
-    try:
-        dharmamitra_results = run_dharmamitra(iast_text, iast_lines)
-    except Exception as exc:
-        dharmamitra_results = {"error": f"Dharmamitra engine failed: {exc}"}
+        sp_results = _run_local_engine(
+            lambda: _convert_devanagari_to_iast(run_sanskrit_parser(cleaned, args.mode))
+        )
+        if sp_results.get("error"):
+            failed_local_engines.append("sanskrit_parser")
+            _log_engine_failure("sanskrit_parser", sp_results["error"], fatal=True)
+        output["engine_outputs"]["sanskrit_parser"] = sp_results
+
+        # Run vidyut engine (Devanagari input; converts to SLP1 internally)
+        vidyut_results = _run_local_engine(
+            lambda: _convert_devanagari_to_iast(run_vidyut(cleaned))
+        )
+        if vidyut_results.get("error"):
+            failed_local_engines.append("vidyut")
+            _log_engine_failure("vidyut", vidyut_results["error"], fatal=True)
+        output["engine_outputs"]["vidyut"] = vidyut_results
+
+        dharmamitra_results = {}
+        try:
+            dharmamitra_results = dharmamitra_future.result()
+        except Exception as exc:
+            dharmamitra_results = {"error": f"Dharmamitra engine failed: {exc}"}
+
     if dharmamitra_results.get("error"):
         _log_engine_failure("dharmamitra", str(dharmamitra_results["error"]), fatal=False)
     output["engine_outputs"]["dharmamitra"] = dharmamitra_results
-
-    # Run vidyut engine (Devanagari input; converts to SLP1 internally)
-    vidyut_results = _run_local_engine(
-        lambda: _convert_devanagari_to_iast(run_vidyut(cleaned))
-    )
-    if vidyut_results.get("error"):
-        failed_local_engines.append("vidyut")
-        _log_engine_failure("vidyut", vidyut_results["error"], fatal=True)
-    output["engine_outputs"]["vidyut"] = vidyut_results
 
     # Enrich Dharmamitra tokens with lemmas from the vidyut kosha
     if dharmamitra_results.get("tokens"):
