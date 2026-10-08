@@ -1,30 +1,30 @@
 """Accuracy regression tests for offline sandhi splitting.
 
 `app._best_word_split` turns one fused pada into words without any context, so its quality has
-to be measured against something. That reference is ``tests/data/sandhi_truth.json``: 64 padas
-from the pinned verses, split as a human reader splits them. Each entry came from Dharmamitra's
-answer first (it resolves sandhi with sentence context) and was then corrected against the
-published padaccheda tables for Raghuvaṃśa 1.1–1.7 — Dharmamitra gets word boundaries right but
-not realizations ('jagantaḥ' for जगतः, 'upahāsya | tām' where the elision belongs inside
-'upahāsyatām').
+to be measured against something. That reference is ``tests/data/sandhi_truth.json``: 147 padas
+from the sixteen pinned verses, split as a human reader splits them. Provenance differs by group.
+The nine older verses (Raghuvaṃśa 1.1–1.7, Gītā 18.66, Śākuntala 1.1) started from Dharmamitra's
+answer — it resolves sandhi with sentence context — and were then corrected word by word against the
+published padaccheda tables: Dharmamitra gets word boundaries right but not realizations ('jagantaḥ'
+for जगतः, 'upahāsya | tām' where the elision belongs inside 'upahāsyatām'). The seven newer verses
+(Gītā 2.22, 2.47, 11.15, 15.5, 15.15, Śākuntala 1.7, 1.18) take Dharmamitra's reading after it was
+checked against the published पदच्छेदः of that very verse and found to give the same words in the
+same order; transparent compounds are listed as their members there too. Those rows therefore test
+sanskrit_parser against Dharmamitra, not against an independent human reading — DOCUMENTATION §9
+keeps the Dharmamitra-vs-reference figures to the nine hand-corrected verses for that reason.
 
 Two tests:
 
 * an always-on set of padas covering each decision the ranking exists to get right — a finite
   verb must survive whole, an elided conjunction must be separated, and a compound boundary in
   the middle of a pada must not dissolve into word fragments;
-* a gated corpus score (`SAMSKRTA_LIVE_GOLDEN=1`, ~10 s): the ranking must keep at least
+* a gated corpus score (`SAMSKRTA_LIVE_GOLDEN=1`, ~25 s): the ranking must keep at least
   `MIN_MATCHES` of the padas. Ranking rules were tuned against that number — making dictionary
-  attestation the primary key instead of standalone morphology raises the score from 36/64 to 40,
-  and the transparent-compound gate in `_best_word_split` raises it to 44; every ranking that
-  splits deeper than that (frequency-summed parts, "prefer more parts") loses ten padas or more to
+  attestation the primary key instead of standalone morphology raises the score from 92/147 to 99,
+  and the transparent-compound gate in `_best_word_split` raises it to 103; every ranking that
+  splits deeper than that (frequency-summed parts, "prefer more parts") loses padas or more to
   fragments such as `mat | is`. The candidate pool sanskrit_parser generates contains a
-  reference-consistent split for 56/64, which is the ceiling any per-word ranking can reach.
-
-A pada counts as matched when the part count agrees and every part pairs one-to-one with an
-expected part sharing a kosha lemma stem. Surface spellings are not compared: sandhi changes
-them (वाक् appears as vāk or vāc depending on what follows), and the splitter writes word-final
-visarga as 's'.
+  reference-consistent split for 127/147, which is the ceiling any per-word ranking can reach.
 """
 
 import itertools
@@ -50,17 +50,19 @@ CURATED_PADAS = [
     "sūtrasyevāsti",           # sūtrasya | iva | asti: genitive + indeclinable + verb
     "sarvadharmānparityajya",  # long pada split only at real word boundaries
     "saṃpṛktau",               # a dual the dictionary knows whole must not be cut
+    "saṅgo'stvakarmaṇi",       # elision at the pāda end: saṅgaḥ | astu | akarmaṇi
+    "jīrṇānyanyāni",           # two inflected words joined across a printed pāda hyphen
     "vāmanaḥ",                 # a single attested word must not be split at all
     "sūryaprabhavo",           # compound the dictionary knows, yet read as sūrya | prabhavaḥ
     "vajrasamutkīrṇe",         # long compound cut at its real member boundary, not into shards
     "saṃbhṛtārthānāṃ",        # genitive plural compound: saṃbhṛta | arthānām
 ]
 
-# Scored over the whole fixture by the gated test: 44/64 with dictionary-validated ranking (43 if
-# the scorer refuses to fold the engines' word-final anusvara/visarga spellings), 36/64 without any
-# dictionary. The floor keeps two padas of margin because processes rank tied candidates
-# differently.
-MIN_MATCHES = 42
+# Scored over the whole fixture by the gated test: 103/147 with dictionary-validated ranking (the
+# transparent-compound gate contributes four of them), 92/147 without any dictionary, and a
+# candidate-pool ceiling of 127. The floor keeps two padas of margin because processes rank tied
+# candidates differently — the pool itself was measured to drift by one pada between runs.
+MIN_MATCHES = 101
 
 live = pytest.mark.skipif(
     os.environ.get("SAMSKRTA_LIVE_GOLDEN") != "1",

@@ -14,14 +14,7 @@
         "padaccheda": [
           "yathāvidhi",
           "huta",
-          "agnīnām",
-          "yathākāma",
-          "arcita",
-          "arthinām",
-          "yathā",
-          "aparādha",
-          "daṇḍānām",
-          "yathā"
+          "agnīnām"
         ],
         "words": [
           {
@@ -41,53 +34,6 @@
             "form": "agnīnām",
             "lemma": "agni",
             "type": "sūnantāḥ"
-          },
-          {
-            "form": "yathākāma",
-            "lemma": "yathākāma",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "arcita",
-            "lemma": [
-              "arc",
-              "arci"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "arthinām",
-            "lemma": [
-              "arthi",
-              "arthin"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "yathā",
-            "lemma": "yathā",
-            "type": "avyayam"
-          },
-          {
-            "form": "aparādha",
-            "lemma": [
-              "aparādh",
-              "aparādha"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "daṇḍānām",
-            "lemma": [
-              "daṇḍa",
-              "daṇḍā"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "yathā",
-            "lemma": "yathā",
-            "type": "avyayam"
           }
         ]
       },
@@ -120,14 +66,7 @@
           ],
           "dharmamitra": [
             "huta",
-            "agnīnām",
-            "yathākāma",
-            "arcita",
-            "arthinām",
-            "yathā",
-            "aparādha",
-            "daṇḍānām",
-            "yathā"
+            "agnīnām"
           ]
         }
       ]
@@ -136,15 +75,29 @@
       "pada": "yathākāmārcitārthinām",
       "dharmamitra": {
         "padaccheda": [
-          "kāla"
+          "yathākāma",
+          "arcita",
+          "arthinām"
         ],
         "words": [
           {
-            "form": "kāla",
+            "form": "yathākāma",
+            "lemma": "yathākāma",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "arcita",
             "lemma": [
-              "kal",
-              "kāla",
-              "kālā"
+              "arc",
+              "arci"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "arthinām",
+            "lemma": [
+              "arthi",
+              "arthin"
             ],
             "type": "sūnantāḥ"
           }
@@ -170,7 +123,9 @@
             "yathākāmārcitārthinām"
           ],
           "dharmamitra": [
-            "kāla"
+            "yathākāma",
+            "arcita",
+            "arthinām"
           ]
         }
       ]
@@ -179,12 +134,30 @@
       "pada": "yathāparādhadaṇḍānāṃ",
       "dharmamitra": {
         "padaccheda": [
-          "prabodhinām"
+          "yathā",
+          "aparādha",
+          "daṇḍānām"
         ],
         "words": [
           {
-            "form": "prabodhinām",
-            "lemma": "prabodhi",
+            "form": "yathā",
+            "lemma": "yathā",
+            "type": "avyayam"
+          },
+          {
+            "form": "aparādha",
+            "lemma": [
+              "aparādh",
+              "aparādha"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "daṇḍānām",
+            "lemma": [
+              "daṇḍa",
+              "daṇḍā"
+            ],
             "type": "sūnantāḥ"
           }
         ]
@@ -209,14 +182,43 @@
             "yathāparādhadaṇḍānām"
           ],
           "dharmamitra": [
-            "prabodhinām"
+            "yathā",
+            "aparādha",
+            "daṇḍānām"
           ]
         }
       ]
     },
     {
       "pada": "yathākālaprabodhinām",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "yathā",
+          "kāla",
+          "prabodhinām"
+        ],
+        "words": [
+          {
+            "form": "yathā",
+            "lemma": "yathā",
+            "type": "avyayam"
+          },
+          {
+            "form": "kāla",
+            "lemma": [
+              "kal",
+              "kāla",
+              "kālā"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "prabodhinām",
+            "lemma": "prabodhi",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "yathākālaprabodhinām"
@@ -236,7 +238,11 @@
           "sanskrit_parser": [
             "yathākālaprabodhinām"
           ],
-          "dharmamitra": null
+          "dharmamitra": [
+            "yathā",
+            "kāla",
+            "prabodhinām"
+          ]
         }
       ]
     }

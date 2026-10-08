@@ -311,27 +311,76 @@ def test_collect_dm_tokens_missing_or_empty_tokens(dm_output):
     assert postprocess_analysis.collect_dm_tokens(dm_output) == []
 
 
-def test_group_dm_tokens_greedy_first_letter_split():
-    words = ["havyaṃ", "pavakaḥ"]
-    tokens = [{"form": "havyam"}, {"form": "hutaḥ"}, {"form": "kaviḥ"}]
-    groups = postprocess_analysis.group_dm_tokens_by_word(words, tokens)
-    assert [[t["form"] for t in g] for g in groups] == [
-        ["havyam", "hutaḥ"],
-        ["kaviḥ"],
+def test_group_dm_tokens_keeps_each_token_on_the_word_it_rebuilds():
+    # The greedy first-letter walk this replaces gave 'grīvābhaṅgābhirāmaṃ' the following pada's
+    # tokens because the word contains an 'm', and left that pada empty.
+    words = ["grīvābhaṅgābhirāmaṃ", "muhuranupatati"]
+    tokens = [
+        {"form": "grīvā"}, {"form": "bhaṅga"}, {"form": "abhirāmam"},
+        {"form": "muhur"}, {"form": "anupatati"},
     ]
+    groups, unmatched = postprocess_analysis.group_dm_tokens_by_word(words, tokens)
+    assert [[t["form"] for t in g] for g in groups] == [
+        ["grīvā", "bhaṅga", "abhirāmam"],
+        ["muhur", "anupatati"],
+    ]
+    assert unmatched == []
 
 
-def test_group_dm_tokens_attaches_trailing_tokens_to_last_pada():
-    tokens = [{"form": "agnim"}, {"form": "sūryaḥ"}]  # 's' matches no word letter
-    groups = postprocess_analysis.group_dm_tokens_by_word(["agniḥ"], tokens)
-    assert [[t["form"] for t in g] for g in groups] == [["agnim", "sūryaḥ"]]
+def test_group_dm_tokens_reports_a_token_that_rebuilds_no_word():
+    # Dharmamitrā put a 'mā' in front of the first pada of Bhagavadgītā 2.47, where it belongs to no
+    # word; it is reported instead of being glued onto the pada whose other tokens already fit.
+    words = ["karmaṇyevādhikāraste", "mā"]
+    tokens = [
+        {"form": "mā"}, {"form": "karmaṇi"}, {"form": "eva"},
+        {"form": "adhikāraḥ"}, {"form": "te"}, {"form": "mā"},
+    ]
+    groups, unmatched = postprocess_analysis.group_dm_tokens_by_word(words, tokens)
+    assert [[t["form"] for t in g] for g in groups] == [
+        ["karmaṇi", "eva", "adhikāraḥ", "te"],
+        ["mā"],
+    ]
+    assert [t["form"] for t in unmatched] == ["mā"]
+
+
+def test_group_dm_tokens_gives_a_skipped_word_an_empty_group():
+    groups, unmatched = postprocess_analysis.group_dm_tokens_by_word(
+        ["agniḥ", "īḷe"], [{"form": "agnim"}]
+    )
+    assert [[t["form"] for t in g] for g in groups] == [["agnim"], []]
+    assert unmatched == []
 
 
 def test_group_dm_tokens_empty_inputs():
-    empty_groups = postprocess_analysis.group_dm_tokens_by_word(["agniḥ", "īḷe"], [])
-    assert empty_groups == [[], []]
-    # No pada to attach to: unmatched tokens are dropped, not fabricated.
-    assert postprocess_analysis.group_dm_tokens_by_word([], [{"form": "agnim"}]) == []
+    groups, unmatched = postprocess_analysis.group_dm_tokens_by_word(["agniḥ", "īḷe"], [])
+    assert (groups, unmatched) == ([[], []], [])
+    # No pada to attach a token to: it is reported as unmatched, never invented onto a word.
+    groups, unmatched = postprocess_analysis.group_dm_tokens_by_word([], [{"form": "agnim"}])
+    assert (groups, unmatched) == ([], [{"form": "agnim"}])
+
+
+# ---------------------------------------------------------------------------
+# collect_dm_word_requests
+# ---------------------------------------------------------------------------
+
+def test_collect_word_requests_keeps_only_the_run_that_rebuilds_the_pada():
+    # A single-word request for 'vāsāṃsi' came back padded with a phrase Dharmamitrā recognised.
+    dm_output = {"pada_followups": [
+        {"pada": "vāsāṃsi", "tokens": [{"form": "ṛta"}, {"form": "iva"}, {"form": "vāsāṃsi"}]},
+    ]}
+    answers = postprocess_analysis.collect_dm_word_requests(dm_output)
+    assert [sorted(t["form"] for t in v) for v in answers.values()] == [["vāsāṃsi"]]
+
+
+def test_collect_word_requests_drops_answers_that_rebuild_nothing_or_are_unusable():
+    dm_output = {"pada_followups": [
+        {"pada": "grīvābhaṅgābhirāmaṃ", "tokens": [{"form": "muhur"}, {"form": "anupatati"}]},
+        {"pada": "syandane", "tokens": []},
+        {"pada": None, "tokens": [{"form": "śarīra"}]},
+        {"tokens": [{"form": "prayāti"}]},
+        "not a mapping",
+    ]}
+    assert postprocess_analysis.collect_dm_word_requests(dm_output) == {}
 
 
 # ---------------------------------------------------------------------------
@@ -455,6 +504,45 @@ def test_build_padas_agreeing_engines_get_no_differences_key():
     )
     assert "differences" not in padas[0]
     assert padas[0]["dharmamitra"]["padaccheda"] == ["agnim"]
+
+
+def test_build_padas_fills_an_empty_side_from_a_word_request_and_labels_it():
+    padas = postprocess_analysis.build_padas(
+        ["tapodhena", "agnim"],
+        {"tapodhena": ["tapaḥ", "dhena"]},
+        {},
+        [[], [{"form": "agnim"}]],
+        True,
+        {"tapodhena": [{"form": "tapas", "lemma": "tapas"}]},
+    )
+    assert padas[0]["dharmamitra"] == {
+        "padaccheda": ["tapas"],
+        "words": [{"form": "tapas", "lemma": "tapas"}],
+        "request": "pada",
+    }
+    # The extra reading changes the comparison as well, so the disagreement is still recorded.
+    assert padas[0]["differences"] == [
+        {"sanskrit_parser": ["tapaḥ", "dhena"], "dharmamitra": ["tapas"]}
+    ]
+    assert "request" not in padas[1]["dharmamitra"]
+
+
+def test_build_padas_verse_tokens_beat_a_word_request():
+    # A word-level answer never overwrites what the verse-level stream already attributed.
+    padas = postprocess_analysis.build_padas(
+        ["agnim"], {"agnim": ["agnim"]}, {}, [[{"form": "agnim"}]], True,
+        {"agnim": [{"form": "havyam"}]},
+    )
+    assert padas[0]["dharmamitra"]["padaccheda"] == ["agnim"]
+    assert "request" not in padas[0]["dharmamitra"]
+
+
+def test_build_padas_without_an_answer_keeps_the_null_side():
+    padas = postprocess_analysis.build_padas(
+        ["tapodhena"], {"tapodhena": ["tapaḥ", "dhena"]}, {}, [[]], True, {}
+    )
+    assert padas[0]["dharmamitra"] is None
+
 
 
 def test_build_padaccheda_none_for_engines_without_parts():
@@ -637,6 +725,37 @@ def test_postprocess_records_vidyut_error_and_omits_chandas():
     processed = postprocess_analysis.postprocess(raw)
     assert processed["engine_errors"]["vidyut"] == "Vidyut data directory not found"
     assert "chandas" not in processed
+
+
+def test_postprocess_reports_a_token_that_rebuilds_no_word():
+    raw = _clean_raw()
+    # Dharmamitrā put an extra 'mā' ahead of the verse; it rebuilds no pada here, so it is named in the
+    # document instead of being filed under a word or dropped.
+    raw["engine_outputs"]["dharmamitra"]["tokens"].insert(0, {"form": "mā"})
+    normalized = postprocess_analysis.postprocess(raw)
+    assert normalized["dharmamitra_unmatched"] == ["mā"]
+    assert list(normalized) == ["input", "padaccheda", "padas", "dharmamitra_unmatched"]
+    # The pada columns are untouched by the extra token.
+    assert [p["dharmamitra"]["padaccheda"] if p["dharmamitra"] else None for p in normalized["padas"]] == [
+        ["agnim"], None
+    ]
+
+
+def test_postprocess_omits_the_unmatched_key_when_every_token_is_used():
+    assert "dharmamitra_unmatched" not in postprocess_analysis.postprocess(_clean_raw())
+
+
+def test_postprocess_notes_a_word_request_whose_answer_rebuilds_nothing(capsys):
+    raw = _clean_raw()
+    # 'ila' covers too little of 'īḷe' to be believed, so the recorded request is reported as unused.
+    raw["engine_outputs"]["dharmamitra"]["pada_followups"] = [
+        {"pada": "īḷe", "raw_output": "ila_", "tokens": [{"form": "ila"}]},
+    ]
+    normalized = postprocess_analysis.postprocess(raw)
+    err = capsys.readouterr().err
+    assert err.startswith("Note: Dharmamitrā's word-level answers rebuilt none of these padas")
+    assert "īḷe" in err
+    assert normalized["padas"][1]["dharmamitra"] is None
 
 
 # ---------------------------------------------------------------------------

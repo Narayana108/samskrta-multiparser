@@ -4,7 +4,7 @@
     "iast": "grīvābhaṅgābhirāmaṃ muhuranupatati syandane baddhadṛṣṭiḥ\npaścārdhena praviṣṭaḥ śarapatanabhayādbhūyasā pūrvakāyam\ndarbhairardhāvalīḍhaiḥ śramavivṛtamukhabhraṃśibhiḥ kīrṇavartmā\npaśyodagraplutatvādviyati bahutaraṃ stokamurvyāṃ prayāti"
   },
   "padaccheda": {
-    "dharmamitra": "muhur | anupatati | syandane | baddha | dṛṣṭiḥ | paśca | ardhena | praviṣṭaḥ | śara | patana | bhayāt | bhūyasā | pūrva | kāyam | darbhaiḥ | ardha | avalīḍhaiḥ | śrama | vivṛta | mukha | bhraṃśibhiḥ | kīrṇa | vartmā | paśya | udagra | pluta | tvāt | viyati | bahutaram | stokam | urvyām | prayāti",
+    "dharmamitra": "grīvā | bhaṅga | abhirāmam | muhur | anupatati | syandane | baddha | dṛṣṭiḥ | paśca | ardhena | praviṣṭaḥ | śara | patana | bhayāt | bhūyasā | pūrva | kāyam | darbhaiḥ | ardha | avalīḍhaiḥ | śrama | vivṛta | mukha | bhraṃśibhiḥ | kīrṇa | vartmā | paśya | udagra | pluta | tvāt | viyati | bahutaram | stokam | urvyām | prayāti",
     "sanskrit_parser": "grīvās | bhaṅgā | abhirāmam | muhur | anu | patati | syandane | baddha | dṛṣṭis | paścārdhena | praviṣṭas | śara | patana | bhayāt | bhūyasā | pūrva | kāyam | darbhais | ardhāvalīḍhais | śrama | vivṛtam | ukha | bhraṃśibhis | kīrṇa | vartmā | paśya | udagraplutatvāt | viyati | bahutaram | stokam | urvyām | prayāti"
   },
   "padas": [
@@ -12,21 +12,41 @@
       "pada": "grīvābhaṅgābhirāmaṃ",
       "dharmamitra": {
         "padaccheda": [
-          "muhur",
-          "anupatati"
+          "grīvā",
+          "bhaṅga",
+          "abhirāmam"
         ],
         "words": [
           {
-            "form": "muhur",
-            "lemma": "muhur",
-            "type": "avyayam"
+            "form": "grīvā",
+            "lemma": [
+              "grīva",
+              "grīvā"
+            ],
+            "type": "sūnantāḥ"
           },
           {
-            "form": "anupatati",
-            "lemma": "anupad",
+            "form": "bhaṅga",
+            "lemma": [
+              "bhaṅga",
+              "bhaṅgā"
+            ],
             "type": "sūnantāḥ"
+          },
+          {
+            "form": "abhirāmam",
+            "lemma": [
+              "abhiram",
+              "abhirāma",
+              "abhirāmam"
+            ],
+            "type": [
+              "avyayam",
+              "sūnantāḥ"
+            ]
           }
-        ]
+        ],
+        "request": "pada"
       },
       "sanskrit_parser": {
         "padaccheda": [
@@ -62,19 +82,35 @@
         {
           "sanskrit_parser": [
             "grīvās",
-            "bhaṅgā",
-            "abhirāmam"
+            "bhaṅgā"
           ],
           "dharmamitra": [
-            "muhur",
-            "anupatati"
+            "grīvā",
+            "bhaṅga"
           ]
         }
       ]
     },
     {
       "pada": "muhuranupatati",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "muhur",
+          "anupatati"
+        ],
+        "words": [
+          {
+            "form": "muhur",
+            "lemma": "muhur",
+            "type": "avyayam"
+          },
+          {
+            "form": "anupatati",
+            "lemma": "anupad",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "muhur",
@@ -109,11 +145,12 @@
       "differences": [
         {
           "sanskrit_parser": [
-            "muhur",
             "anu",
             "patati"
           ],
-          "dharmamitra": null
+          "dharmamitra": [
+            "anupatati"
+          ]
         }
       ]
     },
@@ -208,10 +245,7 @@
       "dharmamitra": {
         "padaccheda": [
           "paśca",
-          "ardhena",
-          "praviṣṭaḥ",
-          "śara",
-          "patana"
+          "ardhena"
         ],
         "words": [
           {
@@ -225,25 +259,6 @@
               "ardha",
               "ardhi",
               "ṛdh"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "praviṣṭaḥ",
-            "lemma": "praviṣṭā",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "śara",
-            "lemma": "śara",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "patana",
-            "lemma": [
-              "pat",
-              "pata",
-              "patana"
             ],
             "type": "sūnantāḥ"
           }
@@ -270,17 +285,25 @@
           ],
           "dharmamitra": [
             "paśca",
-            "ardhena",
-            "praviṣṭaḥ",
-            "śara",
-            "patana"
+            "ardhena"
           ]
         }
       ]
     },
     {
       "pada": "praviṣṭaḥ",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "praviṣṭaḥ"
+        ],
+        "words": [
+          {
+            "form": "praviṣṭaḥ",
+            "lemma": "praviṣṭā",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "praviṣṭas"
@@ -300,7 +323,9 @@
           "sanskrit_parser": [
             "praviṣṭas"
           ],
-          "dharmamitra": null
+          "dharmamitra": [
+            "praviṣṭaḥ"
+          ]
         }
       ]
     },
@@ -308,11 +333,26 @@
       "pada": "śarapatanabhayādbhūyasā",
       "dharmamitra": {
         "padaccheda": [
+          "śara",
+          "patana",
           "bhayāt",
-          "bhūyasā",
-          "pūrva"
+          "bhūyasā"
         ],
         "words": [
+          {
+            "form": "śara",
+            "lemma": "śara",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "patana",
+            "lemma": [
+              "pat",
+              "pata",
+              "patana"
+            ],
+            "type": "sūnantāḥ"
+          },
           {
             "form": "bhayāt",
             "lemma": "bhaya",
@@ -328,15 +368,6 @@
               "avyayam",
               "sūnantāḥ"
             ]
-          },
-          {
-            "form": "pūrva",
-            "lemma": [
-              "pūrv",
-              "pūrva",
-              "pūrvā"
-            ],
-            "type": "sūnantāḥ"
           }
         ]
       },
@@ -377,30 +408,25 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "śara",
-            "patana"
-          ],
-          "dharmamitra": null
-        },
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "pūrva"
-          ]
-        }
-      ]
+      }
     },
     {
       "pada": "pūrvakāyam",
       "dharmamitra": {
         "padaccheda": [
+          "pūrva",
           "kāyam"
         ],
         "words": [
+          {
+            "form": "pūrva",
+            "lemma": [
+              "pūrv",
+              "pūrva",
+              "pūrvā"
+            ],
+            "type": "sūnantāḥ"
+          },
           {
             "form": "kāyam",
             "lemma": "kāya",
@@ -429,15 +455,7 @@
             "linga": "puṃlliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "pūrva"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "darbhairardhāvalīḍhaiḥ",
@@ -506,9 +524,7 @@
           "śrama",
           "vivṛta",
           "mukha",
-          "bhraṃśibhiḥ",
-          "kīrṇa",
-          "vartmā"
+          "bhraṃśibhiḥ"
         ],
         "words": [
           {
@@ -540,16 +556,6 @@
               "bhraṃś",
               "bhraṃśi"
             ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "kīrṇa",
-            "lemma": "kṝ",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "vartmā",
-            "lemma": "vartman",
             "type": "sūnantāḥ"
           }
         ]
@@ -602,16 +608,31 @@
           "dharmamitra": [
             "vivṛta",
             "mukha",
-            "bhraṃśibhiḥ",
-            "kīrṇa",
-            "vartmā"
+            "bhraṃśibhiḥ"
           ]
         }
       ]
     },
     {
       "pada": "kīrṇavartmā",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "kīrṇa",
+          "vartmā"
+        ],
+        "words": [
+          {
+            "form": "kīrṇa",
+            "lemma": "kṝ",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "vartmā",
+            "lemma": "vartman",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "kīrṇa",
@@ -637,16 +658,7 @@
             "linga": "puṃlliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "kīrṇa",
-            "vartmā"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "paśyodagraplutatvādviyati",

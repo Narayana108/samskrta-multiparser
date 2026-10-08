@@ -91,10 +91,36 @@ API_HEADERS = {
 }
 API_MODE = "unsandhied-lemma-morphosyntax"
 
+# Hard ceiling on one Dharmamitra response body. A verse answer is a few kilobytes; anything past
+# this is an upstream fault (or a hijacked endpoint) and would otherwise be buffered, JSON-parsed,
+# tokenised segment by segment, written into both documents, and re-parsed by every later offline
+# postprocess run.
+_MAX_RESPONSE_BYTES = 1 << 20
+
+
+def _env_number(name: str, default: float) -> float:
+    """Read a numeric environment override without letting a malformed value crash the import.
+
+    These settings are read at import time, before argparse runs and long before either output
+    document exists, so an unparseable value has to be reported on stderr and defaulted rather than
+    raised as a traceback out of module import.
+    """
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        print(
+            f"Warning: ignoring invalid {name}={raw!r}; using {default:g}",
+            file=sys.stderr,
+        )
+        return default
+
 # Total wall-clock budget for the whole Dharmamitra exchange, both attempts included. The
 # request runs while the local engines work, so an unreachable API must not stretch the run
 # past this many seconds. Override with DHARMAMITRA_TIMEOUT_SECS=<seconds>.
-DHARMAMITRA_DEADLINE_SECS = float(os.environ.get("DHARMAMITRA_TIMEOUT_SECS", "20"))
+DHARMAMITRA_DEADLINE_SECS = _env_number("DHARMAMITRA_TIMEOUT_SECS", 20.0)
 
 
 # Vidyut data directory — contains kosha, prakriya, chandas, sandhi, cheda subdirectories
@@ -683,7 +709,7 @@ def _analyze_line(parser, kosha, line_index: int, line: str, limit: int) -> Dict
 # holds its own Parser (~130 MB) and kosha index (~220 MB), so workers stay few; SAMSKRTA_WORKERS
 # overrides the count (1 forces the single-process path).
 
-SP_PARALLEL_MIN_LINES = int(os.environ.get("SAMSKRTA_MIN_PARALLEL_LINES", "8"))
+SP_PARALLEL_MIN_LINES = int(_env_number("SAMSKRTA_MIN_PARALLEL_LINES", 8))
 _SP_PARSER = None
 
 
@@ -721,7 +747,7 @@ def _sp_worker_count(line_count: int) -> int:
         return 1
     # Two by default: a worker costs ~350 MB of resident memory, and that is already enough to
     # halve the per-line time on long inputs. SAMSKRTA_WORKERS raises it on bigger machines.
-    requested = int(os.environ.get("SAMSKRTA_WORKERS", "0")) or min(2, os.cpu_count() or 1)
+    requested = int(_env_number("SAMSKRTA_WORKERS", 0)) or min(2, os.cpu_count() or 1)
     return max(1, min(requested, line_count))
 
 
@@ -805,37 +831,64 @@ def _parse_tokens(raw_output: str) -> List[Dict[str, Any]]:
     return [{"form": seg} for seg in raw_output.split("_") if seg]
 
 
-def run_dharmamitra(iast_text: str, iast_lines: List[str]) -> Dict[str, Any]:
-    """Send IAST text to Dharmamitra API and return structured JSON.
-    
+def _read_capped_body(response, deadline: float) -> tuple:
+    """Read a streamed response body under a size cap and the shared deadline.
+
     Args:
-        iast_text: IAST-encoded input text
-        iast_lines: List of IAST-encoded input lines
-    
+        response: A `requests` response obtained with `stream=True`.
+        deadline: Absolute `time.monotonic()` bound for the whole exchange.
+
     Returns:
-        Dict with api_endpoint, mode, input_lines, raw_output, and tokens
+        (body bytes, None) when the body fits and arrived in time, else (None, error message).
+    """
+    declared = response.headers.get("Content-Length")
+    if declared is not None and declared.isdigit() and int(declared) > _MAX_RESPONSE_BYTES:
+        return None, (
+            f"Dharmamitra API response too large: {declared} bytes announced, "
+            f"limit {_MAX_RESPONSE_BYTES}"
+        )
+
+    chunks = []
+    total = 0
+    for chunk in response.iter_content(chunk_size=65536):
+        total += len(chunk)
+        if total > _MAX_RESPONSE_BYTES:
+            return None, (
+                f"Dharmamitra API response too large: more than {_MAX_RESPONSE_BYTES} bytes streamed"
+            )
+        chunks.append(chunk)
+        if time.monotonic() > deadline:
+            return None, "Dharmamitra API request timed out while reading the response body"
+    return b"".join(chunks), None
+
+
+def _dharmamitra_raw_output(text: str, deadline: float) -> tuple:
+    """POST one Dharmamitra tagging request and return (raw_output, error).
+
+    Args:
+        text: Single text to tag; the API takes a list but every caller here sends one item.
+        deadline: Absolute time.monotonic() budget shared by both attempts.
+
+    Returns:
+        (underscore-separated raw output, None) on success, else (None, error message).
     """
     import requests
 
-    # The API silently drops everything after a line whose end has trailing
-    # whitespace before the newline, so collapse spaces around newlines.
-    clean_text = "\n".join(
-        line.strip() for line in iast_text.split("\n") if line.strip()
-    )
-
     data = {
-        "texts": [clean_text],
+        "texts": [text],
         "mode": API_MODE,
         "input_encoding": "auto",
         "human_readable_tags": True,
         "output_format": "dict",
     }
 
-    # Both attempts share one wall-clock budget instead of a fixed timeout each plus a blind
-    # sleep between them: the API is occasionally briefly unreachable, but this call now runs
-    # alongside the local engines, so its waiting has to stay bounded.
-    deadline = time.monotonic() + DHARMAMITRA_DEADLINE_SECS
-    response = None
+    # Both attempts share one wall-clock budget instead of a fixed timeout each plus a blind sleep
+    # between them: the API is occasionally briefly unreachable, but this call runs alongside the
+    # local engines, so its waiting has to stay bounded. `timeout` only bounds individual socket
+    # operations, so the body read re-checks the deadline chunk by chunk — a server that trickles
+    # bytes stays inside every per-op timeout while the exchange itself never ends. Each attempt is
+    # fully self-contained: nothing from a failed attempt (not even its response object) survives
+    # into the next one, so an HTTP error body can never be parsed as if it were an answer.
     last_failure = "Dharmamitra API request never completed"
     for _ in range(2):
         remaining = deadline - time.monotonic()
@@ -843,29 +896,55 @@ def run_dharmamitra(iast_text: str, iast_lines: List[str]) -> Dict[str, Any]:
             break
         try:
             response = requests.post(
-                API_URL, headers=API_HEADERS, json=data, timeout=remaining
+                API_URL, headers=API_HEADERS, json=data, timeout=remaining, stream=True
             )
             response.raise_for_status()
-            break
         except requests.exceptions.Timeout:
-            last_failure = (
-                f"Dharmamitra API request timed out after {DHARMAMITRA_DEADLINE_SECS}s"
-            )
+            last_failure = "Dharmamitra API request timed out"
+            continue
         except requests.exceptions.RequestException as exc:
             last_failure = f"Dharmamitra API unavailable: {exc}"
-    if response is None:
-        return {"error": last_failure}
+            continue
 
-    try:
-        payload = response.json()
-    except ValueError as exc:
-        return {"error": f"Dharmamitra API returned non-JSON body: {exc}"}
+        body, failure = _read_capped_body(response, deadline)
+        if body is None:
+            last_failure = failure
+            continue
 
-    results = payload.get("results")
-    if not isinstance(results, list) or not results or not isinstance(results[0], str):
-        return {"error": f"Dharmamitra API response shape unexpected: {str(payload)[:200]}"}
+        try:
+            payload = json.loads(body.decode("utf-8"))
+        except ValueError as exc:
+            return None, f"Dharmamitra API returned non-JSON body: {exc}"
 
-    raw_output = results[0]
+        results = payload.get("results")
+        if not isinstance(results, list) or not results or not isinstance(results[0], str):
+            return None, f"Dharmamitra API response shape unexpected: {str(payload)[:200]}"
+        return results[0], None
+
+    return None, last_failure
+
+
+def run_dharmamitra(iast_text: str, iast_lines: List[str]) -> Dict[str, Any]:
+    """Send IAST text to Dharmamitra API and return structured JSON.
+
+    Args:
+        iast_text: IAST-encoded input text
+        iast_lines: List of IAST-encoded input lines
+
+    Returns:
+        Dict with api_endpoint, mode, input_lines, raw_output, and tokens
+    """
+    # The API silently drops everything after a line whose end has trailing
+    # whitespace before the newline, so collapse spaces around newlines.
+    clean_text = "\n".join(
+        line.strip() for line in iast_text.split("\n") if line.strip()
+    )
+
+    raw_output, error = _dharmamitra_raw_output(
+        clean_text, time.monotonic() + DHARMAMITRA_DEADLINE_SECS
+    )
+    if error:
+        return {"error": error}
 
     return {
         "api_endpoint": API_URL,
@@ -874,6 +953,74 @@ def run_dharmamitra(iast_text: str, iast_lines: List[str]) -> Dict[str, Any]:
         "raw_output": raw_output,
         "tokens": _parse_tokens(raw_output),
     }
+
+
+# Dharmamitra's verse-level pass leaves some padas with no token at all: its tagger fails on a few
+# long compounds in context while answering the very same word correctly on its own. Those gaps are
+# filled by one extra word-level request each, recorded in the raw document so the offline second
+# pass replays them without the network.
+_MAX_PADA_FOLLOWUPS = 8
+
+
+def fill_missing_pada_readings(
+    dharmamitra_results: Dict[str, Any],
+    processed: Dict[str, Any],
+) -> int:
+    """Ask Dharmamitra for every pada its verse-level answer left untagged (in place).
+
+    Args:
+        dharmamitra_results: Dharmamitra output from run_dharmamitra; 'pada_followups' is appended.
+        processed: Result document built from the same raw output, whose padas show which
+            Dharmamitra sides came back empty.
+
+    Returns:
+        Number of padas that gained tokens from a word-level request.
+    """
+    if dharmamitra_results.get("error") or not dharmamitra_results.get("tokens"):
+        return 0
+
+    missing = [e["pada"] for e in processed.get("padas", []) if not e.get("dharmamitra")]
+    if not missing:
+        return 0
+    if len(missing) > _MAX_PADA_FOLLOWUPS:
+        print(
+            f"Note: {len(missing)} padas had no Dharmamitra tokens; requesting only the first "
+            f"{_MAX_PADA_FOLLOWUPS}.",
+            file=sys.stderr,
+        )
+        missing = missing[:_MAX_PADA_FOLLOWUPS]
+
+    deadline = time.monotonic() + DHARMAMITRA_DEADLINE_SECS
+    followups: List[Dict[str, Any]] = []
+    filled = 0
+    for pada in missing:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            print(
+                "Note: Dharmamitra word requests ran out of time; the rest stay untagged.",
+                file=sys.stderr,
+            )
+            break
+        raw_output, error = _dharmamitra_raw_output(pada, deadline)
+        if error:
+            print(
+                f"Warning: Dharmamitra word request for '{pada}' failed: {error}",
+                file=sys.stderr,
+            )
+            continue
+        tokens = _parse_tokens(raw_output)
+        followups.append({"pada": pada, "raw_output": raw_output, "tokens": tokens})
+        if tokens:
+            filled += 1
+        else:
+            print(
+                f"Note: Dharmamitra returned no tokens for '{pada}' on its own either.",
+                file=sys.stderr,
+            )
+
+    if followups:
+        dharmamitra_results.setdefault("pada_followups", []).extend(followups)
+    return filled
 
 
 # ---------------------------------------------------------------------------
@@ -1015,16 +1162,22 @@ def enrich_dharmamitra_lemmas(dharmamitra_results: Dict[str, Any]) -> None:
                 return finalize(guarded)
         return None
 
-    for token in dharmamitra_results.get("tokens", []):
-        form = token.get("form", "")
-        if not form:
-            continue
-        dev = sanscript.transliterate(form, sanscript.IAST, sanscript.DEVANAGARI)
-        slp1 = sanscript.transliterate(dev, sanscript.DEVANAGARI, sanscript.SLP1)
-        info = lookup(slp1, form)
-        if info:
-            token["lemma"] = info["lemma"]
-            token["kosha_type"] = info["type"]
+    token_groups = [dharmamitra_results.get("tokens") or []]
+    for entry in dharmamitra_results.get("pada_followups") or []:
+        if isinstance(entry, dict):
+            token_groups.append(entry.get("tokens") or [])
+
+    for tokens in token_groups:
+        for token in tokens:
+            form = token.get("form", "")
+            if not form:
+                continue
+            dev = sanscript.transliterate(form, sanscript.IAST, sanscript.DEVANAGARI)
+            slp1 = sanscript.transliterate(dev, sanscript.DEVANAGARI, sanscript.SLP1)
+            info = lookup(slp1, form)
+            if info:
+                token["lemma"] = info["lemma"]
+                token["kosha_type"] = info["type"]
 
 
 def kosha_lookup(kosha, word: str) -> list:
@@ -1888,6 +2041,25 @@ def main() -> int:
     except ValueError as exc:
         print(f"Error building the result document: {exc}", file=sys.stderr)
         return 1
+
+    # A pada Dharmamitra left untagged gets a request of its own; the answers are stored in the raw
+    # document, so rebuilding the result document offline reproduces them.
+    if fill_missing_pada_readings(dharmamitra_results, processed):
+        try:
+            enrich_dharmamitra_lemmas(dharmamitra_results)
+        except Exception as exc:
+            print(f"Warning: Dharmamitra lemma enrichment failed: {exc}", file=sys.stderr)
+        processed = postprocess_analysis.postprocess(output)
+
+    # Dharmamitrā sometimes returns more tokens than the verse has words. They are listed in the result
+    # document and named here rather than folded into a pada they do not belong to.
+    unmatched = processed.get("dharmamitra_unmatched") or []
+    if unmatched:
+        print(
+            f"Note: Dharmamitrā returned {len(unmatched)} token(s) that match no pada of this verse "
+            f"({' | '.join(str(form) for form in unmatched)}); see 'dharmamitra_unmatched' in the result document.",
+            file=sys.stderr,
+        )
 
     try:
         postprocess_analysis.write_document(raw_file, output, indent)

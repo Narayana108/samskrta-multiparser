@@ -37,12 +37,12 @@ vidyut does ship a sandhi splitter — `Splitter.from_csv(data-0.4.0/sandhi/rule
 
 The split of merit is Dharmamitra's, but only for sandhi: it reads the whole sentence, so it knows that `मामेकं` is `mām + ekam`. It is also the least reliable source in the pipeline, which is why nothing is merged.
 
-- **Dharmamitra — right boundaries, wrong words.** Remote only (both attempts share one `DHARMAMITRA_TIMEOUT_SECS` deadline, default 20 s; an offline run records `{"error": …}` and the other engines still produce documents). Its answer is a flat underscore-separated stream with no pada marks: when it cuts one word into more tokens than the verse has padas, every later alignment shifts by one, which shows up as a null side or `—` column in `<base>.result.json` (Raghuvaṃśa 1.2 `mohāduḍupenāsmi`, 1.3 `gamiṣyāmyupahāsyatām`). Its readings contain base stems instead of surface forms (`vāc` for वाक्), its own misreadings (`jagantaḥ` for जगतः) and tokens no sandhi rule produces (`upahāsya | tām` for उपहास्यताम्). Mitigation: side-by-side columns plus `differences`, never a merged answer; lemmas are filled locally from the vidyut kosha (DOCUMENTATION §4); wherever it serves as a test reference its splits are hand-corrected against published padaccheda tables first.
+- **Dharmamitra — right boundaries, wrong words.** Remote only (both attempts share one `DHARMAMITRA_TIMEOUT_SECS` deadline, default 20 s; an offline run records `{"error": …}` and the other engines still produce documents). Its answer is a flat underscore-separated stream with no pada marks, and it is uneven: on a whole-verse request it can skip an opening compound entirely, prepend a word that is not in the verse (`mā` before Gītā 2.47's first pāda), or pad one answer out with words from elsewhere (`ṛta | iva | vāsāṃsi` for वासांसि). Mitigation: tokens are attached to padas by a coverage DP — each token must rebuild the slice of the word it is filed under, and a token that rebuilds none is reported in `dharmamitra_unmatched` instead of being guessed at (`group_dm_tokens_by_word`, DOCUMENTATION §8) — so one over-long stream no longer shifts every later pada. Any pada its verse-level pass left empty gets exactly one word-level request of its own; those answers are recorded in the raw document as `pada_followups` and labelled `"request": "pada"` in the reading, because they arrive without sentence context. Its readings still contain base stems instead of surface forms (`vāc` for वाक्), its own misreadings (`jagantaḥ` for जगतः) and tokens no sandhi rule produces (`upahāsya | tām` for उपहास्यताम्): the answer is kept side by side with `differences`, never merged; lemmas are filled locally from the vidyut kosha (DOCUMENTATION §4); wherever it serves as a test reference its splits are corrected against published padaccheda tables first.
 - **sanskrit_parser — a good generator with no context.** It inspects one word at a time, so samāsa stays whole (`yathākālaprabodhinām`, `prāṃśulabhye`) and it sometimes cuts inside a joined form (`māme | akam` for माम् एकम्). Mitigations: all ten candidates are ranked by dictionary attestation plus a transparent-compound gate that reads long attested compounds as their members (`sūryaprabhavas` → `sūrya | prabhavaḥ`) rather than taken in library order (deterministic within one process, accuracy-floored across processes); `parser.split()` returns `None`, not `[]`, when it finds no split at all — guarded with `or []` after that crashed the raw pass on an avagraha token. Its combinatorial vakya (sentence) parse is **not run**: it cost more than every other engine combined and produced a graph for one pāda in nine verses, so the component was removed rather than tuned.
-- **vidyut — dictionary, derivation, meter; weak sandhi.** Its splitter is the weakest generator measured: reference-consistent chains for 33 of 63 curated padas, against sanskrit_parser's pool containing one for 56 of 64. `_is_quality_split()` suppresses noise by demanding parts ≥ 4 characters with ≥ 2 kosha entries — and with them real words such as `iva`, `yā`, `tu`. So vidyut's splits stay in `<base>.raw.json` as a third opinion and never enter the pada-by-pada comparison. Its other gaps are documented where they occur: no prakriya for avyayas, no anuṣṭubh in meters.tsv (`vrtta: null`, shape still visible as `aksharas_per_pada`), and `Splitter.split_at(word, i)` takes a **byte** offset — passing a Python character index mis-splits non-ASCII words, so `rūpāṇi` came back as `rū | pāṇi`.
+- **vidyut — dictionary, derivation, meter; weak sandhi.** Its splitter is the weakest generator measured: reference-consistent chains for 33 of the 63 padas it covered (measured on the earlier 64-pada fixture), against sanskrit_parser's pool containing a reference-consistent split for 127 of today's 147. `_is_quality_split()` suppresses noise by demanding parts ≥ 4 characters with ≥ 2 kosha entries — and with them real words such as `iva`, `yā`, `tu`. So vidyut's splits stay in `<base>.raw.json` as a third opinion and never enter the pada-by-pada comparison. Its other gaps are documented where they occur: no prakriya for avyayas, no anuṣṭubh in meters.tsv (`vrtta: null`, shape still visible as `aksharas_per_pada`), and `Splitter.split_at(word, i)` takes a **byte** offset — passing a Python character index mis-splits non-ASCII words, so `rūpāṇi` came back as `rū | pāṇi`.
 - **Avagraha (`ऽ`) is left inside the token.** Three variants were tried on Raghuvaṃśa 1.4 (`वंशेऽस्मिन्पूर्वसूरिभिः`): keeping it, deleting it, and restoring the elided `अ`. Deleting strands `स्मिन्` and makes sanskrit_parser return nothing; restoring adds a syllable that vidyut then counts, so the meter came back as `[17, 8, 8]` instead of `[8, 8, 8, 8]`. With the avagraha untouched, sanskrit_parser splits the fused token correctly by itself: `vaṃśe | asmin | pūrvasūribhis`.
 
-**Measured splitting quality.** `tests/data/sandhi_truth.json` holds 64 padas of the pinned verses split the way a reader splits them (Dharmamitra's boundaries, corrected against the published Raghuvaṃśa padaccheda). Against it `_best_word_split()` reproduces the reading for **44/64** padas; morphology-only ranking — the fallback when no kosha is available — manages 36/64, and sanskrit_parser's candidate pool contains a reference-consistent split for 56/64, which bounds any ranking. `tests/test_sandhi_accuracy.py` pins a floor of 42 and prints every missed pada on failure. The remaining misses are context problems (samāsa, case government) that no per-word method can solve — that is the role Dharmamitra plays in the output. Chasing Dharmamitra's own splits was measured and rejected: it agrees with that reference on only **22/64** padas itself (it answers `jagataḥ` as `jagatas | ca`, invents `upahāsya | tām`, and reports base stems instead of surface forms), so matching it would lower the score, not raise it. Metre was tried too, and is reported but never used for splitting: pāda-edge alignment moved one pick (44/64 → 44/64), fitting an anuṣṭubh guru-laghu pattern cost five (44/64 → 39/64) and the caesura rule cost nine on the Raghuvaṃśa rows (32/46 → 23/46), because vidyut scans weights straight across word boundaries and its table has no anuṣṭubh row at all.
+**Measured splitting quality.** `tests/data/sandhi_truth.json` holds 147 padas of the sixteen pinned verses split the way a reader splits them: for nine verses Dharmamitra's boundaries hand-corrected against published padaccheda tables, for seven its reading checked word-for-word against the पदच्छेदः printed for that very verse (transparent compounds listed as their members). Against it `_best_word_split()` reproduces the reading for **103/147** padas; morphology-only ranking — the fallback when no kosha is available — manages 92/147, and sanskrit_parser's candidate pool contains a reference-consistent split for 127/147, which bounds any ranking. `tests/test_sandhi_accuracy.py` pins a floor of 101 and prints every missed pada on failure. The remaining misses are context problems (samāsa, case government) that no per-word method can solve — that is the role Dharmamitra plays in the output. Chasing Dharmamitra's own splits was measured and rejected: on the nine hand-corrected verses it agrees with the reference on only **22/64** padas (it answers `jagataḥ` as `jagatas | ca`, invents `upahāsya | tām`, reports base stems instead of surface forms), so matching it would lower the score, not raise it. Metre was tried too, and is reported but never used for splitting — pāda-edge alignment moved one pick (44/64 → 44/64), fitting an anuṣṭubh guru-laghu pattern cost five (44/64 → 39/64) and the caesura rule cost nine on the Raghuvaṃśa rows (32/46 → 23/46) — figures measured on the earlier 64-pada fixture, because vidyut scans weights straight across word boundaries and its table has no anuṣṭubh row at all.
 
 ## Architecture
 
@@ -388,9 +388,10 @@ Written by the same `app.py` run, or regenerated on its own with
 Contains:
 - `padaccheda`: each engine's full word sequence for the śloka as one pipe-joined line
 - `padas`: one entry per pada **as written in the input**, keyed by engine
-- Per-engine `words` with morphology: Dharmamitra tokens carry kosha `lemma`/`type`; sanskrit_parser forms carry `root`, `vibhakti`, `vacana`, `linga`
+- Per-engine `words` with morphology: Dharmamitra tokens carry kosha `lemma`/`type`; sanskrit_parser forms carry `root`, `vibhakti`, `vacana`, `linga`. A Dharmamitra side that came from a word-level request instead of the verse pass carries `"request": "pada"`
 - `chandas`: vidyut's verse-level meter summary (`vrtta`, `candidates`, per-pāda akshara counts)
 - `differences`: aligned regions where the two engines split a pada differently (only present when they disagree)
+- `dharmamitra_unmatched`: Dharmamitra tokens from the verse pass that rebuild no word of the verse — reported, never filed under a pada (key omitted when empty)
 
 Typically ~7 KB for a śloka (~91% reduction). `<base>.result.json` is byte-stable **for a
 given `<base>.raw.json`**: SP split candidates and morphology groups are re-ranked
@@ -422,7 +423,7 @@ unspecified order; see [DOCUMENTATION.md](DOCUMENTATION.md) §3.
 }
 ```
 
-- `dharmamitra` is `null` when the API returned no tokens for that pada.
+- `dharmamitra` is `null` when neither the verse-level request nor that pada's own word request produced any token for it.
 - A lemma **list** means the vidyut kosha has several stems matching that surface form (genuine ambiguity, not a guess). No lemma key means the kosha had no match.
 - `differences` regions come from `difflib` alignment; agreeing parts (`pratipattaye` above) are omitted and a `null` side marks a split-count mismatch.
 - All comparison is anusvara-normalized: `saṃpṛktau` and `sampṛktau` count as equal.
@@ -436,7 +437,11 @@ sanskrit_parser per-word split ranking (_best_word_split, app.py)
     ↓
 Dharmamitra token lemma enrichment via vidyut kosha (app.py)
     ↓
-DM token grouping under input padas (IAST matching, anusvara-normalized)
+word-level Dharmamitra requests for padas the verse pass left empty,
+appended to the raw document as pada_followups (fill_missing_pada_readings, app.py)
+    ↓
+DM token grouping under input padas — coverage DP over anusvara-normalized IAST
+(group_dm_tokens_by_word), then gap fill from pada_followups (build_padas)
     ↓
 SP morphology collection + ranking across all sandhi splits
     ↓
@@ -444,7 +449,8 @@ difflib region diff between engines
     ↓
 vidyut chandas summary copied to the verse level (_summarize_chandas, app.py)
     ↓
-result document (<base>.result.json: padaccheda + engine-keyed padas + chandas)
+result document (<base>.result.json: padaccheda + engine-keyed padas + chandas
+                [+ dharmamitra_unmatched when a token rebuilds no word])
 ```
 
 This turns a ~90 KB raw document into a ~7 KB reading while preserving the
@@ -511,7 +517,7 @@ fixture: Dharmamitra and vidyut must come back byte-identically, as must the rea
 Dharmamitra column, pada sequence and metre summary, while the sanskrit_parser side is left free to
 vary (see DOCUMENTATION.md §3).
 
-Splitting quality is tested separately. `tests/data/sandhi_truth.json` records how a reader splits 64 padas of those verses; `tests/test_sandhi_accuracy.py` asserts eleven curated cases always (a finite verb must survive whole, an elided conjunction must be separated, attested words must not dissolve into fragments, and three long compounds must be read as their members) and, under the same `SAMSKRTA_LIVE_GOLDEN=1` switch, scores all 64 against `_best_word_split()` with a pinned floor of 42. A pada counts as correct when the part count agrees and each part pairs with an expected part sharing a kosha lemma stem — spelling is not compared, because sandhi changes it and the splitter writes word-final visarga as `s`, anusvara as `m`.
+Splitting quality is tested separately. `tests/data/sandhi_truth.json` records how a reader splits 147 padas of those verses (per-group provenance is spelled out in the test module's docstring); `tests/test_sandhi_accuracy.py` asserts thirteen curated cases always (a finite verb must survive whole, an elided conjunction must be separated, attested words must not dissolve into fragments, and long compounds must be read as their members) and, under the same `SAMSKRTA_LIVE_GOLDEN=1` switch, scores all 147 against `_best_word_split()` with a pinned floor of 101. A pada counts as correct when the part count agrees and each part pairs with an expected part sharing a kosha lemma stem — spelling is not compared, because sandhi changes it and the splitter writes word-final visarga as `s`, anusvara as `m`.
 
 Regenerate a golden after an intentional change:
 

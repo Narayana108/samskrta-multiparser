@@ -237,35 +237,126 @@ def collect_dm_tokens(dm_output: Dict[str, Any]) -> List[Dict[str, Any]]:
     ]
 
 
+def _dm_coverage(word: str, forms: List[str]) -> float:
+    """How completely a run of Dharmamitra token forms rebuilds one pada word.
+
+    SequenceMatcher tolerates the character changes sandhi makes — 'paśca' + 'ardhena' still covers
+    'paścārdhena' — while a run that overshoots the word scores badly, which is what stops one pada
+    from taking its neighbour's tokens.
+    """
+    if not forms:
+        return 0.0
+    target = _norm_anusvara(word).lower()
+    concat = _norm_anusvara("".join(forms)).lower()
+    if not target or not concat:
+        return 0.0
+    return difflib.SequenceMatcher(None, target, concat).ratio()
+
+
+# Longest run of Dharmamitra tokens one pada may be given. Sandhi plus compounds reach six parts in
+# this corpus; ten leaves room without letting a single word absorb a whole line.
+_MAX_DM_PARTS = 10
+
+# Cost of declaring a Dharmamitra token unmatched instead of filing it under a pada. A token that
+# really belongs to a word lifts that word's coverage by far more than this, so the move only wins
+# when the token earns nothing where it stands — which is how 'mā', invented ahead of
+# 'karmaṇy eva adhikāraḥ te' in the Bhagavadgītā 2.47 stream, ends up reported instead of being glued
+# onto a pada whose other tokens are already right.
+_DM_SKIP_PENALTY = 0.02
+
+# A word-level answer must rebuild at least this much of the pada it was requested for. Dharmamitra
+# pads some single-word requests with pieces of a phrase it recognises ('ṛta | iva' ahead of
+# 'vāsāṃsi'); those extras are dropped instead of being shown as a reading.
+_MIN_WORD_REQUEST_COVERAGE = 0.75
+
+
+def _best_dm_subrun(word: str, forms: List[str]) -> tuple:
+    """Best contiguous run of token forms for one word, as (start, length, coverage)."""
+    best_start, best_length, best_score = 0, 0, 0.0
+    for start in range(len(forms)):
+        for end in range(start + 1, min(start + _MAX_DM_PARTS, len(forms)) + 1):
+            score = _dm_coverage(word, forms[start:end])
+            if score > best_score:
+                best_start, best_length, best_score = start, end - start, score
+    return best_start, best_length, best_score
+
+
 def group_dm_tokens_by_word(
     input_words: List[str],
     tokens: List[Dict[str, Any]],
-) -> List[List[Dict[str, Any]]]:
-    """Group flat Dharmamitra tokens under the input word they came from.
+) -> tuple:
+    """Group flat Dharmamitra tokens under the pada word they came from.
 
-    Greedy in-order walk: keep consuming tokens while the token's first letter
-    (anusvara-normalized) occurs somewhere in the current input word. Loose on
-    purpose — sandhi changes token interiors ('vāc' inside 'vāgarthāviva'), so
-    exact prefix matching fails; a shared first letter within the word is the
-    practical signal that we are still inside this pada.
+    Monotonic dynamic program over (word, token) positions: each word takes a contiguous run of at
+    most ``_MAX_DM_PARTS`` tokens, any token may instead be declared unmatched for
+    ``_DM_SKIP_PENALTY``, and the total coverage is maximized. The greedy walk this replaces tested
+    only whether a token's first letter appeared somewhere in the current word, so
+    'grīvābhaṅgābhirāmaṃ' — which contains an 'm' — swallowed 'muhur | anupatati' and left the next
+    pada empty.
+
+    Returns:
+        (groups, unmatched): one list of tokens per input word in stream order, plus the tokens that
+        belong to no pada (Dharmamitra inventions or leftovers), which callers must report rather than
+        hide.
     """
-    groups: List[List[Dict[str, Any]]] = []
-    ti = 0
-    for word in input_words:
-        letters = set(_norm_anusvara(word).lower())
-        group: List[Dict[str, Any]] = []
-        while ti < len(tokens):
-            head = _norm_anusvara(tokens[ti].get("form", ""))[:1].lower()
-            if head and head in letters:
-                group.append(tokens[ti])
-                ti += 1
-            else:
-                break
-        groups.append(group)
-    # Trailing tokens that matched no word attach to the last pada.
-    if groups and ti < len(tokens):
-        groups[-1].extend(tokens[ti:])
-    return groups
+    forms = [_norm_anusvara(t.get("form", "")) for t in tokens]
+    n_words, n_tokens = len(input_words), len(tokens)
+
+    # best[i][j]: highest total coverage reachable for words i.. when tokens j.. are still unused.
+    # take[i][j]: -1 skips token j, 0 gives word i an empty group, >0 is the run length for word i.
+    best = [[0.0] * (n_tokens + 1) for _ in range(n_words + 1)]
+    take = [[0] * (n_tokens + 1) for _ in range(n_words + 1)]
+    for j in range(n_tokens - 1, -1, -1):
+        best[n_words][j] = best[n_words][j + 1] - _DM_SKIP_PENALTY
+        take[n_words][j] = -1
+    for i in range(n_words - 1, -1, -1):
+        for j in range(n_tokens, -1, -1):
+            best[i][j], take[i][j] = best[i + 1][j], 0
+            if j < n_tokens and best[i][j + 1] - _DM_SKIP_PENALTY > best[i][j]:
+                best[i][j], take[i][j] = best[i][j + 1] - _DM_SKIP_PENALTY, -1
+            for k in range(j + 1, min(j + _MAX_DM_PARTS, n_tokens) + 1):
+                candidate = best[i + 1][k] + _dm_coverage(input_words[i], forms[j:k])
+                if candidate > best[i][j]:
+                    best[i][j], take[i][j] = candidate, k - j
+
+    groups: List[List[Dict[str, Any]]] = [[] for _ in input_words]
+    unmatched: List[Dict[str, Any]] = []
+    word_index = token_index = 0
+    while word_index < n_words or token_index < n_tokens:
+        move = take[word_index][token_index] if word_index < n_words else -1
+        if move == -1:
+            unmatched.append(tokens[token_index])
+            token_index += 1
+        elif move == 0:
+            word_index += 1
+        else:
+            groups[word_index] = tokens[token_index:token_index + move]
+            token_index += move
+            word_index += 1
+    return groups, unmatched
+
+
+def collect_dm_word_requests(dm_output: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
+    """Map each pada form to the tokens Dharmamitra returned for it on a word-level request.
+
+    app.py requests a single word when the verse-level pass left that pada with no token of its own;
+    the answers live under ``pada_followups`` in the raw document so this second pass replays them
+    offline. Those answers have no sentence context, which is why they are labelled where used, and
+    only the best contiguous run inside an answer is kept: a request for 'vāsāṃsi' came back as
+    'ṛta | iva | vāsāṃsi', and the two extra pieces rebuild nothing of that pada.
+    """
+    answers: Dict[str, List[Dict[str, Any]]] = {}
+    for entry in dm_output.get("pada_followups") or []:
+        if not isinstance(entry, dict):
+            continue
+        pada = entry.get("pada")
+        tokens = [t for t in (entry.get("tokens") or []) if isinstance(t, dict) and t.get("form")]
+        if not (isinstance(pada, str) and pada and tokens):
+            continue
+        start, length, score = _best_dm_subrun(pada, [_norm_anusvara(t["form"]) for t in tokens])
+        if score >= _MIN_WORD_REQUEST_COVERAGE:
+            answers[pada] = tokens[start:start + length]
+    return answers
 
 
 def _diff_regions(sp: List[str], dm: List[str]) -> List[Dict[str, Any]]:
@@ -319,6 +410,7 @@ def build_padas(
     sp_morph: Dict[str, Dict[str, Any]],
     dm_groups: List[List[Dict[str, Any]]],
     dm_available: bool,
+    dm_word_requests: Optional[Dict[str, List[Dict[str, Any]]]] = None,
 ) -> List[Dict[str, Any]]:
     """Build the per-pada comparison entries (engine-keyed).
 
@@ -326,11 +418,23 @@ def build_padas(
     it did not, an empty group means "no data for this engine", so no
     differences are fabricated; when it did, a pada with no DM tokens is a real
     disagreement and gets a null-side difference region.
+
+    dm_word_requests supplies tokens Dharmamitra returned for a pada form on a
+    word-level follow-up request (no sentence context). They fill only groups the
+    verse-level stream left empty, and such a side is labelled 'request: "pada"' so
+    the reader can see where the reading came from.
     """
     padas: List[Dict[str, Any]] = []
+    requests = dm_word_requests or {}
 
     for word, dm_group in zip(input_words, dm_groups):
         sp_parts = sp_decomp.get(_norm_anusvara(word), [word])
+
+        from_word_request = False
+        if not dm_group and word in requests:
+            dm_group = requests[word]
+            from_word_request = True
+
         dm_forms = [t["form"] for t in dm_group]
 
         entry: Dict[str, Any] = {"pada": word}
@@ -340,6 +444,8 @@ def build_padas(
                 "padaccheda": dm_forms,
                 "words": [_dm_word_entry(t) for t in dm_group],
             }
+            if from_word_request:
+                entry["dharmamitra"]["request"] = "pada"
         else:
             entry["dharmamitra"] = None
 
@@ -414,15 +520,40 @@ def postprocess(raw: Dict[str, Any]) -> Dict[str, Any]:
     sp_decomp = collect_sp_decompositions(sp_output)
     sp_morph = collect_sp_morphology(sp_output)
     dm_tokens = collect_dm_tokens(dm_output)
-    dm_groups = group_dm_tokens_by_word(input_words, dm_tokens)
+    dm_requests = collect_dm_word_requests(dm_output)
+    dm_groups, dm_unmatched = group_dm_tokens_by_word(input_words, dm_tokens)
+    requested = [
+        entry.get("pada")
+        for entry in (dm_output.get("pada_followups") or [])
+        if isinstance(entry, dict) and entry.get("pada")
+    ]
+    unused_requests = [p for p in requested if p not in dm_requests]
+    if unused_requests:
+        print(
+            "Note: Dharmamitrā's word-level answers rebuilt none of these padas, so they were not used: "
+            + " | ".join(str(p) for p in unused_requests),
+            file=sys.stderr,
+        )
 
-    padas = build_padas(input_words, sp_decomp, sp_morph, dm_groups, bool(dm_tokens))
+    padas = build_padas(
+        input_words,
+        sp_decomp,
+        sp_morph,
+        dm_groups,
+        bool(dm_tokens or dm_requests),
+        dm_requests,
+    )
 
     processed: Dict[str, Any] = {
         "input": inp,
         "padaccheda": build_padaccheda(padas),
         "padas": padas,
     }
+
+    # Tokens Dharmamitrā returned that rebuild no pada of the verse — its own additions or leftovers.
+    # They are recorded rather than quietly dropped so a reader can see what the engine produced.
+    if dm_unmatched:
+        processed["dharmamitra_unmatched"] = [t.get("form", "") for t in dm_unmatched]
 
     # vidyut's verse-level meter summary passes through as it is; the raw output
     # keeps the per-pāda detail under engine_outputs.vidyut.meter.

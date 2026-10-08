@@ -45,8 +45,7 @@
       "dharmamitra": {
         "padaccheda": [
           "ca",
-          "aham",
-          "hṛdi"
+          "aham"
         ],
         "words": [
           {
@@ -60,11 +59,6 @@
               "ah",
               "aha"
             ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "hṛdi",
-            "lemma": "hṛd",
             "type": "sūnantāḥ"
           }
         ]
@@ -99,15 +93,25 @@
           ],
           "dharmamitra": [
             "ca",
-            "aham",
-            "hṛdi"
+            "aham"
           ]
         }
       ]
     },
     {
       "pada": "hṛdi",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "hṛdi"
+        ],
+        "words": [
+          {
+            "form": "hṛdi",
+            "lemma": "hṛd",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "hṛdi"
@@ -121,15 +125,7 @@
             "linga": "napuṃsakaliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "hṛdi"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "sanniviṣṭo",
@@ -388,9 +384,7 @@
         "padaccheda": [
           "sarvaiḥ",
           "aham",
-          "eva",
-          "vedyaḥ",
-          "vedānta"
+          "eva"
         ],
         "words": [
           {
@@ -409,16 +403,6 @@
           {
             "form": "eva",
             "lemma": "eva",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "vedyaḥ",
-            "lemma": "vedyā",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "vedānta",
-            "lemma": "vedānta",
             "type": "sūnantāḥ"
           }
         ]
@@ -463,19 +447,23 @@
             "sarvaiḥ",
             "aham"
           ]
-        },
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "vedyaḥ",
-            "vedānta"
-          ]
         }
       ]
     },
     {
       "pada": "vedyo",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "vedyaḥ"
+        ],
+        "words": [
+          {
+            "form": "vedyaḥ",
+            "lemma": "vedyā",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "vedyas"
@@ -495,7 +483,9 @@
           "sanskrit_parser": [
             "vedyas"
           ],
-          "dharmamitra": null
+          "dharmamitra": [
+            "vedyaḥ"
+          ]
         }
       ]
     },
@@ -503,12 +493,18 @@
       "pada": "vedāntakṛdvedavideva",
       "dharmamitra": {
         "padaccheda": [
+          "vedānta",
           "kṛt",
           "veda",
           "vid",
           "eva"
         ],
         "words": [
+          {
+            "form": "vedānta",
+            "lemma": "vedānta",
+            "type": "sūnantāḥ"
+          },
           {
             "form": "kṛt",
             "lemma": [
@@ -576,6 +572,7 @@
             "vedāntakṛt"
           ],
           "dharmamitra": [
+            "vedānta",
             "kṛt"
           ]
         },

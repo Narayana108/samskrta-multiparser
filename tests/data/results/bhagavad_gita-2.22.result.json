@@ -4,13 +4,25 @@
     "iast": "vāsāṃsi jīrṇāni yathā vihāya\nnavāni gṛhṇāti naro'parāṇi\ntathā śarīrāṇi vihāya jīrṇānyanyāni saṃyāti navāni dehī"
   },
   "padaccheda": {
-    "dharmamitra": "yathā | vihāya | navāni | gṛhṇāti | naraḥ | aparāṇi | tathā | śarīrāṇi | vihāya | jīrṇāni | anyāni | saṃyāti | navāni | dehī",
+    "dharmamitra": "vāsāṃsi | jīrṇāni | yathā | vihāya | navāni | gṛhṇāti | naraḥ | aparāṇi | tathā | śarīrāṇi | vihāya | jīrṇāni | anyāni | saṃyāti | navāni | dehī",
     "sanskrit_parser": "vāsāṃsi | jīrṇāni | yathā | vihāya | navāni | gṛhṇāti | naras | aparāṇi | tathā | śarīrāṇi | vihāya | jīrṇāni | anyāni | sam | yāti | navāni | dehī"
   },
   "padas": [
     {
       "pada": "vāsāṃsi",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "vāsāṃsi"
+        ],
+        "words": [
+          {
+            "form": "vāsāṃsi",
+            "lemma": "vāsas",
+            "type": "sūnantāḥ"
+          }
+        ],
+        "request": "pada"
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "vāsāṃsi"
@@ -24,19 +36,23 @@
             "linga": "napuṃsakaliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "vāsāṃsi"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "jīrṇāni",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "jīrṇāni"
+        ],
+        "words": [
+          {
+            "form": "jīrṇāni",
+            "lemma": "jīrṇa",
+            "type": "sūnantāḥ"
+          }
+        ],
+        "request": "pada"
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "jīrṇāni"
@@ -54,15 +70,7 @@
             ]
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "jīrṇāni"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "yathā",

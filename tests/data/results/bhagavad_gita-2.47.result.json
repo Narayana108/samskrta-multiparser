@@ -4,7 +4,7 @@
     "iast": "karmaṇyevādhikāraste mā phaleṣu kadācana\nmā karmaphalaheturbhūrmā te saṅgo'stvakarmaṇi"
   },
   "padaccheda": {
-    "dharmamitra": "mā | karmaṇi | eva | adhikāraḥ | te | mā | phaleṣu | kadācana | mā | karma | phala | hetuḥ | bhūḥ | mā | te | saṅgaḥ | astu | akarmaṇi",
+    "dharmamitra": "karmaṇi | eva | adhikāraḥ | te | mā | phaleṣu | kadācana | mā | karma | phala | hetuḥ | bhūḥ | mā | te | saṅgaḥ | astu | akarmaṇi",
     "sanskrit_parser": "karmaṇye | vā | adhikāras | te | mā | phaleṣu | kadā | cana | mā | karmaphalahetus | bhūs | mā | te | saṅgas | astu | akarmaṇi"
   },
   "padas": [
@@ -12,22 +12,12 @@
       "pada": "karmaṇyevādhikāraste",
       "dharmamitra": {
         "padaccheda": [
-          "mā",
           "karmaṇi",
           "eva",
           "adhikāraḥ",
-          "te",
-          "mā"
+          "te"
         ],
         "words": [
-          {
-            "form": "mā",
-            "lemma": [
-              "ma",
-              "mā"
-            ],
-            "type": "sūnantāḥ"
-          },
           {
             "form": "karmaṇi",
             "lemma": "karmaṇi",
@@ -56,14 +46,6 @@
               "tāy",
               "tāyi",
               "yuṣmad"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "mā",
-            "lemma": [
-              "ma",
-              "mā"
             ],
             "type": "sūnantāḥ"
           }
@@ -115,23 +97,30 @@
             "adhikāras"
           ],
           "dharmamitra": [
-            "mā",
             "karmaṇi",
             "eva",
             "adhikāraḥ"
-          ]
-        },
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "mā"
           ]
         }
       ]
     },
     {
       "pada": "mā",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "mā"
+        ],
+        "words": [
+          {
+            "form": "mā",
+            "lemma": [
+              "ma",
+              "mā"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "mā"
@@ -145,15 +134,7 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "mā"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "phaleṣu",
@@ -272,8 +253,7 @@
           "phala",
           "hetuḥ",
           "bhūḥ",
-          "mā",
-          "te"
+          "mā"
         ],
         "words": [
           {
@@ -308,22 +288,6 @@
             "lemma": [
               "ma",
               "mā"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "te",
-            "lemma": [
-              "ay",
-              "ta",
-              "tad",
-              "tay",
-              "tevi",
-              "tā",
-              "tāvi",
-              "tāy",
-              "tāyi",
-              "yuṣmad"
             ],
             "type": "sūnantāḥ"
           }
@@ -371,18 +335,34 @@
             "hetuḥ",
             "bhūḥ"
           ]
-        },
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "te"
-          ]
         }
       ]
     },
     {
       "pada": "te",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "te"
+        ],
+        "words": [
+          {
+            "form": "te",
+            "lemma": [
+              "ay",
+              "ta",
+              "tad",
+              "tay",
+              "tevi",
+              "tā",
+              "tāvi",
+              "tāy",
+              "tāyi",
+              "yuṣmad"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "te"
@@ -396,15 +376,7 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "te"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "saṅgo'stvakarmaṇi",
@@ -476,6 +448,9 @@
         }
       ]
     }
+  ],
+  "dharmamitra_unmatched": [
+    "mā"
   ],
   "chandas": {
     "vrtta": null,

@@ -44,17 +44,13 @@
       "pada": "sṛṣṭiḥ",
       "dharmamitra": {
         "padaccheda": [
-          "sṛṣṭiḥ",
-          "sraṣṭuḥ"
+          "sṛṣṭiḥ"
         ],
         "words": [
           {
             "form": "sṛṣṭiḥ",
             "lemma": "sṛṣṭi",
             "type": "sūnantāḥ"
-          },
-          {
-            "form": "sraṣṭuḥ"
           }
         ]
       },
@@ -78,8 +74,7 @@
             "sṛṣṭis"
           ],
           "dharmamitra": [
-            "sṛṣṭiḥ",
-            "sraṣṭuḥ"
+            "sṛṣṭiḥ"
           ]
         }
       ]
@@ -88,9 +83,13 @@
       "pada": "sraṣṭurādyā",
       "dharmamitra": {
         "padaccheda": [
+          "sraṣṭuḥ",
           "ādyā"
         ],
         "words": [
+          {
+            "form": "sraṣṭuḥ"
+          },
           {
             "form": "ādyā",
             "lemma": [
@@ -129,7 +128,9 @@
           "sanskrit_parser": [
             "sraṣṭur"
           ],
-          "dharmamitra": null
+          "dharmamitra": [
+            "sraṣṭuḥ"
+          ]
         }
       ]
     },
@@ -137,9 +138,7 @@
       "pada": "vahati",
       "dharmamitra": {
         "padaccheda": [
-          "vahati",
-          "vidhi",
-          "hutam"
+          "vahati"
         ],
         "words": [
           {
@@ -149,22 +148,6 @@
               "vahat",
               "vahati",
               "vahatī"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "vidhi",
-            "lemma": [
-              "vidh",
-              "vidhi"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "hutam",
-            "lemma": [
-              "hu",
-              "huta"
             ],
             "type": "sūnantāḥ"
           }
@@ -183,20 +166,34 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "vidhi",
-            "hutam"
-          ]
-        }
-      ]
+      }
     },
     {
       "pada": "vidhihutaṃ",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "vidhi",
+          "hutam"
+        ],
+        "words": [
+          {
+            "form": "vidhi",
+            "lemma": [
+              "vidh",
+              "vidhi"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "hutam",
+            "lemma": [
+              "hu",
+              "huta"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "vidhi",
@@ -218,16 +215,7 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "vidhi",
-            "hutam"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "yā",
@@ -544,8 +532,7 @@
         "padaccheda": [
           "śruti",
           "viṣaya",
-          "guṇā",
-          "yā"
+          "guṇā"
         ],
         "words": [
           {
@@ -567,14 +554,6 @@
             "lemma": [
               "guṇa",
               "guṇā"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "yā",
-            "lemma": [
-              "ya",
-              "yā"
             ],
             "type": "sūnantāḥ"
           }
@@ -602,15 +581,28 @@
           "dharmamitra": [
             "śruti",
             "viṣaya",
-            "guṇā",
-            "yā"
+            "guṇā"
           ]
         }
       ]
     },
     {
       "pada": "yā",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "yā"
+        ],
+        "words": [
+          {
+            "form": "yā",
+            "lemma": [
+              "ya",
+              "yā"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "yā"
@@ -624,15 +616,7 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "yā"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "sthitā",
@@ -673,10 +657,7 @@
       "pada": "vyāpya",
       "dharmamitra": {
         "padaccheda": [
-          "vyāpya",
-          "viśvam",
-          "yām",
-          "āhuḥ"
+          "vyāpya"
         ],
         "words": [
           {
@@ -685,24 +666,6 @@
               "vyāp",
               "vyāpya"
             ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "viśvam",
-            "lemma": "viśva",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "yām",
-            "lemma": [
-              "ya",
-              "yā"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "āhuḥ",
-            "lemma": "āhū",
             "type": "sūnantāḥ"
           }
         ]
@@ -720,21 +683,22 @@
             "linga": "puṃlliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "viśvam",
-            "yām",
-            "āhuḥ"
-          ]
-        }
-      ]
+      }
     },
     {
       "pada": "viśvam",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "viśvam"
+        ],
+        "words": [
+          {
+            "form": "viśvam",
+            "lemma": "viśva",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "viśvam"
@@ -748,19 +712,31 @@
             "linga": "puṃlliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "viśvam"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "yāmāhuḥ",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "yām",
+          "āhuḥ"
+        ],
+        "words": [
+          {
+            "form": "yām",
+            "lemma": [
+              "ya",
+              "yā"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "āhuḥ",
+            "lemma": "āhū",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "yāmā",
@@ -789,7 +765,10 @@
             "yāmā",
             "ahus"
           ],
-          "dharmamitra": null
+          "dharmamitra": [
+            "yām",
+            "āhuḥ"
+          ]
         }
       ]
     },
@@ -918,30 +897,12 @@
       "pada": "prāṇinaḥ",
       "dharmamitra": {
         "padaccheda": [
-          "prāṇinaḥ",
-          "prāṇavantaḥ",
-          "pratyakṣābhiḥ",
-          "prapannaḥ"
+          "prāṇinaḥ"
         ],
         "words": [
           {
             "form": "prāṇinaḥ",
             "lemma": "prāṇin",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "prāṇavantaḥ",
-            "lemma": "prā",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "pratyakṣābhiḥ",
-            "lemma": "pratyakṣa",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "prapannaḥ",
-            "lemma": "prapad",
             "type": "sūnantāḥ"
           }
         ]
@@ -966,10 +927,7 @@
             "prāṇinas"
           ],
           "dharmamitra": [
-            "prāṇinaḥ",
-            "prāṇavantaḥ",
-            "pratyakṣābhiḥ",
-            "prapannaḥ"
+            "prāṇinaḥ"
           ]
         }
       ]
@@ -978,44 +936,12 @@
       "pada": "prāṇavantaḥ",
       "dharmamitra": {
         "padaccheda": [
-          "tanubhiḥ",
-          "avatu",
-          "vaḥ",
-          "tābhiḥ",
-          "aṣṭābhiḥ"
+          "prāṇavantaḥ"
         ],
         "words": [
           {
-            "form": "tanubhiḥ",
-            "lemma": [
-              "tan",
-              "tanu",
-              "tanū"
-            ],
-            "type": [
-              "sūnantāḥ",
-              "tīnantāḥ"
-            ]
-          },
-          {
-            "form": "avatu",
-            "lemma": "av",
-            "type": "tīnantāḥ"
-          },
-          {
-            "form": "vaḥ",
-            "lemma": [
-              "va",
-              "vā"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "tābhiḥ"
-          },
-          {
-            "form": "aṣṭābhiḥ",
-            "lemma": "aṣṭan",
+            "form": "prāṇavantaḥ",
+            "lemma": "prā",
             "type": "sūnantāḥ"
           }
         ]
@@ -1040,18 +966,25 @@
             "prāṇavantas"
           ],
           "dharmamitra": [
-            "tanubhiḥ",
-            "avatu",
-            "vaḥ",
-            "tābhiḥ",
-            "aṣṭābhiḥ"
+            "prāṇavantaḥ"
           ]
         }
       ]
     },
     {
       "pada": "pratyakṣābhiḥ",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "pratyakṣābhiḥ"
+        ],
+        "words": [
+          {
+            "form": "pratyakṣābhiḥ",
+            "lemma": "pratyakṣa",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "pratyakṣa",
@@ -1080,13 +1013,45 @@
             "pratyakṣa",
             "ābhis"
           ],
-          "dharmamitra": null
+          "dharmamitra": [
+            "pratyakṣābhiḥ"
+          ]
         }
       ]
     },
     {
       "pada": "prapannastanubhiravatu",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "prapannaḥ",
+          "tanubhiḥ",
+          "avatu"
+        ],
+        "words": [
+          {
+            "form": "prapannaḥ",
+            "lemma": "prapad",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "tanubhiḥ",
+            "lemma": [
+              "tan",
+              "tanu",
+              "tanū"
+            ],
+            "type": [
+              "sūnantāḥ",
+              "tīnantāḥ"
+            ]
+          },
+          {
+            "form": "avatu",
+            "lemma": "av",
+            "type": "tīnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "prapannas",
@@ -1126,10 +1091,12 @@
         {
           "sanskrit_parser": [
             "prapannas",
-            "tanubhis",
-            "avatu"
+            "tanubhis"
           ],
-          "dharmamitra": null
+          "dharmamitra": [
+            "prapannaḥ",
+            "tanubhiḥ"
+          ]
         }
       ]
     },
@@ -1137,9 +1104,28 @@
       "pada": "vastābhiraṣṭābhirīśaḥ",
       "dharmamitra": {
         "padaccheda": [
+          "vaḥ",
+          "tābhiḥ",
+          "aṣṭābhiḥ",
           "īśaḥ"
         ],
         "words": [
+          {
+            "form": "vaḥ",
+            "lemma": [
+              "va",
+              "vā"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "tābhiḥ"
+          },
+          {
+            "form": "aṣṭābhiḥ",
+            "lemma": "aṣṭan",
+            "type": "sūnantāḥ"
+          },
           {
             "form": "īśaḥ",
             "lemma": [
@@ -1200,6 +1186,9 @@
             "īśas"
           ],
           "dharmamitra": [
+            "vaḥ",
+            "tābhiḥ",
+            "aṣṭābhiḥ",
             "īśaḥ"
           ]
         }

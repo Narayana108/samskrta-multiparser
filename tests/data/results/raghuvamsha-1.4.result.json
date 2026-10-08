@@ -75,9 +75,7 @@
       "dharmamitra": {
         "padaccheda": [
           "kṛta",
-          "vāgdvāre",
-          "vaṃśe",
-          "asmin"
+          "vāgdvāre"
         ],
         "words": [
           {
@@ -93,16 +91,6 @@
           {
             "form": "vāgdvāre",
             "lemma": "vāgdvāra",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "vaṃśe",
-            "lemma": "vaṃśa",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "asmin",
-            "lemma": "idam",
             "type": "sūnantāḥ"
           }
         ]
@@ -132,32 +120,28 @@
             "linga": "napuṃsakaliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "vaṃśe",
-            "asmin"
-          ]
-        }
-      ]
+      }
     },
     {
       "pada": "vaṃśe'sminpūrvasūribhiḥ",
       "dharmamitra": {
         "padaccheda": [
+          "vaṃśe",
+          "asmin",
           "pūrva",
-          "sūribhiḥ",
-          "maṇau",
-          "vajra",
-          "samutkīrṇe",
-          "sūtrasya",
-          "iva",
-          "asti",
-          "mama"
+          "sūribhiḥ"
         ],
         "words": [
+          {
+            "form": "vaṃśe",
+            "lemma": "vaṃśa",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "asmin",
+            "lemma": "idam",
+            "type": "sūnantāḥ"
+          },
           {
             "form": "pūrva",
             "lemma": [
@@ -176,47 +160,6 @@
               "sūrī"
             ],
             "type": "sūnantāḥ"
-          },
-          {
-            "form": "maṇau",
-            "lemma": "maṇ",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "vajra",
-            "lemma": [
-              "vajra",
-              "vajrā"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "samutkīrṇe",
-            "lemma": "samutkṝ",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "sūtrasya",
-            "lemma": "sūtra",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "iva",
-            "lemma": "iva",
-            "type": "avyayam"
-          },
-          {
-            "form": "asti",
-            "lemma": [
-              "as",
-              "asti"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "mama",
-            "lemma": "mā",
-            "type": "tīnantāḥ"
           }
         ]
       },
@@ -253,27 +196,29 @@
       "differences": [
         {
           "sanskrit_parser": [
-            "vaṃśe",
-            "asmin",
             "pūrvasūribhis"
           ],
           "dharmamitra": [
             "pūrva",
-            "sūribhiḥ",
-            "maṇau",
-            "vajra",
-            "samutkīrṇe",
-            "sūtrasya",
-            "iva",
-            "asti",
-            "mama"
+            "sūribhiḥ"
           ]
         }
       ]
     },
     {
       "pada": "maṇau",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "maṇau"
+        ],
+        "words": [
+          {
+            "form": "maṇau",
+            "lemma": "maṇ",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "maṇau"
@@ -287,19 +232,31 @@
             "linga": "puṃlliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "maṇau"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "vajrasamutkīrṇe",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "vajra",
+          "samutkīrṇe"
+        ],
+        "words": [
+          {
+            "form": "vajra",
+            "lemma": [
+              "vajra",
+              "vajrā"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "samutkīrṇe",
+            "lemma": "samutkṝ",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "vajra",
@@ -321,20 +278,37 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "vajra",
-            "samutkīrṇe"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "sūtrasyevāsti",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "sūtrasya",
+          "iva",
+          "asti"
+        ],
+        "words": [
+          {
+            "form": "sūtrasya",
+            "lemma": "sūtra",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "iva",
+            "lemma": "iva",
+            "type": "avyayam"
+          },
+          {
+            "form": "asti",
+            "lemma": [
+              "as",
+              "asti"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "sūtrasya",
@@ -365,21 +339,22 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "sūtrasya",
-            "iva",
-            "asti"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "me",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "mama"
+        ],
+        "words": [
+          {
+            "form": "mama",
+            "lemma": "mā",
+            "type": "tīnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "me"
@@ -399,7 +374,9 @@
           "sanskrit_parser": [
             "me"
           ],
-          "dharmamitra": null
+          "dharmamitra": [
+            "mama"
+          ]
         }
       ]
     },

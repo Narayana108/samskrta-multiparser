@@ -768,7 +768,7 @@ def test_dharmamitra_retries_share_one_deadline(monkeypatch):
 
     asked = []
 
-    def post(url, headers=None, json=None, timeout=None):  # noqa: A002 - API shape
+    def post(url, headers=None, json=None, timeout=None, stream=False):  # noqa: A002 - API shape
         asked.append(timeout)
         time.sleep(0.2)
         raise Timeout()
@@ -789,7 +789,209 @@ def test_dharmamitra_retries_share_one_deadline(monkeypatch):
     assert asked[0] == pytest.approx(0.5, abs=0.05)
     assert 0 < asked[1] < asked[0]
     assert elapsed < 1.0
-    assert result == {"error": "Dharmamitra API request timed out after 0.5s"}
+    assert result == {"error": "Dharmamitra API request timed out"}
+
+
+def test_an_http_error_body_is_never_parsed_as_an_answer(monkeypatch):
+    # A gateway error page that happens to be JSON in the answer shape must not become a reading.
+    # The old retry loop kept the failed response object alive, so an HTTP 5xx on attempt 1 plus a
+    # timeout on attempt 2 fell through to parsing that error body as if it were the API's answer.
+    class HttpError(Exception):
+        pass
+
+    class Timeout(Exception):
+        pass
+
+    bodies_read = []
+    asked = []
+
+    class ErrorResponse:
+        headers = {"Content-Length": "42"}
+
+        def raise_for_status(self):
+            raise HttpError("503 Service Unavailable")
+
+        def iter_content(self, chunk_size=0):
+            bodies_read.append(True)
+            yield b'{"results": ["tampered_output"]}'
+
+    def post(url, headers=None, json=None, timeout=None, stream=False):  # noqa: A002 - API shape
+        asked.append(stream)
+        if len(asked) == 1:
+            return ErrorResponse()
+        raise Timeout()
+
+    monkeypatch.setitem(
+        sys.modules,
+        "requests",
+        SimpleNamespace(
+            post=post,
+            exceptions=SimpleNamespace(Timeout=Timeout, RequestException=HttpError),
+        ),
+    )
+
+    result = app.run_dharmamitra("agnim īḷe", ["agnim īḷe"])
+
+    assert asked == [True, True], "the body must be streamed so it can be capped"
+    assert bodies_read == [], "a failed attempt's body must never be read"
+    assert result == {"error": "Dharmamitra API request timed out"}
+    assert "tampered_output" not in json.dumps(result)
+
+
+def test_an_announced_oversized_response_is_refused_before_streaming(monkeypatch):
+    class ChattyHeaders:
+        headers = {"Content-Length": str(app._MAX_RESPONSE_BYTES + 1)}
+
+        def raise_for_status(self):
+            return None
+
+        def iter_content(self, chunk_size=0):
+            raise AssertionError("an announced oversized body must not be streamed")
+            yield b""  # pragma: no cover - makes this a generator
+
+    monkeypatch.setitem(
+        sys.modules,
+        "requests",
+        SimpleNamespace(
+            post=lambda *a, **k: ChattyHeaders(),
+            exceptions=SimpleNamespace(Timeout=Exception, RequestException=Exception),
+        ),
+    )
+
+    result = app.run_dharmamitra("agnim īḷe", ["agnim īḷe"])
+    assert result["error"].startswith("Dharmamitra API response too large")
+    assert "tampered" not in json.dumps(result)
+
+
+def test_a_streamed_body_past_the_cap_is_dropped(monkeypatch):
+    class EndlessResponse:
+        headers = {}
+
+        def raise_for_status(self):
+            return None
+
+        def iter_content(self, chunk_size=0):
+            while True:
+                yield b"x" * 65536
+
+    monkeypatch.setitem(
+        sys.modules,
+        "requests",
+        SimpleNamespace(
+            post=lambda *a, **k: EndlessResponse(),
+            exceptions=SimpleNamespace(Timeout=Exception, RequestException=Exception),
+        ),
+    )
+
+    result = app.run_dharmamitra("agnim īḷe", ["agnim īḷe"])
+    assert "more than" in result["error"] and "bytes streamed" in result["error"]
+
+
+def test_the_body_reader_runs_on_a_real_requests_response():
+    # The fakes above only implement the methods this client happens to call, so they cannot catch a
+    # method name that does not exist on `requests.Response` at all — an `iter_bytes` reader passed every
+    # fake-based test and then failed all sixteen live golden runs. This builds the real object.
+    import io
+
+    import requests
+    from urllib3.response import HTTPResponse
+
+    payload = b'{"results": ["agni_"]}'
+    response = requests.Response()
+    response.status_code = 200
+    response.raw = HTTPResponse(
+        body=io.BytesIO(payload),
+        headers={"Content-Length": str(len(payload))},
+        preload_content=False,
+        decode_content=False,
+    )
+    response.headers = {"Content-Length": str(len(payload))}
+
+    body, failure = app._read_capped_body(response, time.monotonic() + 5)
+    assert failure is None
+    assert json.loads(body)["results"] == ["agni_"]
+
+
+def test_malformed_numeric_env_overrides_warn_and_default(monkeypatch, capsys):
+    # These settings are read at import time; a bad value must not turn into an import traceback.
+    monkeypatch.setenv("SAMSKRTA_WORKERS", "two")
+    assert app._env_number("SAMSKRTA_WORKERS", 0) == 0
+    monkeypatch.setenv("DHARMAMITRA_TIMEOUT_SECS", "20s")
+    assert app._env_number("DHARMAMITRA_TIMEOUT_SECS", 20.0) == 20.0
+    err = capsys.readouterr().err
+    assert "ignoring invalid SAMSKRTA_WORKERS='two'" in err
+    assert "ignoring invalid DHARMAMITRA_TIMEOUT_SECS='20s'" in err
+
+
+def test_word_requests_get_an_absolute_deadline(monkeypatch):
+    # The follow-up loop hands the request helper an absolute time.monotonic() deadline. Handing it a
+    # duration instead made every word request fail instantly with 'never completed'.
+    seen = []
+
+    def fake_request(text, deadline):
+        seen.append((text, deadline))
+        return "tapas_", None
+
+    monkeypatch.setattr(app, "_dharmamitra_raw_output", fake_request)
+    monkeypatch.setattr(app, "DHARMAMITRA_DEADLINE_SECS", 3.0)
+    dm = {"tokens": [{"form": "agnim"}]}
+    processed = {"padas": [
+        {"pada": "agnim", "dharmamitra": {"padaccheda": ["agnim"], "words": []}},
+        {"pada": "tapodhena", "dharmamitra": None},
+    ]}
+
+    started = time.monotonic()
+    assert app.fill_missing_pada_readings(dm, processed) == 1
+
+    assert [text for text, _ in seen] == ["tapodhena"]
+    assert seen[0][1] == pytest.approx(started + 3.0, abs=0.5)
+    # The answer is recorded in the raw document so an offline rebuild replays it without the network.
+    assert dm["pada_followups"] == [
+        {"pada": "tapodhena", "raw_output": "tapas_", "tokens": [{"form": "tapas"}]}
+    ]
+
+
+def test_failed_word_request_is_reported_and_leaves_the_pada_untagged(monkeypatch, capsys):
+    monkeypatch.setattr(
+        app, "_dharmamitra_raw_output", lambda text, deadline: (None, "Dharmamitra API request timed out")
+    )
+    dm = {"tokens": [{"form": "agnim"}]}
+    processed = {"padas": [{"pada": "tapodhena", "dharmamitra": None}]}
+    assert app.fill_missing_pada_readings(dm, processed) == 0
+    assert "pada_followups" not in dm
+    assert "word request for 'tapodhena' failed" in capsys.readouterr().err
+
+
+def test_word_requests_stop_when_the_deadline_has_passed(monkeypatch, capsys):
+    monkeypatch.setattr(app, "DHARMAMITRA_DEADLINE_SECS", 0.0)
+    dm = {"tokens": [{"form": "agnim"}]}
+    processed = {"padas": [{"pada": "tapodhena", "dharmamitra": None}]}
+    assert app.fill_missing_pada_readings(dm, processed) == 0
+    assert "ran out of time" in capsys.readouterr().err
+
+
+def test_word_requests_are_skipped_when_the_verse_pass_gave_nothing(monkeypatch):
+    # An engine that failed outright is reported as failed; patching individual padas would invent a
+    # reading the API never gave.
+    calls = []
+    monkeypatch.setattr(app, "_dharmamitra_raw_output", lambda t, d: calls.append(t) or ("x_", None))
+    processed = {"padas": [{"pada": "tapodhena", "dharmamitra": None}]}
+    assert app.fill_missing_pada_readings({"error": "Dharmamitra API unavailable"}, processed) == 0
+    assert app.fill_missing_pada_readings({"tokens": []}, processed) == 0
+    assert calls == []
+
+
+def test_word_request_limit_is_announced_when_it_bites(monkeypatch, capsys):
+    seen = []
+    monkeypatch.setattr(app, "_MAX_PADA_FOLLOWUPS", 2)
+    monkeypatch.setattr(
+        app, "_dharmamitra_raw_output", lambda t, d: seen.append(t) or ("tapas_", None)
+    )
+    dm = {"tokens": [{"form": "agnim"}]}
+    processed = {"padas": [{"pada": f"w{i}", "dharmamitra": None} for i in range(5)]}
+    assert app.fill_missing_pada_readings(dm, processed) == 2
+    assert seen == ["w0", "w1"]
+    assert "requesting only the first 2" in capsys.readouterr().err
 
 
 def test_kosha_is_built_once_per_process(monkeypatch):

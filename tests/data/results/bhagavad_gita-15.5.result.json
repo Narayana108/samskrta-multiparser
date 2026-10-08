@@ -69,8 +69,7 @@
         "padaccheda": [
           "jita",
           "saṅga",
-          "doṣāḥ",
-          "adhyātma"
+          "doṣāḥ"
         ],
         "words": [
           {
@@ -89,11 +88,6 @@
               "doṣa",
               "doṣā"
             ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "adhyātma",
-            "lemma": "adhyātma",
             "type": "sūnantāḥ"
           }
         ]
@@ -129,8 +123,7 @@
           "dharmamitra": [
             "jita",
             "saṅga",
-            "doṣāḥ",
-            "adhyātma"
+            "doṣāḥ"
           ]
         }
       ]
@@ -139,9 +132,15 @@
       "pada": "adhyātmanityā",
       "dharmamitra": {
         "padaccheda": [
+          "adhyātma",
           "nityāḥ"
         ],
         "words": [
+          {
+            "form": "adhyātma",
+            "lemma": "adhyātma",
+            "type": "sūnantāḥ"
+          },
           {
             "form": "nityāḥ",
             "lemma": [
@@ -177,7 +176,6 @@
       "differences": [
         {
           "sanskrit_parser": [
-            "adhyātma",
             "nityā"
           ],
           "dharmamitra": [

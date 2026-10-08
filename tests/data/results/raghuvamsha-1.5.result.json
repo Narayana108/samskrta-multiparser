@@ -18,12 +18,7 @@
           "śuddhānām",
           "āphala",
           "udaya",
-          "karmaṇām",
-          "ā",
-          "samudra",
-          "kṣitīśānām",
-          "ānāka",
-          "ratha"
+          "karmaṇām"
         ],
         "words": [
           {
@@ -70,35 +65,6 @@
               "karman",
               "karmanāman"
             ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "ā",
-            "lemma": [
-              "a",
-              "ā"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "samudra",
-            "lemma": [
-              "samudra",
-              "samudrā"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "kṣitīśānām",
-            "lemma": "kṣitīśa",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "ānāka"
-          },
-          {
-            "form": "ratha",
-            "lemma": "ratha",
             "type": "sūnantāḥ"
           }
         ]
@@ -160,12 +126,7 @@
           "dharmamitra": [
             "āphala",
             "udaya",
-            "karmaṇām",
-            "ā",
-            "samudra",
-            "kṣitīśānām",
-            "ānāka",
-            "ratha"
+            "karmaṇām"
           ]
         }
       ]
@@ -174,9 +135,43 @@
       "pada": "āsamudrakṣitīśānāmānākarathavartmanām",
       "dharmamitra": {
         "padaccheda": [
+          "ā",
+          "samudra",
+          "kṣitīśānām",
+          "ānāka",
+          "ratha",
           "vartmanām"
         ],
         "words": [
+          {
+            "form": "ā",
+            "lemma": [
+              "a",
+              "ā"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "samudra",
+            "lemma": [
+              "samudra",
+              "samudrā"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "kṣitīśānām",
+            "lemma": "kṣitīśa",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "ānāka"
+          },
+          {
+            "form": "ratha",
+            "lemma": "ratha",
+            "type": "sūnantāḥ"
+          },
           {
             "form": "vartmanām",
             "lemma": "vartman",
@@ -226,11 +221,20 @@
         {
           "sanskrit_parser": [
             "āsam",
-            "udra",
-            "kṣitīśānām",
+            "udra"
+          ],
+          "dharmamitra": [
+            "ā",
+            "samudra"
+          ]
+        },
+        {
+          "sanskrit_parser": [
             "ānākarathavartmanām"
           ],
           "dharmamitra": [
+            "ānāka",
+            "ratha",
             "vartmanām"
           ]
         }

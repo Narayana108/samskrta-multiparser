@@ -168,10 +168,11 @@ EXPECTED = {
         "padas": 14,
         "aksharas_per_pada": [11, 11, 11, 11],
         "chandas_candidates": ["indravajrā", "indravaṃśā", "upendravajrā", "vaṃśastha"],
-        # Dharmamitra's token stream runs out before the first pada of the verse.
+        # Dharmamitrā's verse-level pass skipped the two opening words; each got a request of its own,
+        # so the reading line covers the whole verse and those sides carry 'request': 'pada'.
         "dharmamitra_padaccheda": (
-            "yathā | vihāya | navāni | gṛhṇāti | naraḥ | aparāṇi | tathā | śarīrāṇi "
-            "| vihāya | jīrṇāni | anyāni | saṃyāti | navāni | dehī"
+            "vāsāṃsi | jīrṇāni | yathā | vihāya | navāni | gṛhṇāti | naraḥ | aparāṇi | tathā "
+            "| śarīrāṇi | vihāya | jīrṇāni | anyāni | saṃyāti | navāni | dehī"
         ),
         # Both engines cut the joined word at the pāda boundary; only sanskrit_parser also cuts the
         # finite verb sam + yāti.
@@ -184,11 +185,14 @@ EXPECTED = {
         "padas": 8,
         "aksharas_per_pada": [8, 8, 8, 8],
         "chandas_candidates": ["candralekhā", "vasumatī"],
-        # सङ्गोऽस्त्वकर्मणि: both engines restore the elided 'a' as a separate word.
+        # Dharmamitrā put a 'mā' ahead of the first pāda, where it rebuilds no pada; it is reported in
+        # 'dharmamitra_unmatched' instead of being filed under a word. Everything else matches the
+        # published padaccheda (karmaṇi | eva | adhikāraḥ | te … saṅgaḥ | astu | akarmaṇi).
         "dharmamitra_padaccheda": (
-            "mā | karmaṇi | eva | adhikāraḥ | te | mā | phaleṣu | kadācana | mā | karma "
-            "| phala | hetuḥ | bhūḥ | mā | te | saṅgaḥ | astu | akarmaṇi"
+            "karmaṇi | eva | adhikāraḥ | te | mā | phaleṣu | kadācana | mā | karma | phala "
+            "| hetuḥ | bhūḥ | mā | te | saṅgaḥ | astu | akarmaṇi"
         ),
+        "dharmamitra_unmatched": ["mā"],
         # …and the first pāda is cut in the wrong place: karmaṇye | vā for karmaṇi + eva.
         "sanskrit_parser_padaccheda": (
             "karmaṇye | vā | adhikāras | te | mā | phaleṣu | kadā | cana | mā "
@@ -250,12 +254,15 @@ EXPECTED = {
         "padas": 15,
         "aksharas_per_pada": [21, 21, 21, 21],
         "chandas_candidates": ["sragdharā"],
-        # Dharmamitra never reaches the opening compound; sanskrit_parser cuts grīvā + bhaṅgā.
+        # Dharmamitrā's verse pass never reached the opening compound; a request for that one pada
+        # supplied it, so every word of this sragdharā verse is covered. sanskrit_parser cuts
+        # grīvās | bhaṅgā and leaves paścārdhena whole.
         "dharmamitra_padaccheda": (
-            "muhur | anupatati | syandane | baddha | dṛṣṭiḥ | paśca | ardhena | praviṣṭaḥ "
-            "| śara | patana | bhayāt | bhūyasā | pūrva | kāyam | darbhaiḥ | ardha "
-            "| avalīḍhaiḥ | śrama | vivṛta | mukha | bhraṃśibhiḥ | kīrṇa | vartmā | paśya "
-            "| udagra | pluta | tvāt | viyati | bahutaram | stokam | urvyām | prayāti"
+            "grīvā | bhaṅga | abhirāmam | muhur | anupatati | syandane | baddha | dṛṣṭiḥ "
+            "| paśca | ardhena | praviṣṭaḥ | śara | patana | bhayāt | bhūyasā | pūrva | kāyam "
+            "| darbhaiḥ | ardha | avalīḍhaiḥ | śrama | vivṛta | mukha | bhraṃśibhiḥ | kīrṇa "
+            "| vartmā | paśya | udagra | pluta | tvāt | viyati | bahutaram | stokam | urvyām "
+            "| prayāti"
         ),
         "sanskrit_parser_padaccheda": (
             "grīvās | bhaṅgā | abhirāmam | muhur | anu | patati | syandane | baddha "
@@ -338,7 +345,9 @@ def test_raw_document_shape(stem):
 def test_result_document_shape(stem):
     result = load_golden(stem, ".result.json")
     expected = EXPECTED[stem]
-    assert list(result) == ["input", "padaccheda", "padas", "chandas"]
+    extra = ["dharmamitra_unmatched"] if "dharmamitra_unmatched" in expected else []
+    assert list(result) == ["input", "padaccheda", "padas", *extra, "chandas"]
+    assert result.get("dharmamitra_unmatched", []) == expected.get("dharmamitra_unmatched", [])
     assert "engine_errors" not in result  # a clean golden run has no failed engine
 
     chandas = result["chandas"]
@@ -350,13 +359,12 @@ def test_result_document_shape(stem):
     assert len(padas) == expected["padas"]
     for pada in padas:
         assert set(pada) >= {"pada", "dharmamitra", "sanskrit_parser"}
-        # A null side is real behaviour: Dharmamitra's token stream can run out at a
-        # pada when it split an earlier word into more tokens than there were padas.
+        # A null side stays real behaviour: Dharmamitrā can skip a word in the verse pass, and its own
+        # word-level request may still return nothing usable for that pada.
         sides = [s for s in (pada["dharmamitra"], pada["sanskrit_parser"]) if s is not None]
         assert sides, f"{pada['pada']}: neither engine contributed"
         for side in sides:
             assert isinstance(side["padaccheda"], list)
-
     padaccheda = result["padaccheda"]
     for key, value in (
         ("dharmamitra_padaccheda", "dharmamitra"),
@@ -380,15 +388,19 @@ def test_raghuvamsha_one_dot_one_keeps_both_readings_of_the_compound():
     assert pada["differences"], "a disagreement this large must be recorded"
 
 
-def test_raghuvamsha_one_dot_two_lets_the_token_streams_drift_apart():
-    """मोहादुडुपेन: Dharmamitra's tokens were spent on earlier padas, so its side is null
-    while sanskrit_parser still offers a three-word reading; most padas disagree."""
+def test_raghuvamsha_one_dot_two_keeps_every_word_on_its_own_pada():
+    """मोहादुडुपेन: both engines read mohāt | uḍupena | asmi.
+
+    The greedy aligner this corpus used to pin spent Dharmamitrā's tokens on earlier padas and left
+    this pada null; the coverage DP keeps every token inside a word it can rebuild, so five of the
+    nine padas differ instead of most of them."""
     result = load_golden("raghuvamsha-1.2", ".result.json")
     pada = next(p for p in result["padas"] if p["pada"] == "mohāduḍupenāsmi")
-    assert pada["dharmamitra"] is None, "the drift must stay visible as a null side"
+    assert pada["dharmamitra"]["padaccheda"] == ["mohāt", "uḍupena", "asmi"]
     assert pada["sanskrit_parser"]["padaccheda"] == ["mohāt", "uḍupena", "asmi"]
+    assert "differences" not in pada, "the two engines say the same thing here"
     differing = [p for p in result["padas"] if p.get("differences")]
-    assert len(differing) >= 5
+    assert len(differing) == 5
 
 
 def test_abhijnaana_shakuntala_keeps_odd_length_padas_whole():
@@ -403,17 +415,17 @@ def test_abhijnaana_shakuntala_keeps_odd_length_padas_whole():
 def test_bhagavad_gita_eighty_sixty_six_pins_the_harder_split():
     """मामेकं and मोक्षयिष्यामि: one split the offline ranker now gets right, one it does not.
 
-    Dharmamitra's extra token is attached to the preceding pada, so each pin names the pada that
-    actually carries it. The finite verb survives whole because every candidate that cut it lost
-    on dictionary attestation; the fused `mām + ekam` is still mis-cut, which the accuracy floor
-    in ``tests/test_sandhi_accuracy.py`` counts as a miss rather than hiding.
+    Dharmamitrā's 'mām' is filed on its own pada, where the published padaccheda puts it (mām | ekam).
+    The finite verb survives whole because every candidate that cut it lost on dictionary attestation;
+    the fused `mām + ekam` is still mis-cut by sanskrit_parser, which the accuracy floor in
+    ``tests/test_sandhi_accuracy.py`` counts as a miss rather than hiding.
     """
     result = load_golden("bhagavad_gita-18.66", ".result.json")
     assert "mām | ekam" in result["padaccheda"]["dharmamitra"]
     assert "māme | akam" in result["padaccheda"]["sanskrit_parser"]
 
     pada = next(p for p in result["padas"] if p["pada"] == "māmekaṃ")
-    assert pada["dharmamitra"]["padaccheda"] == ["ekam"]
+    assert pada["dharmamitra"]["padaccheda"] == ["mām", "ekam"]
     assert pada["sanskrit_parser"]["padaccheda"] == ["māme", "akam"]
 
     pada = next(p for p in result["padas"] if p["pada"] == "mokṣayiṣyāmi")
@@ -423,18 +435,18 @@ def test_bhagavad_gita_eighty_sixty_six_pins_the_harder_split():
     )
 
 
-def test_raghuvamsha_one_dot_three_reads_the_elision_inside_the_word():
-    """गमिष्याम्युपहास्यताम्: Dharmamitra invents a 'tām'; the offline ranker keeps one word.
+def test_raghuvamsha_one_dot_three_keeps_each_token_on_the_word_it_rebuilds():
+    """गमिष्याम्युपहास्यताम्: Dharmamitrā invents a 'tām'; the offline ranker keeps one word.
 
-    Dharmamitra's token stream has also drifted by this pada — it spends 'prāṃśu' here — which is
-    exactly why its column cannot be the reference for splitting (DOCUMENTATION §3).
-    """
+    Its 'prāṃśu' belongs to the following pada and now stays there, so the streams no longer drift
+    across padas; the invented 'tām' is still shown here because it does rebuild part of this word."""
     result = load_golden("raghuvamsha-1.3", ".result.json")
     pada = next(p for p in result["padas"] if p["pada"] == "gamiṣyāmyupahāsyatām")
-    assert pada["dharmamitra"]["padaccheda"] == ["gamiṣyāmi", "upahāsya", "tām", "prāṃśu"]
+    assert pada["dharmamitra"]["padaccheda"] == ["gamiṣyāmi", "upahāsya", "tām"]
     assert pada["sanskrit_parser"]["padaccheda"] == ["gamiṣyāmi", "upahāsyatām"]
-    # The compound in the next pada is left as received: no engine resolves samāsa offline.
+    # Dharmamitrā decomposes the compound in the next pada while sanskrit_parser leaves it whole.
     pada = next(p for p in result["padas"] if p["pada"] == "prāṃśulabhye")
+    assert pada["dharmamitra"]["padaccheda"] == ["prāṃśu", "labhye"]
     assert pada["sanskrit_parser"]["padaccheda"] == ["prāṃśulabhye"]
 
 

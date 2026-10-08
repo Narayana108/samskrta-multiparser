@@ -116,9 +116,7 @@
       "pada": "ramyaṃ",
       "dharmamitra": {
         "padaccheda": [
-          "ramyam",
-          "malinam",
-          "api"
+          "ramyam"
         ],
         "words": [
           {
@@ -128,22 +126,6 @@
               "ramya"
             ],
             "type": "sūnantāḥ"
-          },
-          {
-            "form": "malinam",
-            "lemma": "malina",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "api",
-            "lemma": [
-              "ap",
-              "api"
-            ],
-            "type": [
-              "avyayam",
-              "sūnantāḥ"
-            ]
           }
         ]
       },
@@ -165,20 +147,34 @@
             ]
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "malinam",
-            "api"
-          ]
-        }
-      ]
+      }
     },
     {
       "pada": "malinamapi",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "malinam",
+          "api"
+        ],
+        "words": [
+          {
+            "form": "malinam",
+            "lemma": "malina",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "api",
+            "lemma": [
+              "ap",
+              "api"
+            ],
+            "type": [
+              "avyayam",
+              "sūnantāḥ"
+            ]
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "malinam",
@@ -200,24 +196,14 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "malinam",
-            "api"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "himāṃśorlakṣma",
       "dharmamitra": {
         "padaccheda": [
           "himāṃśoḥ",
-          "lakṣma",
-          "lakṣmīm"
+          "lakṣma"
         ],
         "words": [
           {
@@ -228,11 +214,6 @@
           {
             "form": "lakṣma",
             "lemma": "lakṣman",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "lakṣmīm",
-            "lemma": "lakṣmī",
             "type": "sūnantāḥ"
           }
         ]
@@ -267,18 +248,23 @@
           "dharmamitra": [
             "himāṃśoḥ"
           ]
-        },
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "lakṣmīm"
-          ]
         }
       ]
     },
     {
       "pada": "lakṣmīṃ",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "lakṣmīm"
+        ],
+        "words": [
+          {
+            "form": "lakṣmīm",
+            "lemma": "lakṣmī",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "lakṣmīm"
@@ -292,39 +278,19 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "lakṣmīm"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "tanoti",
       "dharmamitra": {
         "padaccheda": [
-          "tanoti",
-          "iyam",
-          "adhika"
+          "tanoti"
         ],
         "words": [
           {
             "form": "tanoti",
             "lemma": "tan",
             "type": "tīnantāḥ"
-          },
-          {
-            "form": "iyam",
-            "lemma": "iyam",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "adhika",
-            "lemma": "adhika",
-            "type": "sūnantāḥ"
           }
         ]
       },
@@ -344,24 +310,27 @@
             ]
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "iyam",
-            "adhika"
-          ]
-        }
-      ]
+      }
     },
     {
       "pada": "iyamadhikamanojñā",
       "dharmamitra": {
         "padaccheda": [
+          "iyam",
+          "adhika",
           "manojñā"
         ],
         "words": [
+          {
+            "form": "iyam",
+            "lemma": "iyam",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "adhika",
+            "lemma": "adhika",
+            "type": "sūnantāḥ"
+          },
           {
             "form": "manojñā",
             "lemma": [
@@ -401,16 +370,7 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "iyam",
-            "adhika"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "valkalenāpi",
@@ -579,8 +539,7 @@
       "pada": "madhurāṇāṃ",
       "dharmamitra": {
         "padaccheda": [
-          "madhurāṇām",
-          "maṇḍanam"
+          "madhurāṇām"
         ],
         "words": [
           {
@@ -588,14 +547,6 @@
             "lemma": [
               "madhura",
               "madhurā"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "maṇḍanam",
-            "lemma": [
-              "maṇḍ",
-              "maṇḍana"
             ],
             "type": "sūnantāḥ"
           }
@@ -614,28 +565,20 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "maṇḍanam"
-          ]
-        }
-      ]
+      }
     },
     {
       "pada": "maṇḍanaṃ",
       "dharmamitra": {
         "padaccheda": [
-          "na"
+          "maṇḍanam"
         ],
         "words": [
           {
-            "form": "na",
+            "form": "maṇḍanam",
             "lemma": [
-              "na",
-              "nā"
+              "maṇḍ",
+              "maṇḍana"
             ],
             "type": "sūnantāḥ"
           }
@@ -654,25 +597,24 @@
             "linga": "puṃlliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "maṇḍanam"
-          ],
-          "dharmamitra": [
-            "na"
-          ]
-        }
-      ]
+      }
     },
     {
       "pada": "nākṛtīnām",
       "dharmamitra": {
         "padaccheda": [
+          "na",
           "ākṛtīnām"
         ],
         "words": [
+          {
+            "form": "na",
+            "lemma": [
+              "na",
+              "nā"
+            ],
+            "type": "sūnantāḥ"
+          },
           {
             "form": "ākṛtīnām",
             "lemma": [
@@ -713,6 +655,7 @@
             "kṛtīnām"
           ],
           "dharmamitra": [
+            "na",
             "ākṛtīnām"
           ]
         }

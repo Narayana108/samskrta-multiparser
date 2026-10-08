@@ -124,8 +124,7 @@
         "padaccheda": [
           "gamiṣyāmi",
           "upahāsya",
-          "tām",
-          "prāṃśu"
+          "tām"
         ],
         "words": [
           {
@@ -147,11 +146,6 @@
               "ta",
               "tā"
             ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "prāṃśu",
-            "lemma": "prāṃśu",
             "type": "sūnantāḥ"
           }
         ]
@@ -189,8 +183,7 @@
           ],
           "dharmamitra": [
             "upahāsya",
-            "tām",
-            "prāṃśu"
+            "tām"
           ]
         }
       ]
@@ -199,30 +192,18 @@
       "pada": "prāṃśulabhye",
       "dharmamitra": {
         "padaccheda": [
-          "labhye",
-          "phale",
-          "lobhāt",
-          "udbāhuḥ"
+          "prāṃśu",
+          "labhye"
         ],
         "words": [
           {
+            "form": "prāṃśu",
+            "lemma": "prāṃśu",
+            "type": "sūnantāḥ"
+          },
+          {
             "form": "labhye",
             "lemma": "labh",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "phale",
-            "lemma": "phal",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "lobhāt",
-            "lemma": "lobha",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "udbāhuḥ",
-            "lemma": "udbāhu",
             "type": "sūnantāḥ"
           }
         ]
@@ -247,17 +228,26 @@
             "prāṃśulabhye"
           ],
           "dharmamitra": [
-            "labhye",
-            "phale",
-            "lobhāt",
-            "udbāhuḥ"
+            "prāṃśu",
+            "labhye"
           ]
         }
       ]
     },
     {
       "pada": "phale",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "phale"
+        ],
+        "words": [
+          {
+            "form": "phale",
+            "lemma": "phal",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "phale"
@@ -271,36 +261,31 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "phale"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "lobhādudbāhuriva",
       "dharmamitra": {
         "padaccheda": [
-          "iva",
-          "vāmanaḥ"
+          "lobhāt",
+          "udbāhuḥ",
+          "iva"
         ],
         "words": [
+          {
+            "form": "lobhāt",
+            "lemma": "lobha",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "udbāhuḥ",
+            "lemma": "udbāhu",
+            "type": "sūnantāḥ"
+          },
           {
             "form": "iva",
             "lemma": "iva",
             "type": "avyayam"
-          },
-          {
-            "form": "vāmanaḥ",
-            "lemma": [
-              "vāmana",
-              "vāmanā"
-            ],
-            "type": "sūnantāḥ"
           }
         ]
       },
@@ -338,22 +323,31 @@
       "differences": [
         {
           "sanskrit_parser": [
-            "lobhāt",
             "udbāhus"
           ],
-          "dharmamitra": null
-        },
-        {
-          "sanskrit_parser": null,
           "dharmamitra": [
-            "vāmanaḥ"
+            "udbāhuḥ"
           ]
         }
       ]
     },
     {
       "pada": "vāmanaḥ",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "vāmanaḥ"
+        ],
+        "words": [
+          {
+            "form": "vāmanaḥ",
+            "lemma": [
+              "vāmana",
+              "vāmanā"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "vāmanas"
@@ -373,7 +367,9 @@
           "sanskrit_parser": [
             "vāmanas"
           ],
-          "dharmamitra": null
+          "dharmamitra": [
+            "vāmanaḥ"
+          ]
         }
       ]
     }

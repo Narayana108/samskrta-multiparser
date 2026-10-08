@@ -14,8 +14,7 @@
         "padaccheda": [
           "sarva",
           "dharmān",
-          "parityajya",
-          "mām"
+          "parityajya"
         ],
         "words": [
           {
@@ -35,14 +34,6 @@
             "form": "parityajya",
             "lemma": "parityajya",
             "type": "avyayam"
-          },
-          {
-            "form": "mām",
-            "lemma": [
-              "ma",
-              "mā"
-            ],
-            "type": "sūnantāḥ"
           }
         ]
       },
@@ -75,23 +66,24 @@
             ]
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "mām"
-          ]
-        }
-      ]
+      }
     },
     {
       "pada": "māmekaṃ",
       "dharmamitra": {
         "padaccheda": [
+          "mām",
           "ekam"
         ],
         "words": [
+          {
+            "form": "mām",
+            "lemma": [
+              "ma",
+              "mā"
+            ],
+            "type": "sūnantāḥ"
+          },
           {
             "form": "ekam",
             "lemma": "eka",
@@ -128,6 +120,7 @@
             "akam"
           ],
           "dharmamitra": [
+            "mām",
             "ekam"
           ]
         }
@@ -166,8 +159,7 @@
       "pada": "vraja",
       "dharmamitra": {
         "padaccheda": [
-          "vraja",
-          "aham"
+          "vraja"
         ],
         "words": [
           {
@@ -175,14 +167,6 @@
             "lemma": [
               "vraj",
               "vraja"
-            ],
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "aham",
-            "lemma": [
-              "ah",
-              "aha"
             ],
             "type": "sūnantāḥ"
           }
@@ -201,19 +185,25 @@
             "linga": "puṃlliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "aham"
-          ]
-        }
-      ]
+      }
     },
     {
       "pada": "ahaṃ",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "aham"
+        ],
+        "words": [
+          {
+            "form": "aham",
+            "lemma": [
+              "ah",
+              "aha"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "aham"
@@ -227,15 +217,7 @@
             "linga": "puṃlliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "aham"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "tvāṃ",
@@ -324,22 +306,13 @@
       "pada": "mokṣayiṣyāmi",
       "dharmamitra": {
         "padaccheda": [
-          "mokṣayiṣyāmi",
-          "mā"
+          "mokṣayiṣyāmi"
         ],
         "words": [
           {
             "form": "mokṣayiṣyāmi",
             "lemma": "mokṣi",
             "type": "tīnantāḥ"
-          },
-          {
-            "form": "mā",
-            "lemma": [
-              "ma",
-              "mā"
-            ],
-            "type": "sūnantāḥ"
           }
         ]
       },
@@ -360,19 +333,25 @@
             ]
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": null,
-          "dharmamitra": [
-            "mā"
-          ]
-        }
-      ]
+      }
     },
     {
       "pada": "mā",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "mā"
+        ],
+        "words": [
+          {
+            "form": "mā",
+            "lemma": [
+              "ma",
+              "mā"
+            ],
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "mā"
@@ -386,15 +365,7 @@
             "linga": "strīliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "mā"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "śucaḥ",

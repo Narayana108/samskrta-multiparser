@@ -43,8 +43,7 @@
       "dharmamitra": {
         "padaccheda": [
           "sūrya",
-          "prabhavaḥ",
-          "vaṃśaḥ"
+          "prabhavaḥ"
         ],
         "words": [
           {
@@ -58,11 +57,6 @@
           {
             "form": "prabhavaḥ",
             "lemma": "prabhava",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "vaṃśaḥ",
-            "lemma": "vaṃśa",
             "type": "sūnantāḥ"
           }
         ]
@@ -95,15 +89,25 @@
             "prabhavas"
           ],
           "dharmamitra": [
-            "prabhavaḥ",
-            "vaṃśaḥ"
+            "prabhavaḥ"
           ]
         }
       ]
     },
     {
       "pada": "vaṃśaḥ",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "vaṃśaḥ"
+        ],
+        "words": [
+          {
+            "form": "vaṃśaḥ",
+            "lemma": "vaṃśa",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "vaṃśas"
@@ -123,7 +127,9 @@
           "sanskrit_parser": [
             "vaṃśas"
           ],
-          "dharmamitra": null
+          "dharmamitra": [
+            "vaṃśaḥ"
+          ]
         }
       ]
     },
@@ -228,21 +234,12 @@
       "pada": "matiḥ",
       "dharmamitra": {
         "padaccheda": [
-          "matiḥ",
-          "titīrṣuḥ"
+          "matiḥ"
         ],
         "words": [
           {
             "form": "matiḥ",
             "lemma": "mati",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "titīrṣuḥ",
-            "lemma": [
-              "titarīṣa",
-              "titarīṣi"
-            ],
             "type": "sūnantāḥ"
           }
         ]
@@ -267,8 +264,7 @@
             "matis"
           ],
           "dharmamitra": [
-            "matiḥ",
-            "titīrṣuḥ"
+            "matiḥ"
           ]
         }
       ]
@@ -277,36 +273,21 @@
       "pada": "titīrṣurdustaraṃ",
       "dharmamitra": {
         "padaccheda": [
-          "dustaram",
-          "mohāt",
-          "uḍupena",
-          "asmi",
-          "sāgaram"
+          "titīrṣuḥ",
+          "dustaram"
         ],
         "words": [
           {
+            "form": "titīrṣuḥ",
+            "lemma": [
+              "titarīṣa",
+              "titarīṣi"
+            ],
+            "type": "sūnantāḥ"
+          },
+          {
             "form": "dustaram",
             "lemma": "dustṝ",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "mohāt",
-            "lemma": "moha",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "uḍupena",
-            "lemma": "uḍupa",
-            "type": "sūnantāḥ"
-          },
-          {
-            "form": "asmi",
-            "lemma": "as",
-            "type": "tīnantāḥ"
-          },
-          {
-            "form": "sāgaram",
-            "lemma": "sāgara",
             "type": "sūnantāḥ"
           }
         ]
@@ -338,22 +319,38 @@
           "sanskrit_parser": [
             "titīrṣus"
           ],
-          "dharmamitra": null
-        },
-        {
-          "sanskrit_parser": null,
           "dharmamitra": [
-            "mohāt",
-            "uḍupena",
-            "asmi",
-            "sāgaram"
+            "titīrṣuḥ"
           ]
         }
       ]
     },
     {
       "pada": "mohāduḍupenāsmi",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "mohāt",
+          "uḍupena",
+          "asmi"
+        ],
+        "words": [
+          {
+            "form": "mohāt",
+            "lemma": "moha",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "uḍupena",
+            "lemma": "uḍupa",
+            "type": "sūnantāḥ"
+          },
+          {
+            "form": "asmi",
+            "lemma": "as",
+            "type": "tīnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "mohāt",
@@ -386,21 +383,22 @@
             ]
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "mohāt",
-            "uḍupena",
-            "asmi"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     },
     {
       "pada": "sāgaram",
-      "dharmamitra": null,
+      "dharmamitra": {
+        "padaccheda": [
+          "sāgaram"
+        ],
+        "words": [
+          {
+            "form": "sāgaram",
+            "lemma": "sāgara",
+            "type": "sūnantāḥ"
+          }
+        ]
+      },
       "sanskrit_parser": {
         "padaccheda": [
           "sāgaram"
@@ -414,15 +412,7 @@
             "linga": "puṃlliṅgam"
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "sāgaram"
-          ],
-          "dharmamitra": null
-        }
-      ]
+      }
     }
   ],
   "chandas": {
