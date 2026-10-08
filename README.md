@@ -99,14 +99,15 @@ pip install sanskrit-parser indic-transliteration "vidyut>=0.4.0" requests
 ## Quick Start
 
 ```bash
-# Shloka mode — both documents land under results/, named after the input file
-uv run python app.py shloka          # → results/shloka_input.raw.json + .result.json
+# Shloka mode — with no -i the single .txt file in input/ is used, and both documents
+# land under results/, named after that file
+uv run python app.py shloka          # input/bhagavad_gita-2.47.txt → results/bhagavad_gita-2.47.{raw,result}.json
 
 # Pick the base yourself; missing directories are created, a trailing '.json' is stripped
 uv run python app.py shloka -i my_shloka.txt -o results/my_shloka
 
 # Pada mode (single-word analysis)
-uv run python app.py pada            # → results/pada_input.{raw,result}.json
+uv run python app.py pada            # input/pada_input.txt → results/pada_input.{raw,result}.json
 
 # IAST input analyzes exactly like the Devanagari one
 uv run python app.py shloka -i my_shloka.iast.txt -o results/my_shloka
@@ -131,8 +132,8 @@ positional arguments:
 
 options:
   -h, --help           Show this help message
-  -i, --input INPUT    Input file (use '-' for stdin); defaults to input.txt, then the
-                       mode-specific file (see Input Files)
+  -i, --input INPUT    Input file (use '-' for stdin); default: the single .txt file
+                       in input/ (see Input Files)
   -o, --output OUTPUT  Output base path; writes '<base>.raw.json' and
                        '<base>.result.json' (a trailing '.json' is stripped).
                        Default: results/<input stem>
@@ -141,15 +142,17 @@ options:
 
 ## Input Files
 
-| File | Purpose |
-|------|---------|
-| `input.txt` | Default input, used whenever it exists and `-i` is absent |
-| `shloka_input.txt` | Fallback for shloka mode, only when `input.txt` is missing |
-| `pada_input.txt` | Fallback for pada mode, only when `input.txt` is missing |
+There is exactly one place an implicit input may live: `input/`. The directory ships with nothing but
+`.gitkeep` and everything else in it is gitignored, so a verse you type there can never be committed by
+accident, and its stem names both output documents.
 
-Precedence: `-i FILE` → `input.txt` → the mode-specific file. `-i -` reads stdin.
-
-Your own verses belong in `input/`: the directory ships with nothing but `.gitkeep`, everything else in it is gitignored, so a file you type there can never be committed by accident — `-i input/my-shloka.txt` writes `results/my-shloka.raw.json` and `results/my-shloka.result.json`. The pinned test corpus lives separately under `tests/data/` (see Testing).
+Precedence: `-i FILE` → the single `.txt` file in `input/`. If `input/` holds more than one, the run
+stops and lists them rather than guessing; if it holds none, the run says so and points at `-i`. The
+root-level files earlier releases fell back to (`input.txt`, `shloka_input.txt`, `pada_input.txt`) are
+gone — they sat outside `input/`, their names matched nothing else in the project, and a mode-specific
+name was chosen by the CLI argument instead of by what you actually put on disk. `-i -` reads stdin; with
+no file name at all the pair is named after the mode (`results/shloka.*`). The pinned test corpus lives
+separately under `tests/data/` (see Testing).
 
 Input files may hold Devanagari or any romanization vidyut lipi detects; the text is canonicalized to Devanagari before analysis and both working scripts are recorded under `input` (the script the user typed is an input detail, not part of the analysis). Preprocessing first closes a **hyphenated line break** — printed editions split one word across the pāda junction (`… विहाय जीर्णान्य्-` / `अन्यानि …`), and handing an engine half of that word leaves it a dangling virama it cannot decompose, so the two halves are joined before anything else happens. It then turns every separator — dandas (`।` `॥`), ASCII pipes, dots, commas, hyphens inside a line, slashes — *and* every digit into a space: pasted verse numbers such as `॥ 66॥` or Devanagari `॥६६॥` disappear before any engine sees the text. Runs of whitespace inside each line collapse to one, so `vāc-artha`, `vāc artha.` and `vāc  artha` analyze identically; line structure is preserved and only the padding around a line is trimmed.
 

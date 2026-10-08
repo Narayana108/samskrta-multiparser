@@ -251,16 +251,19 @@ family; 2.22 also matches `upendravajrā`/`vaṃśastha`), a fifteen-akshara pā
 (`candralekhā`, `vasumatī`) because anuṣṭubh is missing from the table, so `candidates` records the names vidyut
 actually matched and `vrtta` stays `null`.
 
-Where input lives is a convention, not code: `input/` holds the user's own śloka files — gitignored apart from
-`.gitkeep`, so nothing typed there is ever committed — while `tests/data/` holds the sixteen pinned corpus verses,
+Where input lives is enforced by `app.default_input()`, not a convention: with no `-i` the run reads the
+single `.txt` file in `input/` (gitignored apart from `.gitkeep`, so nothing typed there is ever committed),
+lists them and refuses to guess when several are present, and says so when none is. The old root-level
+fallbacks (`input.txt`, `shloka_input.txt`, `pada_input.txt`) were removed — outside that directory, named
+after the CLI mode rather than after their content. `tests/data/` holds the sixteen pinned corpus verses,
 their IAST twins and their goldens under `tests/data/results/`.
 
 ## 7. Development workflow
 
 ```bash
 uv sync                                   # runtime deps + pytest (dev group)
-uv run python app.py shloka             # ~2-3 s for one śloka; hits the DM API → results/shloka_input.{raw,result}.json
-uv run python postprocess_analysis.py -o results/shloka_input   # offline, instant
+uv run python app.py shloka             # ~2-3 s for one śloka; reads input/<one>.txt → results/<stem>.{raw,result}.json
+uv run python postprocess_analysis.py -o results/<stem>   # offline, instant
 uv run pytest -q                        # offline suite
 ```
 

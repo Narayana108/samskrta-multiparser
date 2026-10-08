@@ -28,9 +28,9 @@ Engine capabilities:
               recursive sandhi splitting via DFS through kosha dictionary
 
 Usage:
-    python app.py pada -i input.txt          # single-word analysis
-    python app.py shloka -i input.txt        # full-line analysis
-    python app.py shloka -i -                # read from stdin
+    python app.py pada                      # single-word analysis; reads the one .txt in input/
+    python app.py shloka -i input/my_shloka.txt   # full-line analysis, file chosen explicitly
+    python app.py shloka -i -               # read from stdin
 
 Output:
     - '<base>.raw.json': complete engine output; base defaults to results/<input stem>
@@ -276,6 +276,30 @@ def read_input(filename: str) -> str:
         return sys.stdin.read().strip()
     with open(filename, "r", encoding="utf-8") as f:
         return f.read().strip()
+
+
+INPUT_DIR = "input"
+
+
+def default_input() -> tuple:
+    """Choose the input file when `-i` is absent.
+
+    The only place an implicit input may live is `input/`, which ships empty and is gitignored, so a
+    verse typed there can never be committed by accident and its stem names both output documents.
+    The old root-level fallbacks (`input.txt`, `shloka_input.txt`, `pada_input.txt`) are gone: they sat
+    outside that directory, their names matched nothing else in the project, and a mode-specific name
+    decided by `sys.argv` rather than by what the user actually put on disk.
+
+    Returns:
+        (path, None) when exactly one `.txt` file sits in `input/`, else (None, error message).
+    """
+    candidates = sorted(Path(INPUT_DIR).glob("*.txt"))
+    if len(candidates) == 1:
+        return str(candidates[0]), None
+    if candidates:
+        names = ", ".join(path.name for path in candidates)
+        return None, f"{INPUT_DIR}/ holds {len(candidates)} files ({names}); pass -i FILE to choose one"
+    return None, f"no input file: put a .txt in {INPUT_DIR}/ or pass -i FILE"
 
 
 _warned_sites: set = set()
@@ -1933,7 +1957,8 @@ def main() -> int:
     parser.add_argument(
         "-i", "--input",
         default=None,
-        help="Path to input file in Devanagari or a romanization (use '-' for stdin); falls back to input.txt",
+        help="Path to input file in Devanagari or a romanization (use '-' for stdin); "
+             "default: the single .txt file in input/",
     )
     parser.add_argument(
         "-o", "--output",
@@ -1950,18 +1975,14 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    # Determine input file
-    input_file = args.input if args.input else "input.txt"
-    if not args.input and not Path(input_file).exists():
-        # Try shloka/pada specific files
-        if args.mode == "shloka" and Path("shloka_input.txt").exists():
-            input_file = "shloka_input.txt"
-        elif args.mode == "pada" and Path("pada_input.txt").exists():
-            input_file = "pada_input.txt"
-
-    # Read input and canonicalize its script: every engine downstream receives
-    # Devanagari (sanskrit_parser/vidyut) or IAST (Dharmamitra), regardless of
-    # what the user typed.
+    # Determine input file. Without -i there is exactly one place an input may live: input/.
+    if args.input:
+        input_file = args.input
+    else:
+        input_file, problem = default_input()
+        if problem:
+            print(f"Error: {problem}", file=sys.stderr)
+            return 1
     try:
         raw_text = read_input(input_file)
     except FileNotFoundError as e:

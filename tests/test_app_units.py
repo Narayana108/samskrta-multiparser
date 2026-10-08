@@ -498,7 +498,7 @@ def test_enrich_dharmamitra_lemmas_fills_in_lemma_and_type(kosha):
 
 
 # ---------------------------------------------------------------------------
-# Input files and script detection (tests/data, never the repo's input.txt)
+# Input files and script detection (tests/data, never the project's own input/)
 # ---------------------------------------------------------------------------
 
 INPUT_DIR = Path(__file__).resolve().parent / "data"
@@ -571,6 +571,64 @@ def test_preprocess_closes_a_hyphenated_line_break_into_one_word():
     """
     assert app.preprocess_input("सुखदुःखसंज्ञैर्-\nगच्छन्त्यमूढाः") == "सुखदुःखसंज्ञैर्गच्छन्त्यमूढाः"
     assert app.preprocess_input("jīrṇāny-\nanyāni") == "jīrṇānyanyāni"
+
+
+def _stub_engines(monkeypatch):
+    """Offline engine stubs so a full main() run costs no network and no parser load."""
+    for name, impl in (
+        ("run_sanskrit_parser", lambda *a: {"word_decompositions": {}}),
+        ("run_dharmamitra", lambda *a: {"tokens": []}),
+        ("run_vidyut", lambda *a: {"kosha": [], "prakriya": {}, "meter": [], "chandas": {}}),
+    ):
+        monkeypatch.setattr(app, name, impl)
+
+
+def test_the_default_input_is_the_single_file_in_input_dir(tmp_path, monkeypatch):
+    # End to end, because the whole point of the convention is that the file's stem names both
+    # documents: input/<stem>.txt -> results/<stem>.{raw,result}.json.
+    _stub_engines(monkeypatch)
+    (tmp_path / "input").mkdir()
+    (tmp_path / "input" / "agnim_ile.txt").write_text("agnim īḷe", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["app.py", "shloka"])
+
+    assert app.main() == 0
+    assert (tmp_path / "results" / "agnim_ile.raw.json").is_file()
+    assert (tmp_path / "results" / "agnim_ile.result.json").is_file()
+
+
+def test_several_files_in_input_dir_refuse_to_guess(tmp_path, monkeypatch, capsys):
+    (tmp_path / "input").mkdir()
+    for name in ("a_shloka.txt", "b_shloka.txt"):
+        (tmp_path / "input" / name).write_text("agnim īḷe", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["app.py", "shloka"])
+
+    assert app.main() == 1
+    err = capsys.readouterr().err
+    assert "input/ holds 2 files (a_shloka.txt, b_shloka.txt)" in err
+    assert "-i FILE" in err
+
+
+def test_a_missing_default_input_names_the_directory_and_i(tmp_path, monkeypatch, capsys):
+    (tmp_path / "input").mkdir()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["app.py", "pada"])
+
+    assert app.main() == 1
+    assert "no input file: put a .txt in input/ or pass -i FILE" in capsys.readouterr().err
+
+
+def test_the_removed_root_level_default_files_are_ignored(tmp_path, monkeypatch, capsys):
+    # These names used to be picked up by mode; re-adding that fallback would silently analyze the
+    # wrong file whenever input/ is empty.
+    for name in ("input.txt", "shloka_input.txt", "pada_input.txt"):
+        (tmp_path / name).write_text("agnim īḷe", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["app.py", "shloka"])
+
+    assert app.main() == 1
+    assert "put a .txt in input/ or pass -i FILE" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize(
