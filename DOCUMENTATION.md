@@ -129,6 +129,10 @@ Conversion helpers in `app.py`:
   sanskrit_parser and vidyut subtrees in `main()`, catching any Devanagari that
   survived engine-specific formatting.
 
+A conversion that fails returns its input unchanged (Devanagari stays Devanagari, SLP1 keeps its
+`z`/`Ri`) but reports it once per site through `_warn_once`, so a document whose "IAST" fields are not
+actually IAST is never produced silently.
+
 Where a *display* name is needed for a dhatu, prefer `DhatuEntry.clean_text`
 (accent-free dictionary spelling) over `dhatu.aupadeshika`; the latter must keep
 its accent marks because `Dhatu.mula()` expects them.
@@ -333,6 +337,12 @@ Ordered by how likely they are to bite:
    the exchange itself runs forever. Each attempt is self-contained: no response object survives from a
    failed attempt into the next one, so an HTTP error body can never be parsed as an answer (the first
    version kept it in a variable and did exactly that).
+   The body read sits inside the same `try`: with `stream=True` an upstream can pass `raise_for_status()`
+   and then stall or truncate the stream, and those faults (`ReadTimeout`, `ChunkedEncodingError`) surface
+   from `iter_content()`. They are turned into `{"error": …}` like any other transport failure — they used
+   to escape, which mattered because the per-pada follow-up loop calls the helper with no `try` of its own,
+   so one stalled word request aborted `main()` after the local engines had finished and neither output
+   document was written.
 6. **Meter naming depends on splitting quality.** `_split_into_padas` is an akshara-midpoint
    heuristic: it handles anuṣṭubh-style 8+8 lines, but a line whose word boundaries do not
    straddle the midpoint (or a jagatī/triṣṭubh line) can still be cut in the wrong place,

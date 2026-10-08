@@ -250,7 +250,10 @@ def _convert_devanagari_to_iast(obj: Any) -> Any:
             try:
                 from vidyut.lipi import transliterate, Scheme
                 return transliterate(obj, Scheme.Devanagari, Scheme.Iast)
-            except Exception:
+            except Exception as exc:
+                # The Devanagari is returned unchanged so the run still produces a document, but the
+                # caller and every later reader must know those strings are not IAST.
+                _warn_once("vidyut lipi devanagari to iast", exc)
                 return obj
         return obj
     else:
@@ -381,7 +384,9 @@ def _slp1_to_iast(slp1: str) -> str:
     from indic_transliteration import sanscript
     try:
         return sanscript.transliterate(slp1, sanscript.SLP1, sanscript.IAST)
-    except Exception:
+    except Exception as exc:
+        # Raw SLP1 (`z`, `Ri`) in an IAST field is worse than useless downstream unless it is flagged.
+        _warn_once("indic_transliteration slp1 to iast", exc)
         return slp1
 
 
@@ -899,6 +904,12 @@ def _dharmamitra_raw_output(text: str, deadline: float) -> tuple:
                 API_URL, headers=API_HEADERS, json=data, timeout=remaining, stream=True
             )
             response.raise_for_status()
+            # The body read belongs inside the same handlers: with `stream=True` the socket faults of a
+            # stalled or truncated upstream (ReadTimeout, ChunkedEncodingError) surface from
+            # iter_content(), long after raise_for_status() passed. Left outside, they escape this
+            # function and abort `main()` before either document is written — the per-pada follow-up loop
+            # calls it with no try of its own.
+            body, failure = _read_capped_body(response, deadline)
         except requests.exceptions.Timeout:
             last_failure = "Dharmamitra API request timed out"
             continue
@@ -906,13 +917,17 @@ def _dharmamitra_raw_output(text: str, deadline: float) -> tuple:
             last_failure = f"Dharmamitra API unavailable: {exc}"
             continue
 
-        body, failure = _read_capped_body(response, deadline)
         if body is None:
             last_failure = failure
             continue
 
         try:
-            payload = json.loads(body.decode("utf-8"))
+            text_body = body.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            return None, f"Dharmamitra API returned a non-UTF-8 body: {exc}"
+
+        try:
+            payload = json.loads(text_body)
         except ValueError as exc:
             return None, f"Dharmamitra API returned non-JSON body: {exc}"
 

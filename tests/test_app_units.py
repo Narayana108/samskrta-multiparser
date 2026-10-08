@@ -912,6 +912,84 @@ def test_the_body_reader_runs_on_a_real_requests_response():
     assert json.loads(body)["results"] == ["agni_"]
 
 
+def test_a_body_that_dies_mid_stream_becomes_an_engine_error(monkeypatch):
+    # With stream=True the upstream can pass raise_for_status() and then stall or truncate the body;
+    # those faults surface from iter_content() as real requests exceptions. Raised outside the attempt's
+    # handlers they escape this function entirely — see DOCUMENTATION §8 item 5.
+    import requests
+
+    faults = iter(
+        [
+            requests.exceptions.ReadTimeout("stalled upstream"),
+            requests.exceptions.ChunkedEncodingError("Connection broken: IncompleteRead"),
+        ]
+    )
+
+    class StallingResponse:
+        headers = {}
+
+        def raise_for_status(self):
+            return None
+
+        def iter_content(self, chunk_size=0):
+            yield b'{"results": ["agni_'
+            raise next(faults)
+
+    monkeypatch.setattr(requests, "post", lambda *a, **k: StallingResponse())
+
+    result = app.run_dharmamitra("agnim īḷe", ["agnim īḷe"])
+    assert result["error"].startswith("Dharmamitra API unavailable"), result
+
+
+def test_a_word_request_that_faults_mid_body_keeps_the_run_alive(monkeypatch, capsys):
+    # The per-pada follow-up loop has no try of its own: an escaping body fault used to abort main()
+    # after the local engines had already run, so neither output document was written.
+    import requests
+
+    class StallingResponse:
+        headers = {}
+
+        def raise_for_status(self):
+            return None
+
+        def iter_content(self, chunk_size=0):
+            raise requests.exceptions.ChunkedEncodingError("Connection broken")
+            yield b""  # pragma: no cover - makes this a generator
+
+    monkeypatch.setattr(requests, "post", lambda *a, **k: StallingResponse())
+
+    dharmamitra_results = {"tokens": [{"form": "agni"}]}
+    processed = {"padas": [{"pada": "agnim īḷe", "dharmamitra": []}]}
+
+    assert app.fill_missing_pada_readings(dharmamitra_results, processed) == 0
+    assert "pada_followups" not in dharmamitra_results
+    err = capsys.readouterr().err
+    assert "Dharmamitra word request for 'agnim īḷe' failed" in err
+    assert "Connection broken" in err
+
+
+def test_failed_transliterations_are_reported_and_the_source_text_survives(monkeypatch, capsys):
+    # A silent fallback leaves Devanagari or raw SLP1 (`naraH`) sitting in fields documented as IAST;
+    # the value is kept so the run still finishes, but it has to be named on stderr.
+    import indic_transliteration.sanscript
+    import vidyut.lipi
+
+    monkeypatch.setattr(app, "_warned_sites", set())
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("transliteration table unavailable")
+
+    monkeypatch.setattr(vidyut.lipi, "transliterate", boom)
+    assert app._convert_devanagari_to_iast("नरः") == "नरः"
+
+    monkeypatch.setattr(indic_transliteration.sanscript, "transliterate", boom)
+    assert app._slp1_to_iast("naraH") == "naraH"
+
+    err = capsys.readouterr().err
+    assert "Warning: vidyut lipi devanagari to iast: transliteration table unavailable" in err
+    assert "Warning: indic_transliteration slp1 to iast: transliteration table unavailable" in err
+
+
 def test_malformed_numeric_env_overrides_warn_and_default(monkeypatch, capsys):
     # These settings are read at import time; a bad value must not turn into an import traceback.
     monkeypatch.setenv("SAMSKRTA_WORKERS", "two")
