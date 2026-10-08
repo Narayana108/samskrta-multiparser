@@ -471,7 +471,7 @@ def _kosha_exact(kosha, dev_word: str) -> Tuple[bool, int]:
 
 # Bounds of the transparent-compound gate in `_best_word_split`: a split only beats a shorter
 # candidate when it has at most this many parts and every part is at least this long. Measured on
-# tests/data/sandhi_truth.json — 2-3 parts with parts >= 5 letters scores 44/64; allowing 1-part
+# tests/data/sandhi_truth.json — 2-3 parts with parts >= 5 letters scores 103/147; allowing 1-part
 # fragments or 4-letter parts loses padas to junk such as `mat | is`.
 _MAX_DEEP_PARTS = 3
 _MIN_DEEP_PART_LEN = 5
@@ -557,11 +557,11 @@ def _best_word_split(parser, dev_word: str, kosha: Optional[Any] = None) -> List
     5. the rarest part is as common as possible (most kosha entries for its scarcest part);
     6. longest shortest part, then the sorted part list, keeping output byte-stable.
 
-    Measured on the 64 curated padas of ``tests/data/sandhi_truth.json`` (see
-    ``tests/test_sandhi_accuracy.py``): this rule reproduces the reference reading for 44 of them;
-    morphology-only ranking — the fallback used when no kosha is available — reaches 36, and the
-    candidate pool contains a reference-consistent split for 56. Over all 79 distinct words of the
-    nine pinned verses the gate changes exactly five splits, every one of them a compound read as
+    Measured on the 147 curated padas of ``tests/data/sandhi_truth.json`` (see
+    ``tests/test_sandhi_accuracy.py``): this rule reproduces the reference reading for 103 of them;
+    morphology-only ranking — the fallback used when no kosha is available — reaches 92, and the
+    candidate pool contains a reference-consistent split for 127. Over all the distinct words of the
+    sixteen pinned verses the gate changes nine splits, every one of them a compound read as
     its members; nothing else moves.
 
     Args:
