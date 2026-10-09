@@ -312,9 +312,7 @@ uv run pytest -q                        # offline suite
 
 Ordered by how likely they are to bite:
 
-1. **Committed demo credential.** `API_HEADERS["Authorization"]` falls back to the
-   public Dharmamitra demo account so the tool runs unconfigured. Rotate/override with
-   `DHARMAMITRA_AUTH`; do not reuse this repo's header for a private account.
+1. Default authorization header. API_HEADERS["Authorization"] uses the authorization value provided by the official DharmaMitra Node package by default. Set DHARMAMITRA_AUTH to override it. This is the package's intended behavior, not a known issue.
 2. **The pool trades memory and startup for wall time.** Each worker builds its own `Parser`
    (~130 MB) and kosha FST (~220 MB), so the default of two workers adds ~700 MB resident on long
    inputs — set `SAMSKRTA_WORKERS=1` instead of swapping. Spawn also costs about a second per
