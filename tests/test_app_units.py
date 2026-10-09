@@ -1280,3 +1280,70 @@ def test_pada_mode_prints_null_chandas_on_stdout(tmp_path, monkeypatch, capsys):
     printed = json.loads(capsys.readouterr().out)
     assert list(printed) == ["input", "chandas"]
     assert printed["chandas"] is None
+
+
+# ---------------------------------------------------------------------------
+# Chandas: metre table and the verse-level vote
+# ---------------------------------------------------------------------------
+
+
+def _padas(names_and_counts):
+    """Build one vidyut `meter_results` line from (meter, akshara_count) pairs."""
+    return [{"line": 0, "padas": [
+        {"iast": f"p{i}", "meter": name, "akshara_count": count, "weight_pattern": "G" * count}
+        for i, (name, count) in enumerate(names_and_counts)
+    ]}]
+
+
+def test_meter_lengths_reads_declared_akshara_counts_from_the_bundled_table():
+    """'|' groups the pattern for reading; every character is one akshara."""
+    lengths = app._meter_lengths(Path(app.DATA_DIR) / "chandas" / "meters.tsv")
+    assert lengths["indravajrA"] == {11}
+    assert lengths["indravaMSA"] == {12}
+    assert lengths["sragDarA"] == {21}  # 'GGGGLGG|LLLLLLG|GLGGLGG'
+    assert lengths["malinI"] == {15}  # 'LLLLLLGG|GLGGLGG'
+
+
+def test_meter_lengths_skips_blank_and_short_lines(tmp_path):
+    table = tmp_path / "meters.tsv"
+    table.write_text("\n".join(["", "  ", "broken\tvrtta", "kA\tvrtta\tGL|GL|GG"]) + "\n", encoding="utf-8")
+    assert app._meter_lengths(table) == {"kA": {6}}  # 'GL|GL|GG' = 2+2+2 aksharas
+
+
+def test_a_meter_too_long_for_the_pada_stays_a_candidate_and_loses_the_vote(capsys):
+    """vidyut matches gaṇa prefixes: indravaṃśā (12) named for an 11-akshara pāda cannot decide it."""
+    summary = app._summarize_chandas(
+        _padas([("indravajrā", 11), ("indravajrā", 11), ("indravajrā", 11), ("indravaṃśā", 11)]),
+        {"indravajrā": {11}, "indravaṃśā": {12}},
+    )
+    assert summary["vrtta"] == "indravajrā"
+    assert summary["candidates"] == ["indravajrā", "indravaṃśā"]
+    err = capsys.readouterr().err
+    assert "vidyut named indravaṃśā (12 aksharas) for a pāda of 11" in err
+
+
+def test_an_unclassified_pada_does_not_veto_a_name_the_others_agree_on(capsys):
+    """Pāda-final syllables are free in length; vidyut's patterns are not, so it abstains."""
+    summary = app._summarize_chandas(
+        _padas([("sragdharā", 21), (None, 21), ("sragdharā", 21), ("sragdharā", 21)]),
+        {"sragdharā": {21}},
+    )
+    assert summary["vrtta"] == "sragdharā"
+    assert summary["classified_pada_count"] == 3
+    assert capsys.readouterr().err == ""
+
+
+def test_disagreeing_plausible_names_leave_the_verse_unnamed():
+    """BG 2.22 / 11.15 are upajāti, which vidyut's vṛtta table cannot express at all."""
+    summary = app._summarize_chandas(
+        _padas([("indravajrā", 11), ("upendravajrā", 11), ("indravajrā", 11), ("upendravajrā", 11)]),
+        {"indravajrā": {11}, "upendravajrā": {11}},
+    )
+    assert summary["vrtta"] is None
+    assert summary["candidates"] == ["indravajrā", "upendravajrā"]
+
+
+def test_unanimous_names_still_win_without_a_length_table():
+    """Without the table the vote falls back to plain unanimity."""
+    summary = app._summarize_chandas(_padas([("vasantatilakā", 14)] * 4))
+    assert summary["vrtta"] == "vasantatilakā"

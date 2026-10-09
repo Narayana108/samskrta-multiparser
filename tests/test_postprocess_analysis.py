@@ -146,6 +146,14 @@ def test_rank_prefers_vacana_then_fewer_residual_tags():
     assert postprocess_analysis._morph_rank(lean) > postprocess_analysis._morph_rank(heavy)
 
 
+def test_rank_prefers_an_avyaya_reading_over_a_compound_marker():
+    """'avyayam' says what the word is; a compound marker only says where it sits."""
+    indeclinable = {"root": "yathā", "tags": ["avyayam", "saṃyojakaḥ"]}
+    fragment = {"root": "yathā", "tags": ["samāsapūrvapadanāmapadam"]}
+    assert postprocess_analysis._morph_rank(indeclinable) > postprocess_analysis._morph_rank(fragment)
+    assert max([fragment, indeclinable], key=postprocess_analysis._morph_rank) is indeclinable
+
+
 # ---------------------------------------------------------------------------
 # collect_sp_morphology
 # ---------------------------------------------------------------------------
@@ -190,26 +198,29 @@ def test_collect_morphology_recurses_through_nested_splits_and_errors():
         ],
     }
     assert postprocess_analysis.collect_sp_morphology(sp_output) == {
-        "vāgarthāviva": {
+        "vāgarthāviva": [{
+            "root": "vāgartha",
+            "vacana": "bahu",
+            "vibhakti": "prathamā",
+            "linga": "puṃlliṅgam",
+        }],
+        "vāgartha": [{"root": "vāgartha", "tags": ["samāsapūrvapadanāmapadam"]}],
+    }
+
+
+def test_collect_morphology_anusvara_collision_winner_is_order_independent():
+    expected = {"sampṛktau": [
+        {
             "root": "vāgartha",
             "vacana": "bahu",
             "vibhakti": "prathamā",
             "linga": "puṃlliṅgam",
         },
-        "vāgartha": {"root": "vāgartha", "tags": ["samāsapūrvapadanāmapadam"]},
-    }
-
-
-def test_collect_morphology_anusvara_collision_winner_is_order_independent():
-    expected = {"sampṛktau": {
-        "root": "vāgartha",
-        "vacana": "bahu",
-        "vibhakti": "prathamā",
-        "linga": "puṃlliṅgam",
-    }}
+        {"root": "vāgartha", "tags": ["samāsapūrvapadanāmapadam"]},
+    ]}
     forward = postprocess_analysis.collect_sp_morphology(_nested_sp_raw(fragment_first=False))
     reverse = postprocess_analysis.collect_sp_morphology(_nested_sp_raw(fragment_first=True))
-    assert forward == expected  # full reading wins over the fragment
+    assert forward == expected  # the full case reading ranks above the fragment
     assert reverse == forward   # not last-writer-wins
 
 
@@ -235,9 +246,38 @@ def test_collect_morphology_covers_words_only_found_in_word_morphology():
         }],
     }
     assert postprocess_analysis.collect_sp_morphology(sp_output) == {
-        "sarva": {"root": "sarva", "vacana": "eka", "vibhakti": "prathamā", "linga": "puṃlliṅgam"},
-        "pāpebhyas": {"root": "pāpa", "vacana": "bahu", "vibhakti": "pañcamī", "linga": "puṃlliṅgam"},
+        "sarva": [{"root": "sarva", "vacana": "eka", "vibhakti": "prathamā", "linga": "puṃlliṅgam"}],
+        "pāpebhyas": [
+            {"root": "pāpa", "vacana": "bahu", "vibhakti": "pañcamī", "linga": "puṃlliṅgam"},
+            {"root": "pāpa", "tags": ["samāsapūrvapadanāmapadam"]},
+        ],
     }
+
+
+def test_collect_morphology_keeps_every_case_reading_with_the_best_one_first():
+    """An ambiguous form is never collapsed to a single guess.
+
+    sanskrit_parser lists vāsāṃsi as nominative, accusative and vocative plural at once. The old
+    alphabetical tie-break published only 'saṃbodhana' — 103 golden padas showed the vocative alone
+    while their raw output also offered prathamā/dvitīyā — so the reading document looked like a
+    parser that misreads every neuter plural. Case order now decides the primary field, and the
+    alternatives stay visible as `alternates`.
+    """
+    sp_output = {"word_morphology": [{
+        "pada": "vāsāṃsi",
+        "morphological_tags": [
+            {"root": "vāsas", "tags": ["bahuvacanam", "saṃbodhanavibhaktiḥ", "napuṃsakaliṅgam"]},
+            {"root": "vāsas", "tags": ["bahuvacanam", "dvitīyāvibhaktiḥ", "napuṃsakaliṅgam"]},
+            {"root": "vāsas", "tags": ["bahuvacanam", "prathamāvibhaktiḥ", "napuṃsakaliṅgam"]},
+        ],
+    }]}
+    morph = postprocess_analysis.collect_sp_morphology(sp_output)
+    assert len(morph) == 1  # keyed by the anusvara-normalized form, not the surface spelling
+    readings = next(iter(morph.values()))
+    assert [r["vibhakti"] for r in readings] == ["prathamā", "dvitīyā", "saṃbodhana"]
+    entry = postprocess_analysis._sp_word_entry("vāsāṃsi", morph)
+    assert entry["vibhakti"] == "prathamā"
+    assert [r["vibhakti"] for r in entry["alternates"]] == ["dvitīyā", "saṃbodhana"]
 
 
 # ---------------------------------------------------------------------------
@@ -423,13 +463,13 @@ def test_dm_word_entry_filters_keys():
 
 
 def test_sp_word_entry_looks_up_normalized_form_and_filters_keys():
-    morph = {"sampṛktau": {
+    morph = {"sampṛktau": [{
         "root": "vāgartha",
         "vibhakti": "prathamā",
         "vacana": "eka",
         "linga": "puṃlliṅgam",
         "tags": ["samāsapūrvapadanāmapadam"],
-    }}
+    }]}
     assert postprocess_analysis._sp_word_entry("saṃpṛktau", morph) == {
         "form": "saṃpṛktau",
         "root": "vāgartha",
@@ -441,7 +481,7 @@ def test_sp_word_entry_looks_up_normalized_form_and_filters_keys():
     assert postprocess_analysis._sp_word_entry("īḷe", morph) == {"form": "īḷe"}
     # Falsy morphology fields are not copied.
     assert postprocess_analysis._sp_word_entry(
-        "agni", {"agni": {"root": "", "tags": [], "vacana": "eka"}}
+        "agni", {"agni": [{"root": "", "tags": [], "vacana": "eka"}]}
     ) == {"form": "agni", "vacana": "eka"}
 
 
@@ -454,7 +494,7 @@ def _tapodhena_fixture():
     return (
         ["tapodhena"],
         {"tapodhena": ["tapaḥ", "dhena"]},
-        {"tapaḥ": {"root": "tapas", "vibhakti": "ṣaṣṭhī", "vacana": "eka"}},
+        {"tapaḥ": [{"root": "tapas", "vibhakti": "ṣaṣṭhī", "vacana": "eka"}]},
         [[{"form": "tapodhena", "lemma": "tapa"}]],
     )
 

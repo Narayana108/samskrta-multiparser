@@ -164,18 +164,42 @@ def parse_sp_tag_group(group: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     return result or None
 
 
+_VIBHAKTI_ORDER = {
+    "prathamā": 1,
+    "dvitīyā": 2,
+    "tṛtīyā": 3,
+    "caturthī": 4,
+    "pañcamī": 5,
+    "ṣaṣṭhī": 6,
+    "saptamī": 7,
+    "saṃbodhana": 8,
+}
+
+
 def _morph_rank(entry: Dict[str, Any]):
-    """Rank candidate analyses: full case readings beat bare compound markers."""
+    """Rank candidate analyses: full case readings beat bare compound markers.
+
+    Ties between equally complete readings follow the grammatical case order (prathamā first,
+    saṃbodhana last). The previous alphabetical tie-break promoted the vocative over a nominative
+    that sanskrit_parser had listed for the very same form — 103 of our golden padas showed
+    'saṃbodhana' alone while the raw output also offered prathamā/dvitīyā. Case order comes before
+    leanness, so a participle's kṛdanta reading is not demoted below a bare vocative of the same stem
+    (jīrṇāni). An avyaya reading outranks a bare compound marker for the same reason: 'avyayam' states
+    what the word is, while 'samāsapūrvapadanāmapadam' only says it sits inside a compound — otherwise
+    yathā/tathā/ca/eva were published as compound prefixes and their indeclinable reading vanished.
+    """
     return (
         "vibhakti" in entry,
         "vacana" in entry,
+        "avyayam" in entry.get("tags", []),
+        -_VIBHAKTI_ORDER.get(entry.get("vibhakti") or "", 0),
         -len(entry.get("tags", [])),
         tuple(sorted((k, str(v)) for k, v in entry.items())),
     )
 
 
-def collect_sp_morphology(sp_output: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
-    """Map every sanskrit_parser surface form to its best parsed morphology.
+def collect_sp_morphology(sp_output: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
+    """Map every sanskrit_parser surface form to its readings, best ranked first.
 
     Walks the raw output and collects every tag group attached to a 'pada' — both the items of the
     whole-line `sandhi_splits` and the `word_morphology` entries recorded for the words the per-word
@@ -184,6 +208,10 @@ def collect_sp_morphology(sp_output: Dict[str, Any]) -> Dict[str, Dict[str, Any]
     appears first. Candidates are keyed by the anusvara-normalized form up front; otherwise two
     spellings of one pada ('saṃpṛktau' / 'sampṛktau') compete as separate keys and the winner would be
     decided by insertion order.
+
+    An ambiguous form keeps every distinct reading it was given: vāsāṃsi is nominative, accusative
+    and vocative plural at once, so collapsing it to one tag erases an answer the engine did offer.
+    The best-ranked reading fills the word's primary fields; the rest travel as `alternates`.
     """
     groups: Dict[str, List[Dict[str, Any]]] = {}
 
@@ -204,7 +232,17 @@ def collect_sp_morphology(sp_output: Dict[str, Any]) -> Dict[str, Dict[str, Any]
                 walk(item)
 
     walk(sp_output)
-    return {pada: max(cands, key=_morph_rank) for pada, cands in groups.items()}
+    ranked_all = {}
+    for pada, cands in groups.items():
+        seen = set()
+        ranked = []
+        for cand in sorted(cands, key=_morph_rank, reverse=True):
+            key = json.dumps(cand, sort_keys=True, ensure_ascii=False)
+            if key not in seen:
+                seen.add(key)
+                ranked.append(cand)
+        ranked_all[pada] = ranked
+    return ranked_all
 
 
 def collect_sp_decompositions(sp_output: Dict[str, Any]) -> Dict[str, List[str]]:
@@ -394,20 +432,27 @@ def _dm_word_entry(token: Dict[str, Any]) -> Dict[str, Any]:
     return entry
 
 
-def _sp_word_entry(form: str, sp_morph: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
-    """Render one sanskrit_parser surface form as a readable word entry."""
+def _sp_word_entry(form: str, sp_morph: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Any]:
+    """Render one sanskrit_parser surface form as a readable word entry.
+
+    The best-ranked reading fills the primary fields; every other distinct reading the engine gave
+    this form is listed under 'alternates' rather than dropped.
+    """
     entry: Dict[str, Any] = {"form": form}
-    morph = sp_morph.get(_norm_anusvara(form)) or {}
+    readings = sp_morph.get(_norm_anusvara(form)) or []
+    morph = readings[0] if readings else {}
     for key in ("root", "vibhakti", "vacana", "linga", "tags"):
         if morph.get(key):
             entry[key] = morph[key]
+    if len(readings) > 1:
+        entry["alternates"] = readings[1:]
     return entry
 
 
 def build_padas(
     input_words: List[str],
     sp_decomp: Dict[str, List[str]],
-    sp_morph: Dict[str, Dict[str, Any]],
+    sp_morph: Dict[str, List[Dict[str, Any]]],
     dm_groups: List[List[Dict[str, Any]]],
     dm_available: bool,
     dm_word_requests: Optional[Dict[str, List[Dict[str, Any]]]] = None,

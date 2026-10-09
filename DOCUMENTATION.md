@@ -155,7 +155,7 @@ tokens, pass through unsplit rather than being cut at a false boundary.
 The reading pass is reproducible: the same `<base>.raw.json` always yields a
 byte-identical `<base>.result.json`. The rules that buy that stability:
 
-- **Ranked, never first-seen.** SP split candidates go through `_best_word_split`, which ranks all ten with the vidyut kosha in hand: exact dictionary attestation of every part first (this is what keeps `mokṣayiṣyāmi` one word and rejects fragments such as `ava | tu`), then fewest parts, then standalone morphology for every part, then rarity of the scarcest part, then longest shortest part, then the sorted list. Without a kosha it falls back to the older morphology-first keys. Morphology groups go through `_morph_rank` (a complete case reading outranks a fragment such as one tagged only `samāsapūrvapadanāmapadam`). Vidyut split chains are scored by `_chain_score` = (kosha-attested parts, −len(chain)).
+- **Ranked, never first-seen.** SP split candidates go through `_best_word_split`, which ranks all ten with the vidyut kosha in hand: exact dictionary attestation of every part first (this is what keeps `mokṣayiṣyāmi` one word and rejects fragments such as `ava | tu`), then fewest parts, then standalone morphology for every part, then rarity of the scarcest part, then longest shortest part, then the sorted list. Without a kosha it falls back to the older morphology-first keys. Morphology goes through `_morph_rank`, which orders *case-tagged readings* grammatically (prathamā … saṃbodhana), puts an `avyayam` reading above a bare compound marker such as `samāsapūrvapadanāmapadam`, then vacana, then fewer residual tags — and it only chooses the **primary** reading: every distinct reading sanskrit_parser offered for that form is kept in `alternates` (§8). Vidyut split chains are scored by `_chain_score` = (kosha-attested parts, −len(chain)).
 - **Anusvara-normalized keys.** `saṃpṛktau` and `sampṛktau` must collide onto one
   key; `postprocess_analysis._norm_anusvara` does that, and the *key* is normalized at
   collection time so collisions resolve by rank rather than by dict insertion
@@ -181,6 +181,18 @@ subtrees were byte-identical across those runs. Because postprocess re-ranks rat
 traverses, that noise usually cancels — but when sanskrit_parser proposes a genuinely
 different candidate set, `<base>.result.json` legitimately changes with it. Pin the raw
 document (and hence the reading one) if you need archival reproducibility.
+
+**How unstable one fused pāda really is.** For a join with many equally-scored readings the candidate set
+itself moves between runs. Eight back-to-back `app.py shloka` runs on Bhagavad Gītā 2.47 produced six
+different readings of its first pāda alone — `karmaṇye | vā`, `karmaṇye | ava`, `karmaṇi | eva`,
+`karmaṇyā | iva …`, with `adhikāras | te` or `adhikāra | ste` — on the single-process path, so this is not
+pool interleaving. sanskrit_parser says why: it prints "gensim and/or sentencepiece not found. Lexical
+scoring will be disabled" on every run, so its sandhi graph scores many paths equally and pops them in an
+order that depends on internal object identity; pinning `PYTHONHASHSEED` does not help (measured with seeds
+0, 0, 1). Our ranking re-ranks whatever pool arrives, so a pāda like this one changes with the pool. That is
+why `tests/test_golden_outputs.py` pins Dharmamitrā's column plus only those sanskrit_parser columns that are
+stable in practice (Gītā 2.47's first pāda is deliberately unpinned), and why
+`tests/test_sandhi_accuracy.py` floors a corpus score instead of pinning words per run.
 
 The pinned pairs in `tests/data/results/` (§7) exist because of this. Re-running Bhagavad Gītā 18.66 used to reproduce the dharmamitra and vidyut subtrees byte-for-byte while sanskrit_parser's tied per-word ranking put `mokṣe | iṣi | āmi` where the stored document had `mokṣe | iṣyā | āmi`. Dictionary-validated ranking removed that particular tie — every candidate that cut the finite verb now loses to the whole attested word, so the splitter column is stable in practice. The live golden test still compares only the Dharmamitra and vidyut subtrees plus the reading document's Dharmamitra column, pada sequence and metre summary: the *candidate set* `parser.split()` enumerates for a line is not specified to be stable, so pinning the splitter column would test sanskrit_parser's internals rather than this tool.
 
@@ -393,7 +405,7 @@ Ordered by how likely they are to bite:
     अनुष्टुप् [८] for 2.47 and उपजातिः [११] for 2.22 and 11.15, while vidyut reports `candralekhā` /
     `vasumatī` for the first and only the `indravajrā` / `vaṃśastha` / `upendravajrā` family for the
     others — its 145-row table has neither anuṣṭubh nor upajāti. The Raghuvaṃśa and Śākuntala labels
-    (sragdharā [२१], mālinī [५] for the सरसिजम् verse) do come back identical. So `vrtta` is vidyut's
+    (sragdharā [२१], मालिनी [१५] for the सरसिजम् verse) do come back identical. So `vrtta` is vidyut's
     nearest pattern over our akshara counts, not a citation of the edition's metre; where the editions'
     label matters, read it off the printed verse.
 
@@ -429,6 +441,23 @@ Ordered by how likely they are to bite:
     prints `दत्तदृष्टिः` (`dattadṛṣṭiḥ`) where this corpus pins `बद्धदृष्टिः` (`baddhadṛṣṭiḥ`, the reading of
     the other editions in circulation); all three engines analyzed our reading consistently, and the fixture
     is what a golden test must be able to reproduce.
+
+16. **sanskrit_parser offers several case readings for one form, and all of them stay in the document.**
+    Measured over the sixteen fixtures: 546 pada-words carry morphology, 432 of them have more than one
+    distinct reading, and in 103 cases an earlier build published a lone `saṃbodhana` while the raw output had
+    also offered prathamā or dvitīyā — the alphabetical tie-break in the old single-pick code made the vocative
+    win ties. That collapse was ours, not sanskrit_parser's. `collect_sp_morphology` now returns every distinct
+    reading (deduplicated on full content), `_morph_rank` only decides which one is primary (grammatical case
+    order, avyaya above a bare compound marker, then vacana, then fewer residual tags), and the others are
+    published under `"alternates"`. No engine can tell from one word alone which case the poet used, so the
+    choice is stated rather than hidden.
+
+17. **One crash seen once and not reproduced.** During fixture regeneration a single `app.py shloka` run on
+    Raghuvaṃśa 1.3 recorded `Error: sanskrit_parser: unavailable: name 'sys' is not defined`, exited non-zero
+    and wrote the failure into `engine_errors`; six reruns of that verse and eight direct
+    `run_sanskrit_parser` calls were clean, so no cause was established. It is reported here rather than
+    papered over: nothing in this tool filters warnings or engine errors, a run that loses an engine never
+    passes the golden tests, and its output documents say which engine failed.
 
 ## 9. Splitting quality: how it is measured
 
@@ -508,3 +537,34 @@ Per-word sandhi splitting has no oracle inside the tool, so one was built outsid
   pada's candidate pool once and re-running the ranking over it; the pool, not the ranking, is the
   expensive part. When a verse is added to the corpus, regenerate its golden pair with the command in
   §7 rather than editing JSON by hand.
+
+## 10. Metre: how it is measured
+
+Chandas has the same problem splitting has — no oracle inside the tool — so the published reading lives beside
+the engine's best effort in `tests/data/meter_truth.json`: one row per pinned verse with the Devanagari metre
+name, its IAST spelling, aksharas per pāda, pāda count and the source URL (sanskritsahitya.org prints
+`छन्दः <name> [<aksharas/pāda>: <gaṇas>]` plus a छन्दोविश्लेषणम् grid; cross-checked against that site's own
+data repository). `tests/test_meter_accuracy.py` runs offline, prints truth next to best effort for all sixteen
+verses, and emits a warning naming the engine and its documented limit wherever a metre cannot be named.
+
+- **The shape is right on 16/16.** `pada_count` and `aksharas_per_pada` equal the published grids everywhere:
+  [8, 8, 8, 8] for Raghuvaṃśa 1.1–1.7 and Gītā 2.47 / 18.66, [11, 11, 11, 11] for Gītā 2.22 / 11.15 / 15.5 /
+  15.15, [21 …] and [15 …] for the Śākuntala metres. Counting aksharas is vidyut's scanner, and it agrees.
+- **Names: what was ours.** `_summarize_chandas` used to name a verse only when every pāda returned the same
+  metre, so one impossible name silently produced `vrtta: null`. vidyut matches gaṇa *prefixes*: an 11-akshara
+  pāda scanning `GGLGGLLGLGL` is reported as `indravaṃśā`, whose pattern declares 12 aksharas. `_meter_lengths`
+  now reads those declared counts out of meters.tsv (there `|` only groups the pattern — `sragDarA` is
+  `GGGGLGG|LLLLLLG|GLGGLGG`, i.e. 21), and a name whose length contradicts its pāda stays in `candidates`,
+  loses the vote, and is announced on stderr. Pādas vidyut leaves unclassified no longer veto a name the others
+  agree on either: the final syllable of a pāda is free in length while vidyut's patterns are not. Measured
+  after that fix — इन्द्रवज्रा for Gītā 15.5 and 15.15, स्रग्धरा for Śākuntala 1.1 and 1.7, मालिनी for
+  Śākuntala 1.18: five verses named correctly where before the fix none were.
+- **The rest is vidyut's table, not our code.** meters.tsv holds 145 rows, all `vrtta`, and no jāti metre at
+  all, so anuṣṭubh (Raghuvaṃśa 1.1–1.7, Gītā 2.47, 18.66) and upजाति (Gītā 2.22, 11.15) cannot be named: vidyut
+  offers short vṛtta prefixes instead — mṛgī, vasumatī, candralekhā, madalekhā, śuddhavirāṭ, jaloddhatagati,
+  upasthita — or classifies nothing. Those eleven verses are pinned as `vrtta: null` on purpose; a vidyut that
+  learns jāti metres will fail the pin and force a re-measure. Naming them means shipping our own metre table
+  (anuṣṭubh pathya plus the triṣṭubh/upajāti variants), which is separate work, not a patch to this summary.
+- **Spellings come from vidyut.** Metre names in the output are vidyut's own SLP1 → IAST rendering, which writes
+  मालिनी as `malinī`; `meter_truth.json` records that spelling next to the published one rather than us editing
+  engine text after the fact.

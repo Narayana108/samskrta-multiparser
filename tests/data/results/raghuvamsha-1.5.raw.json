@@ -13,159 +13,6 @@
           "split_index": 0,
           "split": [
             "sohamā",
-            "janma",
-            "śuddhānām",
-            "āphalodayakarmaṇām"
-          ],
-          "items": [
-            {
-              "pada": "sohamā",
-              "morphological_tags": [
-                {
-                  "root": "soham",
-                  "tags": [
-                    "ekavacanam",
-                    "puṃlliṅgam",
-                    "tṛtīyāvibhaktiḥ"
-                  ]
-                }
-              ]
-            },
-            {
-              "pada": "janma",
-              "morphological_tags": [
-                {
-                  "root": "janman",
-                  "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "janman",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "prathamāvibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "janman",
-                  "tags": [
-                    "puṃlliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "janman",
-                  "tags": [
-                    "dvitīyāvibhaktiḥ",
-                    "ekavacanam",
-                    "napuṃsakaliṅgam"
-                  ]
-                },
-                {
-                  "root": "janman",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "janma",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "janma",
-                  "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                }
-              ]
-            },
-            {
-              "pada": "śuddhānām",
-              "morphological_tags": [
-                {
-                  "root": "śuddha",
-                  "tags": [
-                    "bahuvacanam",
-                    "karmaṇi",
-                    "kta",
-                    "kṛdantaḥ",
-                    "prāthamikaḥ",
-                    "puṃlliṅgam",
-                    "ṣaṣṭhīvibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "śuddha",
-                  "tags": [
-                    "bahuvacanam",
-                    "karmaṇi",
-                    "kta",
-                    "kṛdantaḥ",
-                    "napuṃsakaliṅgam",
-                    "prāthamikaḥ",
-                    "ṣaṣṭhīvibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "śuddha",
-                  "tags": [
-                    "bahuvacanam",
-                    "karmaṇi",
-                    "kta",
-                    "kṛdantaḥ",
-                    "prāthamikaḥ",
-                    "strīliṅgam",
-                    "ṣaṣṭhīvibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "śuddhā",
-                  "tags": [
-                    "bahuvacanam",
-                    "strīliṅgam",
-                    "ṣaṣṭhīvibhaktiḥ"
-                  ]
-                }
-              ]
-            },
-            {
-              "pada": "āphalodayakarmaṇām",
-              "morphological_tags": [
-                {
-                  "root": "āphalodayakarman",
-                  "tags": [
-                    "bahuvacanam",
-                    "puṃlliṅgam",
-                    "ṣaṣṭhīvibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āphalodayakarman",
-                  "tags": [
-                    "bahuvacanam",
-                    "napuṃsakaliṅgam",
-                    "ṣaṣṭhīvibhaktiḥ"
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "line_index": 0,
-          "split_index": 1,
-          "split": [
-            "sohamā",
             "ajanma",
             "śuddhānām",
             "āphalodayakarmaṇām"
@@ -200,8 +47,9 @@
                 {
                   "root": "ajanman",
                   "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
+                    "dvitīyāvibhaktiḥ",
+                    "ekavacanam",
+                    "napuṃsakaliṅgam"
                   ]
                 },
                 {
@@ -209,7 +57,7 @@
                   "tags": [
                     "ekavacanam",
                     "napuṃsakaliṅgam",
-                    "prathamāvibhaktiḥ"
+                    "saṃbodhanavibhaktiḥ"
                   ]
                 },
                 {
@@ -222,9 +70,8 @@
                 {
                   "root": "ajanman",
                   "tags": [
-                    "dvitīyāvibhaktiḥ",
-                    "ekavacanam",
-                    "napuṃsakaliṅgam"
+                    "napuṃsakaliṅgam",
+                    "samāsapūrvapadanāmapadam"
                   ]
                 },
                 {
@@ -232,7 +79,7 @@
                   "tags": [
                     "ekavacanam",
                     "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
+                    "prathamāvibhaktiḥ"
                   ]
                 }
               ]
@@ -248,7 +95,7 @@
                     "kta",
                     "kṛdantaḥ",
                     "prāthamikaḥ",
-                    "puṃlliṅgam",
+                    "strīliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -272,7 +119,7 @@
                     "kta",
                     "kṛdantaḥ",
                     "prāthamikaḥ",
-                    "strīliṅgam",
+                    "puṃlliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -293,7 +140,7 @@
                   "root": "āphalodayakarman",
                   "tags": [
                     "bahuvacanam",
-                    "puṃlliṅgam",
+                    "napuṃsakaliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -301,7 +148,160 @@
                   "root": "āphalodayakarman",
                   "tags": [
                     "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "line_index": 0,
+          "split_index": 1,
+          "split": [
+            "sohamā",
+            "janma",
+            "śuddhānām",
+            "āphalodayakarmaṇām"
+          ],
+          "items": [
+            {
+              "pada": "sohamā",
+              "morphological_tags": [
+                {
+                  "root": "soham",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "tṛtīyāvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "janma",
+              "morphological_tags": [
+                {
+                  "root": "janman",
+                  "tags": [
+                    "dvitīyāvibhaktiḥ",
+                    "ekavacanam",
+                    "napuṃsakaliṅgam"
+                  ]
+                },
+                {
+                  "root": "janman",
+                  "tags": [
+                    "ekavacanam",
                     "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "janman",
+                  "tags": [
+                    "puṃlliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "janman",
+                  "tags": [
+                    "napuṃsakaliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "janman",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "prathamāvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "janma",
+                  "tags": [
+                    "napuṃsakaliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "janma",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "śuddhānām",
+              "morphological_tags": [
+                {
+                  "root": "śuddha",
+                  "tags": [
+                    "bahuvacanam",
+                    "karmaṇi",
+                    "kta",
+                    "kṛdantaḥ",
+                    "prāthamikaḥ",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "śuddha",
+                  "tags": [
+                    "bahuvacanam",
+                    "karmaṇi",
+                    "kta",
+                    "kṛdantaḥ",
+                    "napuṃsakaliṅgam",
+                    "prāthamikaḥ",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "śuddha",
+                  "tags": [
+                    "bahuvacanam",
+                    "karmaṇi",
+                    "kta",
+                    "kṛdantaḥ",
+                    "prāthamikaḥ",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "śuddhā",
+                  "tags": [
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "āphalodayakarmaṇām",
+              "morphological_tags": [
+                {
+                  "root": "āphalodayakarman",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "āphalodayakarman",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 }
@@ -355,7 +355,7 @@
                     "kta",
                     "kṛdantaḥ",
                     "prāthamikaḥ",
-                    "puṃlliṅgam",
+                    "strīliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -379,7 +379,7 @@
                     "kta",
                     "kṛdantaḥ",
                     "prāthamikaḥ",
-                    "strīliṅgam",
+                    "puṃlliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -400,7 +400,7 @@
                   "root": "āphalodayakarman",
                   "tags": [
                     "bahuvacanam",
-                    "puṃlliṅgam",
+                    "napuṃsakaliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -408,7 +408,7 @@
                   "root": "āphalodayakarman",
                   "tags": [
                     "bahuvacanam",
-                    "napuṃsakaliṅgam",
+                    "puṃlliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 }
@@ -441,37 +441,37 @@
                 {
                   "root": "sa",
                   "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "sa",
-                  "tags": [
-                    "ekavacanam",
-                    "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "sa",
-                  "tags": [
-                    "puṃlliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "sa",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "sa",
-                  "tags": [
                     "avyayam"
+                  ]
+                },
+                {
+                  "root": "sa",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "sa",
+                  "tags": [
+                    "puṃlliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "sa",
+                  "tags": [
+                    "napuṃsakaliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "sa",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saṃbodhanavibhaktiḥ"
                   ]
                 }
               ]
@@ -512,7 +512,7 @@
                     "kta",
                     "kṛdantaḥ",
                     "prāthamikaḥ",
-                    "puṃlliṅgam",
+                    "strīliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -536,7 +536,7 @@
                     "kta",
                     "kṛdantaḥ",
                     "prāthamikaḥ",
-                    "strīliṅgam",
+                    "puṃlliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -557,7 +557,7 @@
                   "root": "āphalodayakarman",
                   "tags": [
                     "bahuvacanam",
-                    "puṃlliṅgam",
+                    "napuṃsakaliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -565,7 +565,7 @@
                   "root": "āphalodayakarman",
                   "tags": [
                     "bahuvacanam",
-                    "napuṃsakaliṅgam",
+                    "puṃlliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 }
@@ -578,9 +578,9 @@
           "split_index": 4,
           "split": [
             "sohamā",
-            "janma",
-            "śuddhās",
-            "nāmā",
+            "ajanma",
+            "śuddhān",
+            "āmā",
             "āphalodayakarmaṇām"
           ],
           "items": [
@@ -598,32 +598,20 @@
               ]
             },
             {
-              "pada": "janma",
+              "pada": "ajanma",
               "morphological_tags": [
                 {
-                  "root": "janman",
+                  "root": "jan",
                   "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
+                    "bahuvacanam",
+                    "luṅ",
+                    "parasmaipadam",
+                    "prāthamikaḥ",
+                    "uttamapuruṣaḥ"
                   ]
                 },
                 {
-                  "root": "janman",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "prathamāvibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "janman",
-                  "tags": [
-                    "puṃlliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "janman",
+                  "root": "ajanman",
                   "tags": [
                     "dvitīyāvibhaktiḥ",
                     "ekavacanam",
@@ -631,7 +619,7 @@
                   ]
                 },
                 {
-                  "root": "janman",
+                  "root": "ajanman",
                   "tags": [
                     "ekavacanam",
                     "napuṃsakaliṅgam",
@@ -639,114 +627,55 @@
                   ]
                 },
                 {
-                  "root": "janma",
+                  "root": "ajanman",
                   "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
+                    "puṃlliṅgam",
+                    "samāsapūrvapadanāmapadam"
                   ]
                 },
                 {
-                  "root": "janma",
+                  "root": "ajanman",
                   "tags": [
                     "napuṃsakaliṅgam",
                     "samāsapūrvapadanāmapadam"
                   ]
+                },
+                {
+                  "root": "ajanman",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "prathamāvibhaktiḥ"
+                  ]
                 }
               ]
             },
             {
-              "pada": "śuddhās",
+              "pada": "śuddhān",
               "morphological_tags": [
                 {
                   "root": "śuddha",
                   "tags": [
                     "bahuvacanam",
+                    "dvitīyāvibhaktiḥ",
                     "karmaṇi",
                     "kta",
                     "kṛdantaḥ",
-                    "prathamāvibhaktiḥ",
                     "prāthamikaḥ",
                     "puṃlliṅgam"
                   ]
-                },
-                {
-                  "root": "śuddha",
-                  "tags": [
-                    "bahuvacanam",
-                    "karmaṇi",
-                    "kta",
-                    "kṛdantaḥ",
-                    "prathamāvibhaktiḥ",
-                    "prāthamikaḥ",
-                    "strīliṅgam"
-                  ]
-                },
-                {
-                  "root": "śuddha",
-                  "tags": [
-                    "bahuvacanam",
-                    "saṃbodhanavibhaktiḥ",
-                    "strīliṅgam"
-                  ]
-                },
-                {
-                  "root": "śuddha",
-                  "tags": [
-                    "bahuvacanam",
-                    "dvitīyāvibhaktiḥ",
-                    "karmaṇi",
-                    "kta",
-                    "kṛdantaḥ",
-                    "prāthamikaḥ",
-                    "strīliṅgam"
-                  ]
-                },
-                {
-                  "root": "śuddha",
-                  "tags": [
-                    "bahuvacanam",
-                    "karmaṇi",
-                    "kta",
-                    "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "śuddhā",
-                  "tags": [
-                    "bahuvacanam",
-                    "prathamāvibhaktiḥ",
-                    "strīliṅgam"
-                  ]
-                },
-                {
-                  "root": "śuddhā",
-                  "tags": [
-                    "bahuvacanam",
-                    "saṃbodhanavibhaktiḥ",
-                    "strīliṅgam"
-                  ]
-                },
-                {
-                  "root": "śuddhā",
-                  "tags": [
-                    "bahuvacanam",
-                    "dvitīyāvibhaktiḥ",
-                    "strīliṅgam"
-                  ]
                 }
               ]
             },
             {
-              "pada": "nāmā",
+              "pada": "āmā",
               "morphological_tags": [
                 {
-                  "root": "nāman",
+                  "root": "āma",
                   "tags": [
                     "ekavacanam",
                     "prathamāvibhaktiḥ",
-                    "puṃlliṅgam"
+                    "strīliṅgam"
                   ]
                 }
               ]
@@ -758,7 +687,7 @@
                   "root": "āphalodayakarman",
                   "tags": [
                     "bahuvacanam",
-                    "puṃlliṅgam",
+                    "napuṃsakaliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -766,7 +695,7 @@
                   "root": "āphalodayakarman",
                   "tags": [
                     "bahuvacanam",
-                    "napuṃsakaliṅgam",
+                    "puṃlliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 }
@@ -777,244 +706,6 @@
         {
           "line_index": 1,
           "split_index": 0,
-          "split": [
-            "āsa",
-            "mudra",
-            "kṣitīśānām",
-            "ānākarathavartmanām"
-          ],
-          "items": [
-            {
-              "pada": "āsa",
-              "morphological_tags": [
-                {
-                  "root": "as#1",
-                  "tags": [
-                    "ekavacanam",
-                    "liṭ",
-                    "parasmaipadam",
-                    "prathamapuruṣaḥ",
-                    "prāthamikaḥ"
-                  ]
-                },
-                {
-                  "root": "as#1",
-                  "tags": [
-                    "bahuvacanam",
-                    "liṭ",
-                    "madhyamapuruṣaḥ",
-                    "parasmaipadam",
-                    "prāthamikaḥ"
-                  ]
-                },
-                {
-                  "root": "as#1",
-                  "tags": [
-                    "ekavacanam",
-                    "liṭ",
-                    "parasmaipadam",
-                    "prāthamikaḥ",
-                    "uttamapuruṣaḥ"
-                  ]
-                },
-                {
-                  "root": "as#2",
-                  "tags": [
-                    "ekavacanam",
-                    "liṭ",
-                    "parasmaipadam",
-                    "prathamapuruṣaḥ",
-                    "prāthamikaḥ"
-                  ]
-                },
-                {
-                  "root": "as#2",
-                  "tags": [
-                    "bahuvacanam",
-                    "liṭ",
-                    "madhyamapuruṣaḥ",
-                    "parasmaipadam",
-                    "prāthamikaḥ"
-                  ]
-                },
-                {
-                  "root": "as#2",
-                  "tags": [
-                    "ekavacanam",
-                    "liṭ",
-                    "parasmaipadam",
-                    "prāthamikaḥ",
-                    "uttamapuruṣaḥ"
-                  ]
-                },
-                {
-                  "root": "āsan",
-                  "tags": [
-                    "dvitīyāvibhaktiḥ",
-                    "ekavacanam",
-                    "napuṃsakaliṅgam"
-                  ]
-                },
-                {
-                  "root": "āsan",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "prathamāvibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsan",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsan",
-                  "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "āsa#2",
-                  "tags": [
-                    "ekavacanam",
-                    "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsa#2",
-                  "tags": [
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "as",
-                  "tags": [
-                    "bahuvacanam",
-                    "liṭ",
-                    "madhyamapuruṣaḥ",
-                    "parasmaipadam"
-                  ]
-                },
-                {
-                  "root": "āsa",
-                  "tags": [
-                    "ekavacanam",
-                    "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsa",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsa",
-                  "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "āsa",
-                  "tags": [
-                    "puṃlliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                }
-              ]
-            },
-            {
-              "pada": "mudra",
-              "morphological_tags": [
-                {
-                  "root": "mudra",
-                  "tags": [
-                    "ekavacanam",
-                    "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "mudra",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "mudra",
-                  "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "mudra",
-                  "tags": [
-                    "puṃlliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                }
-              ]
-            },
-            {
-              "pada": "kṣitīśānām",
-              "morphological_tags": [
-                {
-                  "root": "kṣitīśa",
-                  "tags": [
-                    "bahuvacanam",
-                    "puṃlliṅgam",
-                    "ṣaṣṭhīvibhaktiḥ"
-                  ]
-                }
-              ]
-            },
-            {
-              "pada": "ānākarathavartmanām",
-              "morphological_tags": [
-                {
-                  "root": "ānākarathavartman",
-                  "tags": [
-                    "bahuvacanam",
-                    "napuṃsakaliṅgam",
-                    "ṣaṣṭhīvibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "ānākarathavartman",
-                  "tags": [
-                    "bahuvacanam",
-                    "puṃlliṅgam",
-                    "ṣaṣṭhīvibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "ānākarathavartman",
-                  "tags": [
-                    "bahuvacanam",
-                    "strīliṅgam",
-                    "ṣaṣṭhīvibhaktiḥ"
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "line_index": 1,
-          "split_index": 1,
           "split": [
             "ā",
             "samudra",
@@ -1028,9 +719,7 @@
                 {
                   "root": "ā",
                   "tags": [
-                    "ekavacanam",
-                    "puṃlliṅgam",
-                    "tṛtīyāvibhaktiḥ"
+                    "avyayam"
                   ]
                 },
                 {
@@ -1043,8 +732,8 @@
                   "root": "ā",
                   "tags": [
                     "ekavacanam",
-                    "prathamāvibhaktiḥ",
-                    "strīliṅgam"
+                    "puṃlliṅgam",
+                    "tṛtīyāvibhaktiḥ"
                   ]
                 },
                 {
@@ -1057,13 +746,15 @@
                 {
                   "root": "ā",
                   "tags": [
-                    "avyayam"
+                    "samāsapūrvapadanāmapadam",
+                    "strīliṅgam"
                   ]
                 },
                 {
                   "root": "ā",
                   "tags": [
-                    "samāsapūrvapadanāmapadam",
+                    "ekavacanam",
+                    "prathamāvibhaktiḥ",
                     "strīliṅgam"
                   ]
                 },
@@ -1083,9 +774,7 @@
                 {
                   "root": "samudra#1",
                   "tags": [
-                    "ekavacanam",
-                    "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
+                    "samāsapūrvapadanāmapadam"
                   ]
                 },
                 {
@@ -1099,15 +788,15 @@
                 {
                   "root": "samudra#1",
                   "tags": [
-                    "samāsapūrvapadanāmapadam"
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saṃbodhanavibhaktiḥ"
                   ]
                 },
                 {
                   "root": "samudra#2",
                   "tags": [
-                    "ekavacanam",
-                    "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
+                    "samāsapūrvapadanāmapadam"
                   ]
                 },
                 {
@@ -1121,22 +810,8 @@
                 {
                   "root": "samudra#2",
                   "tags": [
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "samudra",
-                  "tags": [
                     "ekavacanam",
                     "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "samudra",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
                     "saṃbodhanavibhaktiḥ"
                   ]
                 },
@@ -1152,6 +827,22 @@
                   "tags": [
                     "puṃlliṅgam",
                     "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "samudra",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "samudra",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saṃbodhanavibhaktiḥ"
                   ]
                 }
               ]
@@ -1176,7 +867,7 @@
                   "root": "ānākarathavartman",
                   "tags": [
                     "bahuvacanam",
-                    "napuṃsakaliṅgam",
+                    "strīliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -1192,7 +883,245 @@
                   "root": "ānākarathavartman",
                   "tags": [
                     "bahuvacanam",
+                    "napuṃsakaliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "line_index": 1,
+          "split_index": 1,
+          "split": [
+            "āsa",
+            "mudra",
+            "kṣitīśānām",
+            "ānākarathavartmanām"
+          ],
+          "items": [
+            {
+              "pada": "āsa",
+              "morphological_tags": [
+                {
+                  "root": "as#1",
+                  "tags": [
+                    "bahuvacanam",
+                    "liṭ",
+                    "madhyamapuruṣaḥ",
+                    "parasmaipadam",
+                    "prāthamikaḥ"
+                  ]
+                },
+                {
+                  "root": "as#1",
+                  "tags": [
+                    "ekavacanam",
+                    "liṭ",
+                    "parasmaipadam",
+                    "prathamapuruṣaḥ",
+                    "prāthamikaḥ"
+                  ]
+                },
+                {
+                  "root": "as#1",
+                  "tags": [
+                    "ekavacanam",
+                    "liṭ",
+                    "parasmaipadam",
+                    "prāthamikaḥ",
+                    "uttamapuruṣaḥ"
+                  ]
+                },
+                {
+                  "root": "as#2",
+                  "tags": [
+                    "bahuvacanam",
+                    "liṭ",
+                    "madhyamapuruṣaḥ",
+                    "parasmaipadam",
+                    "prāthamikaḥ"
+                  ]
+                },
+                {
+                  "root": "as#2",
+                  "tags": [
+                    "ekavacanam",
+                    "liṭ",
+                    "parasmaipadam",
+                    "prathamapuruṣaḥ",
+                    "prāthamikaḥ"
+                  ]
+                },
+                {
+                  "root": "as#2",
+                  "tags": [
+                    "ekavacanam",
+                    "liṭ",
+                    "parasmaipadam",
+                    "prāthamikaḥ",
+                    "uttamapuruṣaḥ"
+                  ]
+                },
+                {
+                  "root": "āsan",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "āsan",
+                  "tags": [
+                    "napuṃsakaliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "āsan",
+                  "tags": [
+                    "dvitīyāvibhaktiḥ",
+                    "ekavacanam",
+                    "napuṃsakaliṅgam"
+                  ]
+                },
+                {
+                  "root": "āsan",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "prathamāvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "āsa#2",
+                  "tags": [
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "āsa#2",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "as",
+                  "tags": [
+                    "bahuvacanam",
+                    "liṭ",
+                    "madhyamapuruṣaḥ",
+                    "parasmaipadam"
+                  ]
+                },
+                {
+                  "root": "āsa",
+                  "tags": [
+                    "napuṃsakaliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "āsa",
+                  "tags": [
+                    "puṃlliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "āsa",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "āsa",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "mudra",
+              "morphological_tags": [
+                {
+                  "root": "mudra",
+                  "tags": [
+                    "napuṃsakaliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "mudra",
+                  "tags": [
+                    "puṃlliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "mudra",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "mudra",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "kṣitīśānām",
+              "morphological_tags": [
+                {
+                  "root": "kṣitīśa",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "ānākarathavartmanām",
+              "morphological_tags": [
+                {
+                  "root": "ānākarathavartman",
+                  "tags": [
+                    "bahuvacanam",
                     "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "ānākarathavartman",
+                  "tags": [
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "ānākarathavartman",
+                  "tags": [
+                    "bahuvacanam",
+                    "napuṃsakaliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 }
@@ -1265,7 +1194,7 @@
                   "tags": [
                     "dvitīyāvibhaktiḥ",
                     "ekavacanam",
-                    "napuṃsakaliṅgam"
+                    "puṃlliṅgam"
                   ]
                 },
                 {
@@ -1273,7 +1202,7 @@
                   "tags": [
                     "dvitīyāvibhaktiḥ",
                     "ekavacanam",
-                    "puṃlliṅgam"
+                    "napuṃsakaliṅgam"
                   ]
                 },
                 {
@@ -1298,7 +1227,7 @@
                   "tags": [
                     "dvitīyāvibhaktiḥ",
                     "ekavacanam",
-                    "napuṃsakaliṅgam"
+                    "puṃlliṅgam"
                   ]
                 },
                 {
@@ -1306,7 +1235,7 @@
                   "tags": [
                     "dvitīyāvibhaktiḥ",
                     "ekavacanam",
-                    "puṃlliṅgam"
+                    "napuṃsakaliṅgam"
                   ]
                 },
                 {
@@ -1325,15 +1254,8 @@
                 {
                   "root": "udra",
                   "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "udra",
-                  "tags": [
                     "ekavacanam",
-                    "puṃlliṅgam",
+                    "napuṃsakaliṅgam",
                     "saṃbodhanavibhaktiḥ"
                   ]
                 },
@@ -1347,8 +1269,15 @@
                 {
                   "root": "udra",
                   "tags": [
-                    "ekavacanam",
                     "napuṃsakaliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "udra",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
                     "saṃbodhanavibhaktiḥ"
                   ]
                 }
@@ -1374,7 +1303,7 @@
                   "root": "ānākarathavartman",
                   "tags": [
                     "bahuvacanam",
-                    "napuṃsakaliṅgam",
+                    "strīliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -1390,7 +1319,7 @@
                   "root": "ānākarathavartman",
                   "tags": [
                     "bahuvacanam",
-                    "strīliṅgam",
+                    "napuṃsakaliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 }
@@ -1402,181 +1331,52 @@
           "line_index": 1,
           "split_index": 3,
           "split": [
-            "āsa",
-            "mut",
-            "ra",
+            "ā",
+            "sa",
+            "mudra",
             "kṣitīśānām",
             "ānākarathavartmanām"
           ],
           "items": [
             {
-              "pada": "āsa",
+              "pada": "ā",
               "morphological_tags": [
                 {
-                  "root": "as#1",
+                  "root": "ā",
                   "tags": [
-                    "ekavacanam",
-                    "liṭ",
-                    "parasmaipadam",
-                    "prathamapuruṣaḥ",
-                    "prāthamikaḥ"
+                    "avyayam"
                   ]
                 },
                 {
-                  "root": "as#1",
+                  "root": "ā",
                   "tags": [
-                    "bahuvacanam",
-                    "liṭ",
-                    "madhyamapuruṣaḥ",
-                    "parasmaipadam",
-                    "prāthamikaḥ"
+                    "upasargaḥ"
                   ]
                 },
                 {
-                  "root": "as#1",
-                  "tags": [
-                    "ekavacanam",
-                    "liṭ",
-                    "parasmaipadam",
-                    "prāthamikaḥ",
-                    "uttamapuruṣaḥ"
-                  ]
-                },
-                {
-                  "root": "as#2",
-                  "tags": [
-                    "ekavacanam",
-                    "liṭ",
-                    "parasmaipadam",
-                    "prathamapuruṣaḥ",
-                    "prāthamikaḥ"
-                  ]
-                },
-                {
-                  "root": "as#2",
-                  "tags": [
-                    "bahuvacanam",
-                    "liṭ",
-                    "madhyamapuruṣaḥ",
-                    "parasmaipadam",
-                    "prāthamikaḥ"
-                  ]
-                },
-                {
-                  "root": "as#2",
-                  "tags": [
-                    "ekavacanam",
-                    "liṭ",
-                    "parasmaipadam",
-                    "prāthamikaḥ",
-                    "uttamapuruṣaḥ"
-                  ]
-                },
-                {
-                  "root": "āsan",
-                  "tags": [
-                    "dvitīyāvibhaktiḥ",
-                    "ekavacanam",
-                    "napuṃsakaliṅgam"
-                  ]
-                },
-                {
-                  "root": "āsan",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "prathamāvibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsan",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsan",
-                  "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "āsa#2",
+                  "root": "ā",
                   "tags": [
                     "ekavacanam",
                     "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
+                    "tṛtīyāvibhaktiḥ"
                   ]
                 },
                 {
-                  "root": "āsa#2",
-                  "tags": [
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "as",
-                  "tags": [
-                    "bahuvacanam",
-                    "liṭ",
-                    "madhyamapuruṣaḥ",
-                    "parasmaipadam"
-                  ]
-                },
-                {
-                  "root": "āsa",
-                  "tags": [
-                    "ekavacanam",
-                    "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsa",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsa",
-                  "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "āsa",
+                  "root": "ā",
                   "tags": [
                     "puṃlliṅgam",
                     "samāsapūrvapadanāmapadam"
                   ]
-                }
-              ]
-            },
-            {
-              "pada": "mut",
-              "morphological_tags": [
+                },
                 {
-                  "root": "mud#2",
+                  "root": "ā",
                   "tags": [
-                    "ekavacanam",
-                    "saṃbodhanavibhaktiḥ",
+                    "samāsapūrvapadanāmapadam",
                     "strīliṅgam"
                   ]
                 },
                 {
-                  "root": "mud#2",
-                  "tags": [
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "mud#2",
+                  "root": "ā",
                   "tags": [
                     "ekavacanam",
                     "prathamāvibhaktiḥ",
@@ -1584,28 +1384,34 @@
                   ]
                 },
                 {
-                  "root": "mud",
+                  "root": "ṛ",
                   "tags": [
                     "ekavacanam",
                     "prathamāvibhaktiḥ",
-                    "strīliṅgam"
+                    "puṃlliṅgam"
                   ]
                 }
               ]
             },
             {
-              "pada": "ra",
+              "pada": "sa",
               "morphological_tags": [
                 {
-                  "root": "ra",
+                  "root": "tad",
                   "tags": [
                     "ekavacanam",
-                    "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
+                    "prathamāvibhaktiḥ",
+                    "puṃlliṅgam"
                   ]
                 },
                 {
-                  "root": "ra",
+                  "root": "sa",
+                  "tags": [
+                    "avyayam"
+                  ]
+                },
+                {
+                  "root": "sa",
                   "tags": [
                     "ekavacanam",
                     "napuṃsakaliṅgam",
@@ -1613,17 +1419,60 @@
                   ]
                 },
                 {
-                  "root": "ra",
+                  "root": "sa",
+                  "tags": [
+                    "puṃlliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "sa",
                   "tags": [
                     "napuṃsakaliṅgam",
                     "samāsapūrvapadanāmapadam"
                   ]
                 },
                 {
-                  "root": "ra",
+                  "root": "sa",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "mudra",
+              "morphological_tags": [
+                {
+                  "root": "mudra",
+                  "tags": [
+                    "napuṃsakaliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "mudra",
                   "tags": [
                     "puṃlliṅgam",
                     "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "mudra",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "mudra",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saṃbodhanavibhaktiḥ"
                   ]
                 }
               ]
@@ -1648,7 +1497,7 @@
                   "root": "ānākarathavartman",
                   "tags": [
                     "bahuvacanam",
-                    "napuṃsakaliṅgam",
+                    "strīliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -1664,7 +1513,7 @@
                   "root": "ānākarathavartman",
                   "tags": [
                     "bahuvacanam",
-                    "strīliṅgam",
+                    "napuṃsakaliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 }
@@ -1676,215 +1525,18 @@
           "line_index": 1,
           "split_index": 4,
           "split": [
-            "āsa",
-            "mudra",
-            "kṣitīśān",
-            "ām",
+            "ā",
+            "samudra",
+            "kṣitīśa",
+            "ānām",
             "ānākarathavartmanām"
           ],
           "items": [
             {
-              "pada": "āsa",
+              "pada": "ā",
               "morphological_tags": [
                 {
-                  "root": "as#1",
-                  "tags": [
-                    "ekavacanam",
-                    "liṭ",
-                    "parasmaipadam",
-                    "prathamapuruṣaḥ",
-                    "prāthamikaḥ"
-                  ]
-                },
-                {
-                  "root": "as#1",
-                  "tags": [
-                    "bahuvacanam",
-                    "liṭ",
-                    "madhyamapuruṣaḥ",
-                    "parasmaipadam",
-                    "prāthamikaḥ"
-                  ]
-                },
-                {
-                  "root": "as#1",
-                  "tags": [
-                    "ekavacanam",
-                    "liṭ",
-                    "parasmaipadam",
-                    "prāthamikaḥ",
-                    "uttamapuruṣaḥ"
-                  ]
-                },
-                {
-                  "root": "as#2",
-                  "tags": [
-                    "ekavacanam",
-                    "liṭ",
-                    "parasmaipadam",
-                    "prathamapuruṣaḥ",
-                    "prāthamikaḥ"
-                  ]
-                },
-                {
-                  "root": "as#2",
-                  "tags": [
-                    "bahuvacanam",
-                    "liṭ",
-                    "madhyamapuruṣaḥ",
-                    "parasmaipadam",
-                    "prāthamikaḥ"
-                  ]
-                },
-                {
-                  "root": "as#2",
-                  "tags": [
-                    "ekavacanam",
-                    "liṭ",
-                    "parasmaipadam",
-                    "prāthamikaḥ",
-                    "uttamapuruṣaḥ"
-                  ]
-                },
-                {
-                  "root": "āsan",
-                  "tags": [
-                    "dvitīyāvibhaktiḥ",
-                    "ekavacanam",
-                    "napuṃsakaliṅgam"
-                  ]
-                },
-                {
-                  "root": "āsan",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "prathamāvibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsan",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsan",
-                  "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "āsa#2",
-                  "tags": [
-                    "ekavacanam",
-                    "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsa#2",
-                  "tags": [
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "as",
-                  "tags": [
-                    "bahuvacanam",
-                    "liṭ",
-                    "madhyamapuruṣaḥ",
-                    "parasmaipadam"
-                  ]
-                },
-                {
-                  "root": "āsa",
-                  "tags": [
-                    "ekavacanam",
-                    "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsa",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "āsa",
-                  "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "āsa",
-                  "tags": [
-                    "puṃlliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                }
-              ]
-            },
-            {
-              "pada": "mudra",
-              "morphological_tags": [
-                {
-                  "root": "mudra",
-                  "tags": [
-                    "ekavacanam",
-                    "puṃlliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "mudra",
-                  "tags": [
-                    "ekavacanam",
-                    "napuṃsakaliṅgam",
-                    "saṃbodhanavibhaktiḥ"
-                  ]
-                },
-                {
-                  "root": "mudra",
-                  "tags": [
-                    "napuṃsakaliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                },
-                {
-                  "root": "mudra",
-                  "tags": [
-                    "puṃlliṅgam",
-                    "samāsapūrvapadanāmapadam"
-                  ]
-                }
-              ]
-            },
-            {
-              "pada": "kṣitīśān",
-              "morphological_tags": [
-                {
-                  "root": "kṣitīśa",
-                  "tags": [
-                    "bahuvacanam",
-                    "dvitīyāvibhaktiḥ",
-                    "puṃlliṅgam"
-                  ]
-                }
-              ]
-            },
-            {
-              "pada": "ām",
-              "morphological_tags": [
-                {
-                  "root": "ām",
+                  "root": "ā",
                   "tags": [
                     "avyayam"
                   ]
@@ -1892,13 +1544,153 @@
                 {
                   "root": "ā",
                   "tags": [
-                    "bahuvacanam",
-                    "puṃlliṅgam",
-                    "ṣaṣṭhīvibhaktiḥ"
+                    "upasargaḥ"
                   ]
                 },
                 {
                   "root": "ā",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "tṛtīyāvibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "ā",
+                  "tags": [
+                    "puṃlliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "ā",
+                  "tags": [
+                    "samāsapūrvapadanāmapadam",
+                    "strīliṅgam"
+                  ]
+                },
+                {
+                  "root": "ā",
+                  "tags": [
+                    "ekavacanam",
+                    "prathamāvibhaktiḥ",
+                    "strīliṅgam"
+                  ]
+                },
+                {
+                  "root": "ṛ",
+                  "tags": [
+                    "ekavacanam",
+                    "prathamāvibhaktiḥ",
+                    "puṃlliṅgam"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "samudra",
+              "morphological_tags": [
+                {
+                  "root": "samudra#1",
+                  "tags": [
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "samudra#1",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "samudra#1",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "samudra#2",
+                  "tags": [
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "samudra#2",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "samudra#2",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "samudra",
+                  "tags": [
+                    "napuṃsakaliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "samudra",
+                  "tags": [
+                    "puṃlliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "samudra",
+                  "tags": [
+                    "ekavacanam",
+                    "napuṃsakaliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                },
+                {
+                  "root": "samudra",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "kṣitīśa",
+              "morphological_tags": [
+                {
+                  "root": "kṣitīśa",
+                  "tags": [
+                    "puṃlliṅgam",
+                    "samāsapūrvapadanāmapadam"
+                  ]
+                },
+                {
+                  "root": "kṣitīśa",
+                  "tags": [
+                    "ekavacanam",
+                    "puṃlliṅgam",
+                    "saṃbodhanavibhaktiḥ"
+                  ]
+                }
+              ]
+            },
+            {
+              "pada": "ānām",
+              "morphological_tags": [
+                {
+                  "root": "āna",
                   "tags": [
                     "dvitīyāvibhaktiḥ",
                     "ekavacanam",
@@ -1908,17 +1700,17 @@
                 {
                   "root": "ā",
                   "tags": [
-                    "dvitīyāvibhaktiḥ",
-                    "ekavacanam",
-                    "puṃlliṅgam"
+                    "bahuvacanam",
+                    "strīliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
                 {
-                  "root": "o",
+                  "root": "a",
                   "tags": [
-                    "dvitīyāvibhaktiḥ",
-                    "ekavacanam",
-                    "puṃlliṅgam"
+                    "bahuvacanam",
+                    "puṃlliṅgam",
+                    "ṣaṣṭhīvibhaktiḥ"
                   ]
                 }
               ]
@@ -1930,7 +1722,7 @@
                   "root": "ānākarathavartman",
                   "tags": [
                     "bahuvacanam",
-                    "napuṃsakaliṅgam",
+                    "strīliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 },
@@ -1946,7 +1738,7 @@
                   "root": "ānākarathavartman",
                   "tags": [
                     "bahuvacanam",
-                    "strīliṅgam",
+                    "napuṃsakaliṅgam",
                     "ṣaṣṭhīvibhaktiḥ"
                   ]
                 }
@@ -1999,8 +1791,9 @@
             {
               "root": "ajanman",
               "tags": [
-                "napuṃsakaliṅgam",
-                "samāsapūrvapadanāmapadam"
+                "dvitīyāvibhaktiḥ",
+                "ekavacanam",
+                "napuṃsakaliṅgam"
               ]
             },
             {
@@ -2008,7 +1801,7 @@
               "tags": [
                 "ekavacanam",
                 "napuṃsakaliṅgam",
-                "prathamāvibhaktiḥ"
+                "saṃbodhanavibhaktiḥ"
               ]
             },
             {
@@ -2021,9 +1814,8 @@
             {
               "root": "ajanman",
               "tags": [
-                "dvitīyāvibhaktiḥ",
-                "ekavacanam",
-                "napuṃsakaliṅgam"
+                "napuṃsakaliṅgam",
+                "samāsapūrvapadanāmapadam"
               ]
             },
             {
@@ -2031,7 +1823,7 @@
               "tags": [
                 "ekavacanam",
                 "napuṃsakaliṅgam",
-                "saṃbodhanavibhaktiḥ"
+                "prathamāvibhaktiḥ"
               ]
             }
           ]
@@ -2047,7 +1839,7 @@
                 "kta",
                 "kṛdantaḥ",
                 "prāthamikaḥ",
-                "puṃlliṅgam",
+                "strīliṅgam",
                 "ṣaṣṭhīvibhaktiḥ"
               ]
             },
@@ -2071,7 +1863,7 @@
                 "kta",
                 "kṛdantaḥ",
                 "prāthamikaḥ",
-                "strīliṅgam",
+                "puṃlliṅgam",
                 "ṣaṣṭhīvibhaktiḥ"
               ]
             },
@@ -2092,7 +1884,7 @@
               "root": "āphalodayakarman",
               "tags": [
                 "bahuvacanam",
-                "puṃlliṅgam",
+                "napuṃsakaliṅgam",
                 "ṣaṣṭhīvibhaktiḥ"
               ]
             },
@@ -2100,7 +1892,7 @@
               "root": "āphalodayakarman",
               "tags": [
                 "bahuvacanam",
-                "napuṃsakaliṅgam",
+                "puṃlliṅgam",
                 "ṣaṣṭhīvibhaktiḥ"
               ]
             }
@@ -2161,7 +1953,7 @@
               "tags": [
                 "dvitīyāvibhaktiḥ",
                 "ekavacanam",
-                "napuṃsakaliṅgam"
+                "puṃlliṅgam"
               ]
             },
             {
@@ -2169,7 +1961,7 @@
               "tags": [
                 "dvitīyāvibhaktiḥ",
                 "ekavacanam",
-                "puṃlliṅgam"
+                "napuṃsakaliṅgam"
               ]
             },
             {
@@ -2194,7 +1986,7 @@
               "tags": [
                 "dvitīyāvibhaktiḥ",
                 "ekavacanam",
-                "napuṃsakaliṅgam"
+                "puṃlliṅgam"
               ]
             },
             {
@@ -2202,7 +1994,7 @@
               "tags": [
                 "dvitīyāvibhaktiḥ",
                 "ekavacanam",
-                "puṃlliṅgam"
+                "napuṃsakaliṅgam"
               ]
             },
             {
@@ -2221,15 +2013,8 @@
             {
               "root": "udra",
               "tags": [
-                "napuṃsakaliṅgam",
-                "samāsapūrvapadanāmapadam"
-              ]
-            },
-            {
-              "root": "udra",
-              "tags": [
                 "ekavacanam",
-                "puṃlliṅgam",
+                "napuṃsakaliṅgam",
                 "saṃbodhanavibhaktiḥ"
               ]
             },
@@ -2243,8 +2028,15 @@
             {
               "root": "udra",
               "tags": [
-                "ekavacanam",
                 "napuṃsakaliṅgam",
+                "samāsapūrvapadanāmapadam"
+              ]
+            },
+            {
+              "root": "udra",
+              "tags": [
+                "ekavacanam",
+                "puṃlliṅgam",
                 "saṃbodhanavibhaktiḥ"
               ]
             }
@@ -2270,7 +2062,7 @@
               "root": "ānākarathavartman",
               "tags": [
                 "bahuvacanam",
-                "napuṃsakaliṅgam",
+                "strīliṅgam",
                 "ṣaṣṭhīvibhaktiḥ"
               ]
             },
@@ -2286,7 +2078,7 @@
               "root": "ānākarathavartman",
               "tags": [
                 "bahuvacanam",
-                "strīliṅgam",
+                "napuṃsakaliṅgam",
                 "ṣaṣṭhīvibhaktiḥ"
               ]
             }

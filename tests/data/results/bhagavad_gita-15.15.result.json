@@ -35,7 +35,15 @@
             "root": "sarva",
             "vibhakti": "ṣaṣṭhī",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "sarva",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "ṣaṣṭhī"
+              }
+            ]
           }
         ]
       }
@@ -72,16 +80,62 @@
           {
             "form": "cās",
             "root": "ca",
-            "vibhakti": "saṃbodhana",
+            "vibhakti": "prathamā",
             "vacana": "bahu",
-            "linga": "strīliṅgam"
+            "linga": "strīliṅgam",
+            "alternates": [
+              {
+                "root": "ca",
+                "vacana": "bahu",
+                "vibhakti": "prathamā",
+                "linga": "puṃlliṅgam"
+              },
+              {
+                "root": "ca",
+                "vacana": "bahu",
+                "vibhakti": "dvitīyā",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "ca",
+                "vacana": "bahu",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "ca",
+                "vacana": "bahu",
+                "linga": "puṃlliṅgam",
+                "vibhakti": "saṃbodhana"
+              }
+            ]
           },
           {
             "form": "ham",
             "root": "ha",
-            "vibhakti": "dvitīyā",
+            "vibhakti": "prathamā",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "napuṃsakaliṅgam",
+            "alternates": [
+              {
+                "root": "ha",
+                "vibhakti": "dvitīyā",
+                "vacana": "eka",
+                "linga": "puṃlliṅgam"
+              },
+              {
+                "root": "ha",
+                "vibhakti": "dvitīyā",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam"
+              },
+              {
+                "root": "ham",
+                "tags": [
+                  "avyayam"
+                ]
+              }
+            ]
           }
         ]
       },
@@ -122,7 +176,15 @@
             "root": "hṛdaya",
             "vibhakti": "saptamī",
             "vacana": "eka",
-            "linga": "napuṃsakaliṅgam"
+            "linga": "napuṃsakaliṅgam",
+            "alternates": [
+              {
+                "root": "hṛd",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "saptamī"
+              }
+            ]
           }
         ]
       }
@@ -152,7 +214,16 @@
             "root": "sanna",
             "vibhakti": "saṃbodhana",
             "vacana": "eka",
-            "linga": "strīliṅgam"
+            "linga": "strīliṅgam",
+            "alternates": [
+              {
+                "root": "sanni",
+                "linga": "strīliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              }
+            ]
           },
           {
             "form": "viṣṭas",
@@ -165,6 +236,20 @@
               "kta",
               "kṛdantaḥ",
               "prāthamikaḥ"
+            ],
+            "alternates": [
+              {
+                "root": "viṣṭa",
+                "vacana": "eka",
+                "vibhakti": "prathamā",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "karmaṇi",
+                  "kta",
+                  "kṛdantaḥ",
+                  "prāthamikaḥ"
+                ]
+              }
             ]
           }
         ]
@@ -205,11 +290,25 @@
         "words": [
           {
             "form": "mattas",
-            "root": "asmad",
-            "vibhakti": "pañcamī",
+            "root": "matta",
+            "vibhakti": "prathamā",
             "vacana": "eka",
+            "linga": "puṃlliṅgam",
             "tags": [
-              "saṅkhyā"
+              "karmaṇi",
+              "kta",
+              "kṛdantaḥ",
+              "prāthamikaḥ"
+            ],
+            "alternates": [
+              {
+                "root": "asmad",
+                "vacana": "eka",
+                "vibhakti": "pañcamī",
+                "tags": [
+                  "saṅkhyā"
+                ]
+              }
             ]
           }
         ]
@@ -274,16 +373,38 @@
           {
             "form": "jñānam",
             "root": "jñāna",
-            "vibhakti": "dvitīyā",
+            "vibhakti": "prathamā",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "napuṃsakaliṅgam",
+            "alternates": [
+              {
+                "root": "jñāna",
+                "vibhakti": "dvitīyā",
+                "vacana": "eka",
+                "linga": "puṃlliṅgam"
+              },
+              {
+                "root": "jñāna",
+                "vibhakti": "dvitīyā",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam"
+              }
+            ]
           },
           {
             "form": "apohanam",
             "root": "apohana",
             "vibhakti": "prathamā",
             "vacana": "eka",
-            "linga": "napuṃsakaliṅgam"
+            "linga": "napuṃsakaliṅgam",
+            "alternates": [
+              {
+                "root": "apohana",
+                "vibhakti": "dvitīyā",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam"
+              }
+            ]
           }
         ]
       },
@@ -322,7 +443,36 @@
             "root": "ca",
             "vibhakti": "saṃbodhana",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "ca",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "saṃbodhana"
+              },
+              {
+                "root": "ca",
+                "tags": [
+                  "avyayam",
+                  "saṃyojakaḥ"
+                ]
+              },
+              {
+                "root": "ca",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              },
+              {
+                "root": "ca",
+                "linga": "napuṃsakaliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              }
+            ]
           }
         ]
       }
@@ -356,14 +506,51 @@
             "root": "veda",
             "vibhakti": "tṛtīyā",
             "vacana": "bahu",
-            "linga": "puṃlliṅgam"
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "veda",
+                "vacana": "bahu",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "tṛtīyā"
+              }
+            ]
           },
           {
             "form": "ca",
             "root": "ca",
             "vibhakti": "saṃbodhana",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "ca",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "saṃbodhana"
+              },
+              {
+                "root": "ca",
+                "tags": [
+                  "avyayam",
+                  "saṃyojakaḥ"
+                ]
+              },
+              {
+                "root": "ca",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              },
+              {
+                "root": "ca",
+                "linga": "napuṃsakaliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              }
+            ]
           }
         ]
       },
@@ -419,7 +606,15 @@
             "root": "sarva",
             "vibhakti": "tṛtīyā",
             "vacana": "bahu",
-            "linga": "puṃlliṅgam"
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "sarva",
+                "vacana": "bahu",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "tṛtīyā"
+              }
+            ]
           },
           {
             "form": "raham",
@@ -433,7 +628,36 @@
             "root": "eva",
             "vibhakti": "saṃbodhana",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "eva",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "saṃbodhana"
+              },
+              {
+                "root": "eva",
+                "tags": [
+                  "avyayam",
+                  "karmapravacanīyaḥ"
+                ]
+              },
+              {
+                "root": "eva",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              },
+              {
+                "root": "eva",
+                "linga": "napuṃsakaliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              }
+            ]
           }
         ]
       },
@@ -472,9 +696,82 @@
           {
             "form": "vedyas",
             "root": "vedī",
-            "vibhakti": "saṃbodhana",
+            "vibhakti": "prathamā",
             "vacana": "bahu",
-            "linga": "strīliṅgam"
+            "linga": "strīliṅgam",
+            "alternates": [
+              {
+                "root": "vedi",
+                "vacana": "bahu",
+                "vibhakti": "prathamā",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "veda",
+                "vacana": "bahu",
+                "vibhakti": "prathamā",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "vedya",
+                "vacana": "eka",
+                "vibhakti": "prathamā",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "bhaviṣyat",
+                  "karmaṇi",
+                  "kṛtya"
+                ]
+              },
+              {
+                "root": "vedya#2",
+                "vacana": "eka",
+                "vibhakti": "prathamā",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "karmaṇi",
+                  "kṛdantaḥ",
+                  "kṛtya",
+                  "prāthamikaḥ"
+                ]
+              },
+              {
+                "root": "vedya#1",
+                "vacana": "eka",
+                "vibhakti": "prathamā",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "karmaṇi",
+                  "kṛdantaḥ",
+                  "kṛtya",
+                  "ṇijantaḥ"
+                ]
+              },
+              {
+                "root": "vedya",
+                "vacana": "eka",
+                "vibhakti": "prathamā",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "karmaṇi",
+                  "kṛdantaḥ",
+                  "kṛtya",
+                  "prāthamikaḥ"
+                ]
+              },
+              {
+                "root": "vedī",
+                "vacana": "bahu",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "vedi",
+                "vacana": "bahu",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
+              }
+            ]
           }
         ]
       },
@@ -546,23 +843,111 @@
           {
             "form": "vedāntakṛt",
             "root": "vedāntakṛt",
-            "vibhakti": "saṃbodhana",
+            "vibhakti": "prathamā",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "vedāntakṛt",
+                "vacana": "eka",
+                "linga": "puṃlliṅgam",
+                "vibhakti": "saṃbodhana"
+              }
+            ]
           },
           {
             "form": "veda",
             "root": "veda",
             "vibhakti": "saṃbodhana",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "vid",
+                "vacana": "eka",
+                "tags": [
+                  "liṭ",
+                  "parasmaipadam",
+                  "prathamapuruṣaḥ"
+                ]
+              },
+              {
+                "root": "vid#1",
+                "vacana": "eka",
+                "tags": [
+                  "liṭ",
+                  "parasmaipadam",
+                  "prāthamikaḥ",
+                  "uttamapuruṣaḥ"
+                ]
+              },
+              {
+                "root": "vid#1",
+                "vacana": "eka",
+                "tags": [
+                  "liṭ",
+                  "parasmaipadam",
+                  "prathamapuruṣaḥ",
+                  "prāthamikaḥ"
+                ]
+              },
+              {
+                "root": "veda",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              }
+            ]
           },
           {
             "form": "videva",
             "root": "videva",
             "vibhakti": "saṃbodhana",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "videva",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "saṃbodhana"
+              },
+              {
+                "root": "vid",
+                "vacana": "dvi",
+                "tags": [
+                  "parasmaipadam",
+                  "uttamapuruṣaḥ",
+                  "vidhiliṅ"
+                ]
+              },
+              {
+                "root": "vid#1",
+                "vacana": "dvi",
+                "tags": [
+                  "kartari",
+                  "parasmaipadam",
+                  "prāthamikaḥ",
+                  "uttamapuruṣaḥ",
+                  "vidhiliṅ"
+                ]
+              },
+              {
+                "root": "videva",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              },
+              {
+                "root": "videva",
+                "linga": "napuṃsakaliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              }
+            ]
           }
         ]
       },
@@ -619,16 +1004,62 @@
           {
             "form": "cās",
             "root": "ca",
-            "vibhakti": "saṃbodhana",
+            "vibhakti": "prathamā",
             "vacana": "bahu",
-            "linga": "strīliṅgam"
+            "linga": "strīliṅgam",
+            "alternates": [
+              {
+                "root": "ca",
+                "vacana": "bahu",
+                "vibhakti": "prathamā",
+                "linga": "puṃlliṅgam"
+              },
+              {
+                "root": "ca",
+                "vacana": "bahu",
+                "vibhakti": "dvitīyā",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "ca",
+                "vacana": "bahu",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "ca",
+                "vacana": "bahu",
+                "linga": "puṃlliṅgam",
+                "vibhakti": "saṃbodhana"
+              }
+            ]
           },
           {
             "form": "ham",
             "root": "ha",
-            "vibhakti": "dvitīyā",
+            "vibhakti": "prathamā",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "napuṃsakaliṅgam",
+            "alternates": [
+              {
+                "root": "ha",
+                "vibhakti": "dvitīyā",
+                "vacana": "eka",
+                "linga": "puṃlliṅgam"
+              },
+              {
+                "root": "ha",
+                "vibhakti": "dvitīyā",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam"
+              },
+              {
+                "root": "ham",
+                "tags": [
+                  "avyayam"
+                ]
+              }
+            ]
           }
         ]
       },
@@ -647,7 +1078,7 @@
     }
   ],
   "chandas": {
-    "vrtta": null,
+    "vrtta": "indravajrā",
     "candidates": [
       "indravajrā",
       "indravaṃśā"

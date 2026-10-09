@@ -193,11 +193,13 @@ EXPECTED = {
             "| hetuḥ | bhūḥ | mā | te | saṅgaḥ | astu | akarmaṇi"
         ),
         "dharmamitra_unmatched": ["mā"],
-        # …and the first pāda is cut in the wrong place: karmaṇye | vā for karmaṇi + eva.
-        "sanskrit_parser_padaccheda": (
-            "karmaṇye | vā | adhikāras | te | mā | phaleṣu | kadā | cana | mā "
-            "| karmaphalahetus | bhūs | mā | te | saṅgas | astu | akarmaṇi"
-        ),
+        # sanskrit_parser's reading of the first pāda is not pinned: eight back-to-back runs on this
+        # one line produced six different cuts (karmaṇye | vā, karmaṇye | ava, karmaṇi | eva,
+        # karmaṇyā | iva …, with adhikāras | te or adhikāra | ste), because its sandhi graph has many
+        # equally-scored paths and gensim/sentencepiece — the lexical scorer it would rank them with —
+        # is not installed here (it says so on every run). Pinning one arbitrary draw would freeze a
+        # coin flip; DOCUMENTATION §9 records the instability, and tests/test_sandhi_accuracy.py counts
+        # this pada as a miss or a match per run instead.
     },
     "bhagavad_gita-11.15": {
         "padas": 11,

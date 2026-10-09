@@ -1859,6 +1859,20 @@ def run_vidyut(devanagari_text: str) -> Dict[str, Any]:
             "padas": pada_results,
         })
 
+    # vidyut's classifier answers per pāda and matches gaṇa prefixes, so a name can be structurally
+    # impossible for the pāda it was given. The table's declared lengths let `_summarize_chandas`
+    # keep such a name as a candidate without letting it decide `vrtta`.
+    metre_lengths: Dict[str, set] = {}
+    try:
+        metre_lengths = {
+            _slp1_to_iast_vidyut(name): counts
+            for name, counts in _meter_lengths(
+                Path(DATA_DIR) / "chandas" / "meters.tsv"
+            ).items()
+        }
+    except Exception as exc:
+        _warn_once("vidyut metre table transliteration", exc)
+
     return {
         "kosha": words,
         "prakriya": {
@@ -1866,28 +1880,84 @@ def run_vidyut(devanagari_text: str) -> Dict[str, Any]:
             "pratipadikas": pratipadikas_prakriya,
         },
         "meter": meter_results,
-        "chandas": _summarize_chandas(meter_results),
+        "chandas": _summarize_chandas(meter_results, metre_lengths),
     }
 
 
-def _summarize_chandas(meter_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _meter_lengths(meters_tsv: Path) -> Dict[str, set]:
+    """Read vidyut's metre table into {SLP1 name: declared akshara counts}.
+
+    `meters.tsv` holds one metre per line as '<name>\t<vrtta|jati>\t<pattern>', where every pattern
+    character is one akshara (G guru, L laghu) and '|' only groups the pattern for readability —
+    sragDarA is 'GGGGLGG|LLLLLLG|GLGGLGG', i.e. 21 aksharas. The declared counts are what let us see
+    through vidyut's classifier: it matches gaṇa prefixes, so an 11-akshara pāda whose scan is a
+    prefix of indravaṃśā's 12-akshara pattern gets named 'indravaṃśā' anyway.
+
+    Args:
+        meters_tsv: path to vidyut's metre table
+
+    Returns:
+        Mapping of SLP1 metre name to the set of akshara counts its patterns declare
+    """
+    lengths: Dict[str, set] = {}
+    try:
+        with meters_tsv.open(encoding="utf-8") as handle:
+            for line in handle:
+                fields = line.rstrip("\n").split("\t")
+                if len(fields) < 3 or not fields[0]:
+                    continue
+                lengths.setdefault(fields[0], set()).add(
+                    sum(len(group) for group in fields[2].split("|") if group)
+                )
+    except OSError as exc:
+        _warn_once("vidyut metre table read", exc)
+    return lengths
+
+
+def _summarize_chandas(
+    meter_results: List[Dict[str, Any]],
+    metre_lengths: Optional[Dict[str, set]] = None,
+) -> Dict[str, Any]:
     """Summarize vidyut's per-pāda classifications for the whole verse.
 
-    vidyut classifies one pāda at a time against data-0.4.0/chandas/meters.tsv —
-    145 vṛttas, none of them the classical anuṣṭubh/śloka pattern — so the verse
-    only gets a name when every pāda classifies to the same one. Otherwise `vrtta`
-    stays None and vidyut's own suggestions are listed in `candidates`, next to the
-    akshara counts that show the verse's actual shape (8·8·8·8 for an anuṣṭubh).
+    vidyut classifies one pāda at a time against data-0.4.0/chandas/meters.tsv — 145 vṛttas, no jāti
+    metres at all, so neither anuṣṭubh (the 8·8·8·8 śloka of the Bhagavadgītā and Raghuvamṣa I) nor
+    upajāti (the mixed 11-akshara triṣṭubh of BG 2.22 / 11.15) is in its table. `vrtta` names the verse
+    only when every structurally possible pāda name agrees; vidyut's own suggestions stay listed in
+    `candidates`, next to the akshara counts that show the actual shape.
+
+    A name whose declared length does not match the pāda it was given (vidyut matching a gaṇa prefix,
+    e.g. indravaṃśā's 12 aksharas for an 11-akshara pāda) is kept as a candidate but excluded from the
+    vote and reported on stderr — otherwise one impossible name silently turns 'indravajrā in three
+    pādas' into `null`. Pādas vidyut leaves unclassified (the final syllable of a pāda is free in
+    length, its patterns are not) do not veto a name the other pādas agree on; `classified_pada_count`
+    records how much of the verse it actually scanned.
 
     Args:
         meter_results: per-line pāda classifications built by run_vidyut
+        metre_lengths: {IAST metre name: declared akshara counts}, from `_meter_lengths`
 
     Returns:
         Verse-level dict with vrtta, candidates and pada statistics
     """
     padas = [pada for line in meter_results for pada in line["padas"]]
     names = [pada["meter"] for pada in padas if pada["meter"]]
-    agreed = names[0] if padas and len(names) == len(padas) and len(set(names)) == 1 else None
+    plausible: List[str] = []
+    for pada in padas:
+        name = pada["meter"]
+        if not name:
+            continue
+        declared = (metre_lengths or {}).get(name)
+        if declared and pada["akshara_count"] not in declared:
+            print(
+                f"Note: vidyut named {name} ({'/'.join(str(c) for c in sorted(declared))} aksharas) "
+                f"for a pāda of {pada['akshara_count']}; its classifier matches gaṇa prefixes, so the "
+                "name stays a candidate only and cannot decide the verse.",
+                file=sys.stderr,
+            )
+            continue
+        plausible.append(name)
+    agreed = plausible[0] if plausible and len(set(plausible)) == 1 else None
     return {
         "vrtta": agreed,
         "candidates": sorted(set(names)),

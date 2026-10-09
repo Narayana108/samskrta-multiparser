@@ -1,0 +1,152 @@
+{
+  "_source": "Live fetches on 2026-10-09 from https://www.sanskritsahitya.org (verse pages print 'छन्दः <metre> [<aksharas/pāda>: <gaṇas>]' plus a छन्दोविश्लेषणम् grid), cross-checked against the site's upstream data repository github.com/sanskritsahitya-com/data @ main (raghuvansham/raghuvansham.json, shakuntalam/shakuntalam.json, srimadbhagavadgita/srimadbhagavadgita.json). The raghuvamsha pages carry मल्लिनाथ's सञ्जीविनीटीका.",
+  "_notes": [
+    "anuṣṭubh and upajāti are jāti (matra-counting) metres. data-0.4.0/chandas/meters.tsv holds 145 vṛtta patterns and no jāti entry at all, so vidyut can never name these verses; their akshara counts still show the shape.",
+    "The metre names we print come from vidyut's own SLP1 -> IAST table, which renders मालिनी as 'malinī' (short a). The published spelling is recorded next to it."
+  ],
+  "raghuvamsha-1.1": {
+    "url": "https://www.sanskritsahitya.org/raghuvansham/1.1",
+    "chandas_devanagari": "अनुष्टुप्",
+    "chandas_iast": "anuṣṭubh",
+    "aksharas_per_pada": [8, 8, 8, 8],
+    "pada_count": 4,
+    "vidyut_can_name_it": false,
+    "notes": "page prints 'छन्दः अनुष्टुप् [८]', grid 4 x 8"
+  },
+  "raghuvamsha-1.2": {
+    "url": "https://www.sanskritsahitya.org/raghuvansham/1.2",
+    "chandas_devanagari": "अनुष्टुप्",
+    "chandas_iast": "anuṣṭubh",
+    "aksharas_per_pada": [8, 8, 8, 8],
+    "pada_count": 4,
+    "vidyut_can_name_it": false,
+    "notes": "'छन्दः अनुष्टुप् [८]'"
+  },
+  "raghuvamsha-1.3": {
+    "url": "https://www.sanskritsahitya.org/raghuvansham/1.3",
+    "chandas_devanagari": "अनुष्टुप्",
+    "chandas_iast": "anuṣṭubh",
+    "aksharas_per_pada": [8, 8, 8, 8],
+    "pada_count": 4,
+    "vidyut_can_name_it": false,
+    "notes": "'छन्दः अनुष्टुप् [८]'"
+  },
+  "raghuvamsha-1.4": {
+    "url": "https://www.sanskritsahitya.org/raghuvansham/1.4",
+    "chandas_devanagari": "अनुष्टुप्",
+    "chandas_iast": "anuṣṭubh",
+    "aksharas_per_pada": [8, 8, 8, 8],
+    "pada_count": 4,
+    "vidyut_can_name_it": false,
+    "notes": "'छन्दः अनुष्टुप् [८]'"
+  },
+  "raghuvamsha-1.5": {
+    "url": "https://www.sanskritsahitya.org/raghuvansham/1.5",
+    "chandas_devanagari": "अनुष्टुप्",
+    "chandas_iast": "anuṣṭubh",
+    "aksharas_per_pada": [8, 8, 8, 8],
+    "pada_count": 4,
+    "vidyut_can_name_it": false,
+    "notes": "'छन्दः अनुष्टुप् [८]'"
+  },
+  "raghuvamsha-1.6": {
+    "url": "https://www.sanskritsahitya.org/raghuvansham/1.6",
+    "chandas_devanagari": "अनुष्टुप्",
+    "chandas_iast": "anuṣṭubh",
+    "aksharas_per_pada": [8, 8, 8, 8],
+    "pada_count": 4,
+    "vidyut_can_name_it": false,
+    "notes": "'छन्दः अनुष्टुप् [८]'"
+  },
+  "raghuvamsha-1.7": {
+    "url": "https://www.sanskritsahitya.org/raghuvansham/1.7",
+    "chandas_devanagari": "अनुष्टुप्",
+    "chandas_iast": "anuṣṭubh",
+    "aksharas_per_pada": [8, 8, 8, 8],
+    "pada_count": 4,
+    "vidyut_can_name_it": false,
+    "notes": "'छन्दः अनुष्टुप् [८]'; पदच्छेदः on the page: त्यागाय संभृतार्थानाम् सत्याय मितभाषिणाम् ..."
+  },
+  "bhagavad_gita-2.22": {
+    "url": "https://www.sanskritsahitya.org/srimadbhagavadgita/2.22",
+    "chandas_devanagari": "उपजातिः",
+    "chandas_iast": "upajāti",
+    "aksharas_per_pada": [11, 11, 11, 11],
+    "pada_count": 4,
+    "vidyut_can_name_it": false,
+    "notes": "'छन्दः उपजातिः [११]' — a mixed triṣṭubh (pādas 1/3 pātalagaṇa, 2/4 indravajrā); not in vidyut's vṛtta-only table"
+  },
+  "bhagavad_gita-2.47": {
+    "url": "https://www.sanskritsahitya.org/srimadbhagavadgita/2.47",
+    "chandas_devanagari": "अनुष्टुप्",
+    "chandas_iast": "anuṣṭubh",
+    "aksharas_per_pada": [8, 8, 8, 8],
+    "pada_count": 4,
+    "vidyut_can_name_it": false,
+    "notes": "'छन्दः अनुष्टुप् [८]'"
+  },
+  "bhagavad_gita-11.15": {
+    "url": "https://www.sanskritsahitya.org/srimadbhagavadgita/11.15",
+    "chandas_devanagari": "उपजातिः",
+    "chandas_iast": "upajāti",
+    "aksharas_per_pada": [11, 11, 11, 11],
+    "pada_count": 4,
+    "vidyut_can_name_it": false,
+    "notes": "'छन्दः उपजातिः [११]'"
+  },
+  "bhagavad_gita-15.5": {
+    "url": "https://www.sanskritsahitya.org/srimadbhagavadgita/15.5",
+    "chandas_devanagari": "इन्द्रवज्रा",
+    "chandas_iast": "indravajrā",
+    "aksharas_per_pada": [11, 11, 11, 11],
+    "pada_count": 4,
+    "vidyut_can_name_it": true,
+    "notes": "'छन्दः इन्द्रवज्रा [११: ततजगग]'"
+  },
+  "bhagavad_gita-15.15": {
+    "url": "https://www.sanskritsahitya.org/srimadbhagavadgita/15.15",
+    "chandas_devanagari": "इन्द्रवज्रा",
+    "chandas_iast": "indravajrā",
+    "aksharas_per_pada": [11, 11, 11, 11],
+    "pada_count": 4,
+    "vidyut_can_name_it": true,
+    "notes": "'छन्दः इन्द्रवज्रा [११: ततजगग]'; the page reads संनिविष्टो where our fixture has सन्निविष्टो"
+  },
+  "bhagavad_gita-18.66": {
+    "url": "https://www.sanskritsahitya.org/srimadbhagavadgita/18.66",
+    "chandas_devanagari": "अनुष्टुप्",
+    "chandas_iast": "anuṣṭubh",
+    "aksharas_per_pada": [8, 8, 8, 8],
+    "pada_count": 4,
+    "vidyut_can_name_it": false,
+    "notes": "'छन्दः अनुष्टुप् [८]'"
+  },
+  "abhijnaana_shakuntala-1.1": {
+    "url": "https://www.sanskritsahitya.org/shakuntalam/1.1",
+    "chandas_devanagari": "स्रग्धरा",
+    "chandas_iast": "sragdharā",
+    "aksharas_per_pada": [21, 21, 21, 21],
+    "pada_count": 4,
+    "vidyut_can_name_it": true,
+    "notes": "'छन्दः स्रग्धरा [२१: मरभनययय]'"
+  },
+  "abhijnaana_shakuntala-1.7": {
+    "url": "https://www.sanskritsahitya.org/shakuntalam/1.7",
+    "chandas_devanagari": "स्रग्धरा",
+    "chandas_iast": "sragdharā",
+    "aksharas_per_pada": [21, 21, 21, 21],
+    "pada_count": 4,
+    "vidyut_can_name_it": true,
+    "notes": "'छन्दः स्रग्धरा [२१: मरभनययय]'; the page reads दत्तदृष्टिः where our fixture has बद्धदृष्टिः"
+  },
+  "abhijnaana_shakuntala-1.18": {
+    "url": "https://www.sanskritsahitya.org/shakuntalam/1.19",
+    "chandas_devanagari": "मालिनी",
+    "chandas_iast": "mālinī",
+    "vidyut_spelling": "malinī",
+    "aksharas_per_pada": [15, 15, 15, 15],
+    "pada_count": 4,
+    "vidyut_can_name_it": true,
+    "notes": "'छन्दः मालिनी [१५: ननमयय]'; numbering note — our verse (सरसिजमनुविद्धं ...) is the site's 1.19, its own 1.18 is a different verse in वंशस्थम् [१२]"
+  }
+}
