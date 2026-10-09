@@ -568,3 +568,28 @@ verses, and emits a warning naming the engine and its documented limit wherever 
 - **Spellings come from vidyut.** Metre names in the output are vidyut's own SLP1 → IAST rendering, which writes
   मालिनी as `malinī`; `meter_truth.json` records that spelling next to the published one rather than us editing
   engine text after the fact.
+
+## 11. Word readings: how accuracy is measured
+
+Morphology has the same missing oracle, so `tests/data/morphology_truth.json` holds the published reading for
+nine forms whose value in that verse follows from its पदच्छेदः and standard grammar — never from our engines.
+`tests/test_morphology_accuracy.py` runs offline against the committed result documents and prints the score it
+exists to show: **offered by sanskrit_parser 9/9, chosen by our ranking 4/9**. The four that must be primary are
+asserted (`pitarau`, `deva`, `navāni`, `avyayam`); the five that cannot be settled per-pada (`vande`, `jagataḥ`,
+`asti`, `vraja`, `śucaḥ`) only have to stay visible among the published readings, and each emits a warning naming
+the engine and the limit responsible. A test fails if the engine stops offering a reference reading, or if our
+ranking loses one of the four it currently gets right — that is the regression net, not a claim of correctness.
+
+- **Why five stay wrong.** The analyser sees one pada at a time and offers every reading Pāṇini allows for those
+  letters: `śucas` came with twenty-seven readings, `vande` with fourteen, `jagatas` with twelve. Case, number and
+  gender are properties of the sentence; no ordering of context-free readings can recover them. The one component
+  that could (sanskrit_parser's vakya parse) is measured unusable here — see §8 — so the choice stays upstream.
+- **Ranking rules rejected on these numbers.** Putting finite-verb readings above nominal ones changes 20 primaries
+  over the sixteen verses: about 8 improvements (`vande`, `vraja`, `asti`, `yāti`) against about 12 regressions
+  (`navāni` → √nu loṭ, `deva` → imperative of √dev, `avyayam` → √vyā, `ajanma`, `āsam`, `bhūr`). Preferring readings
+  whose stem is exactly attested in the vidyut kosha changes 15: about 3 improvements against about 10 regressions.
+  Both are net losses on real output, so neither shipped; §3's `_morph_rank` remains the rule and `alternates`
+  carries everything else. Re-measure these figures before trying any third rule.
+- **Dharmamitrā is not used as the reference.** It resolves several of these forms correctly (`vande → vand`) but
+  invents real errors elsewhere (`jagantaḥ`, `sūnantāḥ` type noise — §8), so pinning against it would move the goal
+  post whenever the remote changes. Its reading stays beside ours in `padaccheda.dharmamitra` for a human to weigh.

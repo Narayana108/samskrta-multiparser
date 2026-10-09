@@ -1,0 +1,98 @@
+{
+  "_note": "Reference morphology for a small set of forms from the sixteen pinned verses. Each row states what the word is in that verse, taken from the published पदच्छेदः and standard grammar of that verse (sanskritsahitya.org), never from our engines. `expected` lists every reading that counts as correct; a reading matches when all of its listed fields match and its `tags` are all present in the engine's tag set. `limit` records, for rows where no context-free ranking can pick the right reading, which upstream limit is responsible.",
+  "rows": [
+    {
+      "verse": "raghuvamsha-1.1",
+      "pada": "vande",
+      "form": "vande",
+      "expected": [
+        {"root": "vand", "vacana": "eka", "tags": ["laṭ", "uttamapuruṣaḥ", "ātmanepadam"]}
+      ],
+      "source": "Raghuvaṃśa 1.1: vande = 'I bow', laṭ ātmanepada prathama-puruṣa ekavacana of √vand.",
+      "limit": "sanskrit_parser analyses each pada without sentence context, so it also builds nominal readings on stems such as 'vandā' that no dictionary records; the verbal reading is offered but ranked last."
+    },
+    {
+      "verse": "raghuvamsha-1.1",
+      "pada": "jagataḥ",
+      "form": "jagatas",
+      "expected": [
+        {"root": "jagat", "vibhakti": "ṣaṣṭhī", "vacana": "eka", "linga": "napuṃsakaliṅgam"}
+      ],
+      "source": "Raghuvaṃśa 1.1: jagataḥ pitarau = 'the parents of the world', ṣaṣṭhī ekavacana of jagat (neuter).",
+      "limit": "jagatas is also a nominative/accusative plural form, and choosing the case needs the sentence; the genitive reading is offered but ranked behind the nominal plurals."
+    },
+    {
+      "verse": "raghuvamsha-1.1",
+      "pada": "pitarau",
+      "form": "pitarau",
+      "expected": [
+        {"root": "pitṛ", "vibhakti": "prathamā", "vacana": "dvi", "linga": "puṃlliṅgam"},
+        {"root": "pitṛ", "vibhakti": "saṃbodhana", "vacana": "dvi", "linga": "puṃlliṅgam"}
+      ],
+      "source": "Raghuvaṃśa 1.1: pitarau = dual of pitṛ; the verse addresses them, so nominative and vocative both describe the form."
+    },
+    {
+      "verse": "raghuvamsha-1.4",
+      "pada": "sūtrasyevāsti",
+      "form": "asti",
+      "expected": [
+        {"root": "as", "vacana": "eka", "tags": ["laṭ", "prathamapuruṣaḥ"]},
+        {"root": "as#1", "vacana": "eka", "tags": ["laṭ", "prathamapuruṣaḥ"]}
+      ],
+      "source": "Raghuvaṃśa 1.4: sūtrasya iva asti = 'it is like a thread'; asti is laṭ prathama-puruṣa ekavacana of √as.",
+      "limit": "sanskrit_parser also reads the same letters as the feminine noun 'asta' in vocative singular and ranks that nominal reading first."
+    },
+    {
+      "verse": "bhagavad_gita-11.15",
+      "pada": "deva",
+      "form": "deva",
+      "expected": [
+        {"root": "deva", "vibhakti": "saṃbodhana", "vacana": "eka", "linga": "puṃlliṅgam"}
+      ],
+      "source": "BG 11.15 addresses the gods: deva = vocative singular of deva."
+    },
+    {
+      "verse": "bhagavad_gita-2.22",
+      "pada": "navāni",
+      "form": "navāni",
+      "expected": [
+        {"root": "nava#1", "vibhakti": "prathamā", "vacana": "bahu", "linga": "napuṃsakaliṅgam"},
+        {"root": "nava", "vacana": "bahu", "vibhakti": "dvitīyā", "linga": "napuṃsakaliṅgam"}
+      ],
+      "source": "BG 2.22: vāṃsi jīrṇāni navāni śarīri... 'new bodies'; nominative/accusative plural neuter of nava."
+    },
+    {
+      "verse": "bhagavad_gita-15.5",
+      "pada": "padamavyayaṃ",
+      "form": "avyayam",
+      "expected": [
+        {"root": "avyaya#1", "vibhakti": "dvitīyā", "vacana": "eka"},
+        {"root": "avyaya", "vibhakti": "dvitīyā", "vacana": "eka"},
+        {"root": "avyaya#1", "vibhakti": "prathamā", "vacana": "eka"},
+        {"root": "avyaya", "vibhakti": "prathamā", "vacana": "eka"}
+      ],
+      "source": "BG 15.5: padam avyayam — the neuter accusative singular is identical to the nominative, so either case label describes the form."
+    },
+    {
+      "verse": "bhagavad_gita-18.66",
+      "pada": "vraja",
+      "form": "vraja",
+      "expected": [
+        {"root": "vraj", "vacana": "eka", "tags": ["loṭ", "madhyamapuruṣaḥ"]}
+      ],
+      "source": "BG 18.66: mām ekaṃ śaraṇaṃ vraja = 'take refuge in me alone'; loṭ madhyama-puruṣa ekavacana of √vraj.",
+      "limit": "the same letters are also a vocative of the noun vraja, and without the sentence the nominal reading is ranked first."
+    },
+    {
+      "verse": "bhagavad_gita-18.66",
+      "pada": "śucaḥ",
+      "form": "śucas",
+      "expected": [
+        {"root": "śuc", "vacana": "eka", "tags": ["madhyamapuruṣaḥ"]},
+        {"root": "śuc#1", "vacana": "eka", "tags": ["madhyamapuruṣaḥ"]}
+      ],
+      "source": "BG 18.66: mā śucaḥ = 'grieve not' — a prohibition (mā with luṅ) addressed to Arjuna.",
+      "limit": "śucas is also a nominal form; sanskrit_parser offers twenty-seven readings for it and ranks the nominal ones first."
+    }
+  ]
+}
