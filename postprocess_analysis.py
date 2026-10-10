@@ -175,9 +175,67 @@ _VIBHAKTI_ORDER = {
     "saṃbodhana": 8,
 }
 
+def kosha_attest(kosha):
+    """Build the dictionary-attestation lookup used to rank readings; None when there is no kosha.
 
-def _morph_rank(entry: Dict[str, Any]):
-    """Rank candidate analyses: full case readings beat bare compound markers.
+    Args:
+        kosha: a vidyut Kosha, or None when its data files are unavailable
+
+    Returns:
+        Callable taking an IAST surface form and returning the SLP1 lemma stems recorded for it — probed both
+        as written and with the orthography the engines use among themselves (anusvara 'M' → 'm', final
+        visarga 'H' → 's', trailing sign dropped) — or None when no dictionary is loaded. `app` owns all
+        dictionary access, so its primitives are imported lazily here; this module must stay importable on a
+        machine that has no engine data at all.
+    """
+    if kosha is None:
+        return None
+
+    from indic_transliteration import sanscript
+
+    from app import _kosha_entry_info, kosha_lookup
+
+    def stems_for(form: str) -> set:
+        slp1 = sanscript.transliterate(form, sanscript.IAST, sanscript.SLP1)
+        folded = "".join({"M": "m", "H": "s"}.get(ch, ch) for ch in slp1).rstrip("sr")
+        stems = set()
+        for probe in (slp1, folded):
+            for entry in kosha_lookup(kosha, probe):
+                info = _kosha_entry_info(entry)
+                if info:
+                    stems.add(info["stem"])
+        return stems
+
+    return stems_for
+
+
+def _root_attested(entry: Dict[str, Any], stems: Optional[set]) -> bool:
+    """Whether a reading's root is one of the lemma stems recorded for its surface form.
+
+    Args:
+        entry: one candidate reading; its `root` may carry sanskrit_parser's `#n` homophony marker
+        stems: recorded SLP1 stems for that form, or None when no dictionary signal exists
+
+    Returns:
+        True on an exact match — never a prefix match, because vidyut records short homographs ('ah' and 'aha'
+        for the form अहम्) that are prefixes of longer stems — and also True when there is no signal at all, so
+        forms absent from the kosha keep exactly the order they had.
+    """
+    if not stems:
+        return True
+    root = (entry.get("root") or "").split("#", 1)[0]
+    if not root:
+        return False
+
+    from indic_transliteration import sanscript
+
+    return sanscript.transliterate(root, sanscript.IAST, sanscript.SLP1) in stems
+
+
+
+
+def _morph_rank(entry: Dict[str, Any], attested: bool = True):
+    """Rank candidate analyses: dictionary-attested stems first, then the fullest case reading.
 
     Ties between equally complete readings follow the grammatical case order (prathamā first,
     saṃbodhana last). The previous alphabetical tie-break promoted the vocative over a nominative
@@ -187,18 +245,31 @@ def _morph_rank(entry: Dict[str, Any]):
     (jīrṇāni). An avyaya reading outranks a bare compound marker for the same reason: 'avyayam' states
     what the word is, while 'samāsapūrvapadanāmapadam' only says it sits inside a compound — otherwise
     yathā/tathā/ca/eva were published as compound prefixes and their indeclinable reading vanished.
+
+    Dictionary attestation outranks all of that when a kosha is available: a reading built on a stem the
+    dictionary does not record for that form loses to one it does record. Measured over the sixteen pinned
+    verses (273 published word readings), 8 primaries move and 6 of those become the reading the printed
+    editions give — 'asti' becomes √as "is" instead of an invented vocative *asta*, 'hi' becomes the
+    indeclinable particle instead of a vocative *ha*, 'yathāvidhi' becomes an avyaya, 'prakṛti' and 'sanni'
+    become compound members rather than vocatives, and 'yāti' in saṃyāti becomes √yā "goes". Two move
+    sideways: 'vastā', where the true reading (instrumental plural of *vasu*, the eight Vasus) is offered by
+    no engine, and BG 18.66 'aham', where the kosha really does record a short noun *aha* ("non-existence")
+    for that form, so attestation cannot single out the pronoun *asmad*. A longer-stem preference was also
+    measured (42 primaries move, one curated form lost), so it is not used.
     """
     return (
+        bool(attested),
         "vibhakti" in entry,
         "vacana" in entry,
         "avyayam" in entry.get("tags", []),
-        -_VIBHAKTI_ORDER.get(entry.get("vibhakti") or "", 0),
-        -len(entry.get("tags", [])),
+        (-_VIBHAKTI_ORDER.get(entry.get("vibhakti") or "", 0)),
+        (-len(entry.get("tags", []))),
         tuple(sorted((k, str(v)) for k, v in entry.items())),
     )
 
 
-def collect_sp_morphology(sp_output: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
+def collect_sp_morphology(sp_output: Dict[str, Any], attest: Optional[Any] = None
+                          ) -> Dict[str, List[Dict[str, Any]]]:
     """Map every sanskrit_parser surface form to its readings, best ranked first.
 
     Walks the raw output and collects every tag group attached to a 'pada' — both the items of the
@@ -212,6 +283,12 @@ def collect_sp_morphology(sp_output: Dict[str, Any]) -> Dict[str, List[Dict[str,
     An ambiguous form keeps every distinct reading it was given: vāsāṃsi is nominative, accusative
     and vocative plural at once, so collapsing it to one tag erases an answer the engine did offer.
     The best-ranked reading fills the word's primary fields; the rest travel as `alternates`.
+
+    Args:
+        sp_output: the raw `sanskrit_parser` subtree of a raw analysis document
+        attest: optional callable mapping an IAST surface form to the SLP1 lemma stems vidyut's kosha records
+            for it (built by `kosha_attest`). Given it, readings built on stems the dictionary does not record
+            are demoted below recorded ones; without it the ranking is exactly as before.
     """
     groups: Dict[str, List[Dict[str, Any]]] = {}
 
@@ -234,9 +311,11 @@ def collect_sp_morphology(sp_output: Dict[str, Any]) -> Dict[str, List[Dict[str,
     walk(sp_output)
     ranked_all = {}
     for pada, cands in groups.items():
+        stems = attest(pada) if attest else None
+        order = sorted(cands, key=lambda cand: _morph_rank(cand, _root_attested(cand, stems)), reverse=True)
         seen = set()
         ranked = []
-        for cand in sorted(cands, key=_morph_rank, reverse=True):
+        for cand in order:
             key = json.dumps(cand, sort_keys=True, ensure_ascii=False)
             if key not in seen:
                 seen.add(key)
@@ -527,11 +606,13 @@ def build_padaccheda(padas: List[Dict[str, Any]]) -> Dict[str, Optional[str]]:
     }
 
 
-def postprocess(raw: Dict[str, Any]) -> Dict[str, Any]:
+def postprocess(raw: Dict[str, Any], attest: Optional[Any] = None) -> Dict[str, Any]:
     """Condense raw engine output into the readable padaccheda/padas form.
 
     Args:
         raw: Raw multi-engine analysis output (multi-engine-analysis.json content)
+        attest: optional dictionary lookup mapping a surface form to its kosha lemma stems, used to rank word
+            readings (`collect_sp_morphology`); None keeps the previous ranking
 
     Returns:
         Processed dict with input, padaccheda and padas; plus engine_errors when an
@@ -563,7 +644,7 @@ def postprocess(raw: Dict[str, Any]) -> Dict[str, Any]:
     input_words = [w for w in input_iast.split() if w]
 
     sp_decomp = collect_sp_decompositions(sp_output)
-    sp_morph = collect_sp_morphology(sp_output)
+    sp_morph = collect_sp_morphology(sp_output, attest)
     dm_tokens = collect_dm_tokens(dm_output)
     dm_requests = collect_dm_word_requests(dm_output)
     dm_groups, dm_unmatched = group_dm_tokens_by_word(input_words, dm_tokens)
@@ -633,6 +714,10 @@ def main() -> int:
         "-o", "--output", default=None,
         help="Output base path; writes '<base>.result.json' (a trailing '.json' is stripped)",
     )
+    parser.add_argument(
+        "--no-dictionary", action="store_true",
+        help="Rank word readings without the vidyut kosha (older behaviour; faster, and no dictionary needed)",
+    )
     args = parser.parse_args()
 
     if args.output:
@@ -664,8 +749,17 @@ def main() -> int:
         print(f"Error parsing JSON from '{input_file}': {exc}", file=sys.stderr)
         return 1
 
+    attest = None
+    if not args.no_dictionary:
+        try:
+            from app import load_kosha
+
+            attest = kosha_attest(load_kosha())
+        except Exception as exc:
+            print(f"Warning: word readings will not be checked against the dictionary: {exc}", file=sys.stderr)
+
     try:
-        processed = postprocess(raw)
+        processed = postprocess(raw, attest)
     except ValueError as exc:
         print(f"Error: {exc} (is '{input_file}' a raw app.py output?)", file=sys.stderr)
         return 1

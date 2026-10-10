@@ -211,17 +211,17 @@
         "words": [
           {
             "form": "sanni",
-            "root": "sanna",
-            "vibhakti": "saṃbodhana",
-            "vacana": "eka",
+            "root": "sanni",
             "linga": "strīliṅgam",
+            "tags": [
+              "samāsapūrvapadanāmapadam"
+            ],
             "alternates": [
               {
-                "root": "sanni",
-                "linga": "strīliṅgam",
-                "tags": [
-                  "samāsapūrvapadanāmapadam"
-                ]
+                "root": "sanna",
+                "vacana": "eka",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
               }
             ]
           },
@@ -707,6 +707,18 @@
                 "linga": "strīliṅgam"
               },
               {
+                "root": "vedī",
+                "vacana": "bahu",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "vedi",
+                "vacana": "bahu",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
+              },
+              {
                 "root": "veda",
                 "vacana": "bahu",
                 "vibhakti": "prathamā",
@@ -758,18 +770,6 @@
                   "kṛtya",
                   "prāthamikaḥ"
                 ]
-              },
-              {
-                "root": "vedī",
-                "vacana": "bahu",
-                "vibhakti": "saṃbodhana",
-                "linga": "strīliṅgam"
-              },
-              {
-                "root": "vedi",
-                "vacana": "bahu",
-                "vibhakti": "saṃbodhana",
-                "linga": "strīliṅgam"
               }
             ]
           }
@@ -914,6 +914,20 @@
                 "vibhakti": "saṃbodhana"
               },
               {
+                "root": "videva",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              },
+              {
+                "root": "videva",
+                "linga": "napuṃsakaliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              },
+              {
                 "root": "vid",
                 "vacana": "dvi",
                 "tags": [
@@ -931,20 +945,6 @@
                   "prāthamikaḥ",
                   "uttamapuruṣaḥ",
                   "vidhiliṅ"
-                ]
-              },
-              {
-                "root": "videva",
-                "linga": "puṃlliṅgam",
-                "tags": [
-                  "samāsapūrvapadanāmapadam"
-                ]
-              },
-              {
-                "root": "videva",
-                "linga": "napuṃsakaliṅgam",
-                "tags": [
-                  "samāsapūrvapadanāmapadam"
                 ]
               }
             ]

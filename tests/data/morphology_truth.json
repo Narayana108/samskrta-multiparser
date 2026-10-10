@@ -1,5 +1,5 @@
 {
-  "_note": "Reference morphology for a small set of forms from the sixteen pinned verses. Each row states what the word is in that verse, taken from the published पदच्छेदः and standard grammar of that verse (sanskritsahitya.org), never from our engines. `expected` lists every reading that counts as correct; a reading matches when all of its listed fields match and its `tags` are all present in the engine's tag set. `limit` records, for rows where no context-free ranking can pick the right reading, which upstream limit is responsible.",
+  "_note": "Reference morphology for a small set of forms from the sixteen pinned verses. Each row states what the word is in that verse, taken from the published पदच्छेदः and standard grammar of that verse (sanskritsahitya.org), never from our engines. `expected` lists every reading that counts as correct; a reading matches when all of its listed fields match and its `tags` are all present in the engine's tag set. A row without `limit` must have the reference reading published as the primary; `limit` records, for rows where no context-free ranking can pick the right reading, which upstream limit is responsible — those rows only require the reading to stay visible among the published readings.",
   "rows": [
     {
       "verse": "raghuvamsha-1.1",
@@ -9,7 +9,7 @@
         {"root": "vand", "vacana": "eka", "tags": ["laṭ", "uttamapuruṣaḥ", "ātmanepadam"]}
       ],
       "source": "Raghuvaṃśa 1.1: vande = 'I bow', laṭ ātmanepada prathama-puruṣa ekavacana of √vand.",
-      "limit": "sanskrit_parser analyses each pada without sentence context, so it also builds nominal readings on stems such as 'vandā' that no dictionary records; the verbal reading is offered but ranked last."
+      "limit": "sanskrit_parser analyses each pada without sentence context and offers fourteen readings for vande; vidyut's kosha records a stem 'vandA' for exactly this form, so dictionary attestation cannot prefer the verb — the verbal reading is now alternate #4 of 13."
     },
     {
       "verse": "raghuvamsha-1.1",
@@ -39,8 +39,7 @@
         {"root": "as", "vacana": "eka", "tags": ["laṭ", "prathamapuruṣaḥ"]},
         {"root": "as#1", "vacana": "eka", "tags": ["laṭ", "prathamapuruṣaḥ"]}
       ],
-      "source": "Raghuvaṃśa 1.4: sūtrasya iva asti = 'it is like a thread'; asti is laṭ prathama-puruṣa ekavacana of √as.",
-      "limit": "sanskrit_parser also reads the same letters as the feminine noun 'asta' in vocative singular and ranks that nominal reading first."
+      "source": "Raghuvaṃśa 1.4: sūtrasya iva asti = 'it is like a thread'; asti is laṭ prathama-puruṣa ekavacana of √as."
     },
     {
       "verse": "bhagavad_gita-11.15",
@@ -93,6 +92,61 @@
       ],
       "source": "BG 18.66: mā śucaḥ = 'grieve not' — a prohibition (mā with luṅ) addressed to Arjuna.",
       "limit": "śucas is also a nominal form; sanskrit_parser offers twenty-seven readings for it and ranks the nominal ones first."
+    },
+    {
+      "verse": "abhijnaana_shakuntala-1.1",
+      "pada": "sarvabījaprakṛtiriti",
+      "form": "prakṛti",
+      "expected": [
+        {"root": "prakṛti"}
+      ],
+      "source": "Abhijñānaśākuntala 1.1: yām āhuḥ sarva-bīja-prakṛtiḥ iti — prakṛti is the stem of that compound ('the source of all seeds'); it used to be published as a vocative of 'prakṛta', a stem no dictionary records."
+    },
+    {
+      "verse": "abhijnaana_shakuntala-1.18",
+      "pada": "hi",
+      "form": "hi",
+      "expected": [
+        {"root": "hi", "tags": ["avyayam"]}
+      ],
+      "source": "Abhijñānaśākuntala 1.18: kim iva hi madhurāṇāṃ maṇḍanaṃ nākṛtīnām — hi is the indeclinable particle; Dharmamitrā also segments it as a pada of its own."
+    },
+    {
+      "verse": "bhagavad_gita-15.15",
+      "pada": "sanniviṣṭo",
+      "form": "sanni",
+      "expected": [
+        {"root": "sanni"}
+      ],
+      "source": "BG 15.15: sarvasya ahaṃ hṛdi sanni-niviṣṭaḥ — sanni is the prefixed member of that fused pada, not an independent vocative; 'sanna' is recorded by no dictionary."
+    },
+    {
+      "verse": "bhagavad_gita-2.22",
+      "pada": "saṃyāti",
+      "form": "yāti",
+      "expected": [
+        {"root": "yā", "tags": ["laṭ"]}
+      ],
+      "source": "BG 2.22: anyāni saṃyāti navāni dehī — yāti = 'goes', laṭ prathama-puruṣa ekavacana of √yā with the prefix sam."
+    },
+    {
+      "verse": "raghuvamsha-1.6",
+      "pada": "yathāvidhihutāgnīnāṃ",
+      "form": "yathāvidhi",
+      "expected": [
+        {"root": "yathāvidhi", "tags": ["avyayam"]}
+      ],
+      "source": "Raghuvaṃśa 1.6: yathā-vidhi hutāgnīnām — yathāvidhi is the indeclinable 'according to rule'."
+    },
+    {
+      "verse": "bhagavad_gita-18.66",
+      "pada": "ahaṃ",
+      "form": "aham",
+      "expected": [
+        {"root": "asmad", "vibhakti": "prathamā"}
+      ],
+      "source": "BG 18.66: ahaṃ tvāṃ śaraṇaṃ vraja — aham is the first-person pronoun (stem asmad) in the nominative.",
+      "limit": "vidyut's kosha records a short noun 'aha' ('non-existence') for exactly these letters, so dictionary attestation cannot prefer the pronoun; the asmad reading stays an alternate."
     }
   ]
 }

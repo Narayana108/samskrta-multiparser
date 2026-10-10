@@ -294,15 +294,15 @@
             "linga": "puṃlliṅgam",
             "alternates": [
               {
-                "root": "ayam",
-                "vacana": "eka",
-                "linga": "puṃlliṅgam",
-                "vibhakti": "saptamī"
-              },
-              {
                 "root": "idam",
                 "vacana": "eka",
                 "linga": "napuṃsakaliṅgam",
+                "vibhakti": "saptamī"
+              },
+              {
+                "root": "ayam",
+                "vacana": "eka",
+                "linga": "puṃlliṅgam",
                 "vibhakti": "saptamī"
               },
               {
@@ -562,20 +562,14 @@
           },
           {
             "form": "asti",
-            "root": "asta",
-            "vibhakti": "saṃbodhana",
+            "root": "as",
             "vacana": "eka",
-            "linga": "strīliṅgam",
+            "tags": [
+              "laṭ",
+              "parasmaipadam",
+              "prathamapuruṣaḥ"
+            ],
             "alternates": [
-              {
-                "root": "as",
-                "vacana": "eka",
-                "tags": [
-                  "laṭ",
-                  "parasmaipadam",
-                  "prathamapuruṣaḥ"
-                ]
-              },
               {
                 "root": "as#1",
                 "vacana": "eka",
@@ -599,6 +593,12 @@
                 "tags": [
                   "samāsapūrvapadanāmapadam"
                 ]
+              },
+              {
+                "root": "asta",
+                "vacana": "eka",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
               }
             ]
           }

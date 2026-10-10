@@ -297,6 +297,10 @@ uv run pytest -q                        # offline suite
   The offline half of `tests/test_golden_outputs.py` then proves `postprocess()` still reproduces
   the reading document exactly; the live half re-runs all three engines, needs network access, and
   is skipped unless `SAMSKRTA_LIVE_GOLDEN=1`.
+- A ranking-only change never needs an engine run: regenerate each reading document from its pinned raw file with
+  `uv run python postprocess_analysis.py -i tests/data/results/<stem>.raw.json` (~0.5 s each, all sixteen in ~7 s). That
+  pass now reads the vidyut kosha to rank word readings (§11), so the documents depend on `data-0.4.0/kosha`;
+  `--no-dictionary` reproduces the pre-rule ordering byte for byte.
 - `tests/test_sandhi_accuracy.py` scores splitting against the curated padaccheda of §9. Thirteen
   curated padas run offline (kosha + sanskrit_parser, ~5 s); the corpus-wide score over all 147 rows
   needs both engines and runs under the same `SAMSKRTA_LIVE_GOLDEN=1` switch (~25 s). It is the test to
@@ -607,24 +611,40 @@ verses, and emits a warning naming the engine and its documented limit wherever 
 ## 11. Word readings: how accuracy is measured
 
 Morphology has the same missing oracle, so `tests/data/morphology_truth.json` holds the published reading for
-nine forms whose value in that verse follows from its पदच्छेदः and standard grammar — never from our engines.
+fifteen forms whose value in that verse follows from their पदच्छेदः and standard grammar — never from our engines.
 `tests/test_morphology_accuracy.py` runs offline against the committed result documents and prints the score it
-exists to show: **offered by sanskrit_parser 9/9, chosen by our ranking 4/9**. The four that must be primary are
-asserted (`pitarau`, `deva`, `navāni`, `avyayam`); the five that cannot be settled per-pada (`vande`, `jagataḥ`,
-`asti`, `vraja`, `śucaḥ`) only have to stay visible among the published readings, and each emits a warning naming
-the engine and the limit responsible. A test fails if the engine stops offering a reference reading, or if our
-ranking loses one of the four it currently gets right — that is the regression net, not a claim of correctness.
+exists to show: **offered by sanskrit_parser 15/15, chosen by our ranking 10/15**. The ten that must be primary are
+asserted (`pitarau`, `deva`, `navāni`, `avyayam`, `asti`, `prakṛti`, `hi`, `sanni`, `yāti`, `yathāvidhi`); the five
+that cannot be settled per-pada (`vande`, `jagataḥ`, `vraja`, `śucaḥ`, `ahaṃ`) only have to stay visible among the
+published readings, and each emits a warning naming the engine and the limit responsible. A test fails if the engine
+stops offering a reference reading, or if our ranking loses one of the ten it currently gets right — that is the
+regression net, not a claim of correctness. `tools/morphology_ranks.py` rebuilds the same table with the rank at which
+each right reading survived.
 
 - **Why five stay wrong.** The analyser sees one pada at a time and offers every reading Pāṇini allows for those
   letters: `śucas` came with twenty-seven readings, `vande` with fourteen, `jagatas` with twelve. Case, number and
   gender are properties of the sentence; no ordering of context-free readings can recover them. The one component
-  that could (sanskrit_parser's vakya parse) is measured unusable here — see §8 — so the choice stays upstream.
-- **Ranking rules rejected on these numbers.** Putting finite-verb readings above nominal ones changes 20 primaries
-  over the sixteen verses: about 8 improvements (`vande`, `vraja`, `asti`, `yāti`) against about 12 regressions
-  (`navāni` → √nu loṭ, `deva` → imperative of √dev, `avyayam` → √vyā, `ajanma`, `āsam`, `bhūr`). Preferring readings
-  whose stem is exactly attested in the vidyut kosha changes 15: about 3 improvements against about 10 regressions.
-  Both are net losses on real output, so neither shipped; §3's `_morph_rank` remains the rule and `alternates`
-  carries everything else. Re-measure these figures before trying any third rule.
+  that could (sanskrit_parser's vakya parse) is measured unusable here — see §8 — so the choice stays upstream. For
+  two of them the dictionary points the wrong way as well: vidyut records a stem *vandA* for `vande` and a genuine
+  noun *aha* ("non-existence") for अहम्, so attestation actively prefers those readings.
+- **The rule that shipped: demote an unattested root.** `postprocess_analysis.kosha_attest()` maps a surface form to
+  the SLP1 lemma stems vidyut's kosha records for it (probing both the IAST→SLP1 spelling and the engines' own
+  orthography — anusvara `M`→`m`, final visarga `H`→`s`, trailing sign dropped); `_root_attested()` compares the
+  reading's `root` (with sanskrit_parser's `#n` homophony marker stripped) by **exact membership, never prefix**, and
+  `_morph_rank()` puts that boolean ahead of every other key. `collect_sp_morphology(sp_output, attest)` takes the
+  lookup as an argument, so postprocessing stays importable without engine data and unit-testable with a fake; `app.py`
+  builds it once from `load_kosha()`, and `postprocess_analysis.py --no-dictionary` skips it. Measured over the sixteen
+  verses: **8 of 273 published primaries move, 6 become what the editions read** (`asti`, `hi`, `yathāvidhi`,
+  `prakṛti`, `sanni`, `yāti`), none regress — which is why the fixture could grow from nine forms to fifteen. Prefix
+  matching was tried first and rejected: it blessed exactly the truncations that are wrong (`vas` for *vastā*, `vand`
+  for *vandā*, `aha` for *asmad*).
+- **Ranking rules rejected on these numbers.** Putting finite-verb readings above nominal ones changes 20 primaries:
+  about 8 improvements against about 12 regressions (`navāni` → √nu loṭ, `deva` → imperative of √dev, `avyayam` → √vyā,
+  `ajanma`, `āsam`, `bhūr`). Requiring the stem to be kosha-attested *and* preferring the longest attested lemma changes
+  36 primaries and scores 9/15 — one curated form loses its reading. Both are net losses on real output, so neither
+  shipped. `tools/morphology_lab.py` re-scores any further idea against the pinned corpus in seconds (no engine run):
+  it re-runs the shipped rule as a no-op check and keeps the rejected variant measured. Re-measure before trying a new
+  rule, because the blast radius — how many of the 273 primaries move — decides whether a rule is safe to land.
 - **Dharmamitrā is not used as the reference.** It resolves several of these forms correctly (`vande → vand`) but
   invents real errors elsewhere (`jagantaḥ`, `sūnantāḥ` type noise — §8), so pinning against it would move the goal
   post whenever the remote changes. Its reading stays beside ours in `padaccheda.dharmamitra` for a human to weigh.

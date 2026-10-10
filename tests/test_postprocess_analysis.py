@@ -280,6 +280,58 @@ def test_collect_morphology_keeps_every_case_reading_with_the_best_one_first():
     assert [r["vibhakti"] for r in entry["alternates"]] == ["dvitīyā", "saṃbodhana"]
 
 
+def test_collect_morphology_demotes_a_root_the_dictionary_does_not_record():
+    """A reading built on a stem the kosha never lists for that form loses to one it does.
+
+    This is the ranking rule measured over the sixteen pinned verses: 8 of 273 published primaries move,
+    and 6 of them become what the printed editions read — 'asti' becomes √as "is" instead of an invented
+    vocative *asta*, and with it 'hi', 'yathāvidhi', 'prakṛti', 'sanni' and 'yāti' in saṃyāti. The
+    unattested reading here is the *fuller* one (case, number and gender), so completeness alone used to
+    win; the `#1` homophony marker must not hide an attested root either.
+    """
+    sp_output = {"word_morphology": [{
+        "pada": "asti",
+        "morphological_tags": [
+            {"root": "asta", "tags": ["ekavacanam", "saṃbodhanavibhaktiḥ", "strīliṅgam"]},
+            {"root": "as#1", "tags": ["laṭ", "prathamapuruṣaḥ", "ekavacanam"]},
+        ],
+    }]}
+
+    def attest(form):
+        assert form == "asti"
+        return {"as"}  # vidyut records √as for this form, and no stem 'asta'
+
+    readings = postprocess_analysis.collect_sp_morphology(sp_output, attest)["asti"]
+    assert [r.get("root") for r in readings] == ["as#1", "asta"]  # demoted, never dropped
+
+
+def test_collect_morphology_without_a_dictionary_is_byte_for_byte_the_old_ranking():
+    """Forms the kosha says nothing about keep exactly the order they had."""
+    sp_output = {"word_morphology": [{
+        "pada": "vastā",
+        "morphological_tags": [
+            {"root": "vas#1", "tags": ["ekavacanam", "prathamāvibhaktiḥ", "strīliṅgam"]},
+            {"root": "vas", "tags": ["bahuvacanam", "tṛtīyāvibhaktiḥ"]},
+        ],
+    }]}
+    no_signal = postprocess_analysis.collect_sp_morphology(sp_output, lambda form: set())
+    assert no_signal == postprocess_analysis.collect_sp_morphology(sp_output)
+    assert [r.get("root") for r in no_signal["vastā"]] == ["vas#1", "vas"]
+
+
+def test_attestation_is_exact_membership_never_a_prefix():
+    """vidyut records short homographs, so a prefix of a stem proves nothing.
+
+    The kosha lists 'ah' and 'aha' for the form अहम्; matching those as prefixes would have blessed the
+    truncations that made the rule misfire ('vas' standing in for the instrumental plural *vasu*, 'vand'
+    for *vandā*). Homophony markers are stripped before the comparison.
+    """
+    assert postprocess_analysis._root_attested({"root": "vandā"}, {"vand"}) is False
+    assert postprocess_analysis._root_attested({"root": "vandā"}, {"vandA"}) is True
+    assert postprocess_analysis._root_attested({"root": "as#1"}, {"as"}) is True
+    assert postprocess_analysis._root_attested({"root": None}, {"as"}) is False
+    assert postprocess_analysis.kosha_attest(None) is None  # no kosha data: no lookup, old ranking
+
 # ---------------------------------------------------------------------------
 # collect_sp_decompositions
 # ---------------------------------------------------------------------------

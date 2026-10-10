@@ -28,8 +28,8 @@ Measured **2026-10-10** on `sanskrit-parser 0.2.6`, `vidyut 0.4.0` + bundled `da
 |---|---|---|
 | Aksharas per pāda, pāda count (§1) | **16 / 16** ✅ | verified correct on every verse |
 | Metre name (§1) | **5 / 16** named; 11 ⚠️ null | zero ❌: vidyut's data has no jāti/anuṣṭubh rows, and our veto only removes wrong names |
-| Right word reading is offered at all (§2) | **9 / 9** ✅ | never silently dropped — it travels in `alternates` |
-| Right word reading published first (§2) | **4 / 9**; 5 ⚠️/❌ | the five need sentence context no per-pada analysis has |
+| Right word reading is offered at all (§2) | **15 / 15** ✅ | never silently dropped — it travels in `alternates` |
+| Right word reading published first (§2) | **10 / 15**; 5 ⚠️/❌ | the five need sentence context, or a homograph the dictionary really does record |
 | Word boundaries, whole corpus (§3) | **103 / 147** | ⚠️ 20 padas: the right cut is not in the candidate pool at all; ❌ 24 padas: a correct candidate existed and our ranking did not pick it |
 
 ## 1. Metre — shape verified on every verse, names limited by vidyut's data
@@ -78,7 +78,7 @@ Read this as: **the "Shape" column is all green; the "Name we publish" column sh
 | jāti metres in code (`vidyut-chandas/src/chandas.rs:98-121`) | exactly seven hard-coded: `vEtAlIyam, upagIti, AryAgIti, gIti, udgIti, Aupacchandasikam, AryA` — none is a śloka metre; `Jati::try_match` compares akshara counts only |
 | vṛtta matching (`VrttaPada::try_match`) | gaṇa **prefix** match over the weight string; declared length is not enforced, so an 11-akshara pāda can be reported as `indravaṃśā` (which declares 12) — exactly the wrong names our veto removes |
 
-## 2. Word grammar — the right reading is always offered; our context-free ranking picks it first for 4 of 9
+## 2. Word grammar — the right reading is always offered; our ranking picks it first for 10 of 15
 
 Read this as: **"Our published primary" vs "Source of truth"; the last two columns say whether the right answer survived
 in the output and how deep we buried it.**
@@ -89,26 +89,55 @@ in the output and how deep we buried it.**
 | `deva` | bhagavad_gita-11.15 | deva, saṃbodhana, eka, puṃlliṅgam | deva, saṃbodhana, eka, puṃlliṅgam | ✅ correct | it *is* the primary (5 alternates) |
 | `navāni` | bhagavad_gita-2.22 | nava#1, prathamā, bahu, napuṃsakaliṅgam | nava#1, prathamā, bahu, napuṃsakaliṅgam | ✅ correct | it *is* the primary (7 alternates) |
 | `avyayam` | bhagavad_gita-15.5 | avyaya, dvitīyā **or** prathamā, eka | avyaya#1, prathamā, eka, napuṃsakaliṅgam | ✅ correct (the fixture accepts both cases) | it *is* the primary (6 alternates) |
-| `asti` | raghuvamsha-1.4 | as, eka, laṭ / prathamapuruṣaḥ | asta, saṃbodhana, eka, strīliṅgam | ❌ wrong primary — ⚠️ needs the sentence | yes, **alternate #1 of 4** |
+| `prakṛti` | abhijnaana_shakuntala-1.1 | stem prakṛti (head of *sarva-bīja-prakṛtiḥ*) | prakṛti, compound member | ✅ correct — fixed by the dictionary rule (§2.1) | it *is* the primary (1 alternate) |
+| `hi` | abhijnaana_shakuntala-1.18 | hi, avyayam | hi, avyayam | ✅ correct — fixed by the dictionary rule (§2.1) | it *is* the primary (2 alternates) |
+| `sanni` | bhagavad_gita-15.15 | sanni, prefixed member of *sanni-niviṣṭaḥ* | sanni, compound member | ✅ correct — fixed by the dictionary rule (§2.1) | it *is* the primary (1 alternate) |
+| `yāti` | bhagavad_gita-2.22 | yā, laṭ, eka (*saṃ-yāti*, "goes") | yā, laṭ, prathamapuruṣaḥ, eka | ✅ correct — fixed by the dictionary rule (§2.1) | it *is* the primary (6 alternates) |
+| `yathāvidhi` | raghuvamsha-1.6 | yathāvidhi, avyayam | yathāvidhi, avyayam | ✅ correct — fixed by the dictionary rule (§2.1) | it *is* the primary (1 alternate) |
+| `asti` | raghuvamsha-1.4 | as, eka, laṭ / prathamapuruṣaḥ | as, eka, laṭ, prathamapuruṣaḥ | ✅ correct — fixed by the dictionary rule (§2.1) | it *is* the primary (4 alternates) |
 | `vraja` | bhagavad_gita-18.66 | vraj, eka, loṭ / madhyamapuruṣaḥ | vraja, saṃbodhana, eka, puṃlliṅgam | ❌ wrong primary — ⚠️ needs the sentence | yes, **alternate #2 of 4** |
 | `jagatas` | raghuvamsha-1.1 | jagat, ṣaṣṭhī, eka, napuṃsakaliṅgam | jagat, prathamā, bahu, strīliṅgam | ❌ wrong primary — ⚠️ needs the sentence | yes, **alternate #9 of 11** |
-| `vande` | raghuvamsha-1.1 | vand, eka, laṭ / uttamapuruṣaḥ / ātmanepadam | vandā, prathamā, dvi, strīliṅgam | ❌ wrong primary — ⚠️ needs the sentence (and `vandā` is a stem no dictionary records) | yes, **alternate #13 of 13** |
-| `śucas` | bhagavad_gita-18.66 | śuc, eka, madhyamapuruṣaḥ | śuc#2, prathamā, bahu, strīliṅgam | ❌ wrong primary — ⚠️ needs the sentence | yes, **alternate #25 of 26** |
+| `vande` | raghuvamsha-1.1 | vand, eka, laṭ / uttamapuruṣaḥ / ātmanepadam | vandā, prathamā, dvi, strīliṅgam | ❌ wrong primary — ⚠️ needs the sentence; the kosha records *vandA* too, so attestation cannot settle it | yes, **alternate #4 of 13** |
+| `śucas` | bhagavad_gita-18.66 | śuc, eka, madhyamapuruṣaḥ | śuc#2, prathamā, bahu, strīliṅgam | ❌ wrong primary — ⚠️ needs the sentence | yes, **alternate #24 of 26** |
+| `aham` | bhagavad_gita-18.66 | asmad, prathamā | aha (a real noun, "non-existence"), prathamā, eka | ❌ wrong primary — ⚠️ the dictionary records that homograph for these very letters | yes, **alternate #1 of 7** |
 
-- **✅ Verified correct — nothing is lost.** The reference reading appears in the published output for all nine forms;
-  `tests/test_morphology_accuracy.py::test_published_reading_is_among_the_readings` fails if one ever disappears.
+- **✅ Verified correct — nothing is lost.** The reference reading appears in the published output for all fifteen
+  curated forms; `tests/test_morphology_accuracy.py::test_published_reading_is_among_the_readings` fails if one ever
+  disappears.
 - **❌/⚠️ Five wrong primaries.** Case, number and gender are properties of the *sentence*. sanskrit_parser analyses one
   pada at a time and returns every reading Pāṇini allows for those letters (27 for `śucas`, 14 for `vande`), so no
-  ordering of context-free readings can settle these five. They warn in the test suite, they never fail silently.
+  ordering of context-free readings can settle them. Two more resist the dictionary rule because the dictionary itself
+  is against us: vidyut records a stem *vandA* for `vande`, and a genuine noun *aha* ("non-existence") for the form
+  अहम्, so attestation prefers those over the verbal/pronominal reading. They warn in the test suite, they never fail
+  silently.
+- **One truth no engine offers.** AS 1.1 `vastābhiraṣṭābhirīśaḥ` = *vastebhyaḥ aṣṭabhiḥ*, the instrumental plural of
+  *vasu* (the eight Vasus). Neither engine emits that reading, so it is documented here rather than pinned in the
+  fixture — pinning it would fail the "right reading is still offered" test instead of measuring anything.
 - **Ambiguity is normal:** across the sixteen verses **546 pada-words carry morphology and 432 have more than one
   distinct reading.**
 
-### Ranking rules tried on this fixture and rejected (measured — do not re-try them blind)
+### 2.1 The dictionary-attestation ranking rule (shipped)
+
+A reading whose `root` vidyut's kosha does not record as a lemma for that surface form is demoted below every reading it
+does record; everything else about the ordering is unchanged, and no reading is ever dropped. Measured over the sixteen
+pinned verses (**273 published word readings**): **8 primaries move**, and 6 of those become what the printed editions
+read — `asti` (√as "is", not an invented vocative *asta*), `hi`, `yathāvidhi`, `prakṛti`, `sanni`, and `yāti` inside
+`saṃyāti` (√yā "goes", not a saptamī of *yāt*). No curated form lost its reading; the fixture went from 4/9 correct to
+10/15 by adding six forms the rule settles. Membership is **exact, never prefix**: the kosha lists `ah` and `aha` for
+अहम्, and prefix matching blessed exactly those truncations (`vas` standing in for *vastā*, `vand` for *vandā*) and made
+the rule misfire. The lookup probes both the IAST→SLP1 spelling of the pada and the orthography the engines use among
+themselves (anusvara `M`→`m`, final visarga `H`→`s`, trailing sign dropped), so a pause-normalised form still finds its
+lemma. Ranking is skipped entirely with `postprocess_analysis.py --no-dictionary`, and on a machine without kosha data
+the analysis falls back to the previous order instead of failing.
+
+### Ranking rules tried on this fixture (measured — do not re-try the rejected ones blind)
 
 | Rule | Measured effect over the 16 verses | Verdict |
 |---|---|---|
 | Finite verb above nominal reading | 20 primaries change: ≈8 better (`vande`, `vraja`, `asti`, `yāti`), ≈12 worse (`navāni`→√nu, `deva`→imperative of √dev, `avyayam`→√vyā, `ajanma`, `āsam`) | ❌ rejected — net loss |
 | Prefer readings whose stem is exactly attested in the vidyut kosha | 15 primaries change: ≈3 better, ≈10 worse (`anu`→dvitīyā napuṃsaka) | ❌ rejected — net loss |
+| Demote roots absent from the vidyut kosha lemma set for that form (**exact** membership only) | 8 primaries move of 273; 6 curated forms fixed, none lost | ✅ **applied** — see §2.1 |
+| …and prefer the longer attested lemma stem among the recorded ones | 9/15 curated, 36 primaries move | ❌ rejected — four times the blast radius of the rule above for one less correct form; it also cannot fix `aham`, where the short homograph is the recorded word |
 
 ## 3. Word boundaries (sandhi) — 103 of 147 padas correct; the ceiling is 127
 
@@ -171,7 +200,7 @@ arithmetic across runs. Two runs on 2026-10-10 gave `picked 103/147` both times 
 | Akshara counts, pāda count | vidyut `chandas` | ✅ correct on all 16 verses; ⚠️ ṛ/ṝ are not counted as vowels (`sounds.rs:4`), so a pāda containing ṛ is miscounted by vidyut and by our `_count_aksharas` in step |
 | Metre name | vidyut `chandas` | ⚠️ 145 vṛtta rows, no jāti rows → 11/16 unnamed (§1); ✅ the five it can name are right, ❌ never a wrong published name (the veto holds) |
 | Word boundaries | sanskrit_parser pool + vidyut kosha ranking | ⚠️ ceiling 127/147; ❌ 24 padas still ranked wrong (§3); samāsa resolution needs context we do not have |
-| Root / stem / dictionary attestation | vidyut kosha (`load_kosha`) | ✅ contains the reference stem for 9/9 pinned forms where sanskrit_parser's primary root is right for only 6/9 (it invents `vandā`, `asta`, `vraja`); ⚠️ surface keys only — pause-normalised lookups needed (`vāk`→`vac`) |
+| Root / stem / dictionary attestation | vidyut kosha (`load_kosha`) | ✅ now a ranking key as well as a display field: readings built on stems the kosha does not record for that form are demoted (§2.1), which fixed 6 curated forms and lost none; ⚠️ sometimes the dictionary itself is against us — it records *aha* ("non-existence") for अहम् and *vandA* for `vande`, so attestation cannot settle those; ⚠️ surface keys only — pause-normalised lookups needed (`vāk`→`vac`) |
 | Vibhakti / vacana / liṅga / lakāra tags | sanskrit_parser | ✅ the only engine that emits lakāra/puruṣa at all (vidyut's kosha krdanta entries carry `lakara=None`); ⚠️ context-free: 432 of 546 forms arrive ambiguous (§2) |
 | Sentence-level reading (padaccheda) | Dharmamitrā (remote) | shown side by side, never merged; ⚠️ returns surface forms with no tags and invents/skips tokens (`jagantaḥ`, a stray `mā`) — which is why it is not the reference key |
 
@@ -179,21 +208,27 @@ arithmetic across runs. Two runs on 2026-10-10 gave `picked 103/147` both times 
 
 ```bash
 uv run pytest -q tests/test_meter_accuracy.py        # offline: truth vs best effort, all 16 verses
-uv run pytest -q tests/test_morphology_accuracy.py   # offline: 9/9 offered, 4/9 chosen first
+uv run pytest -q tests/test_morphology_accuracy.py   # offline: 15/15 offered, 10/15 chosen first
 SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_sandhi_accuracy.py   # ~50 s live; prints every missed pada
 uv run python tools/meter_audit.py                 # offline: rebuilds §1, with the reason for every null
 uv run python tools/morphology_ranks.py            # offline: rebuilds §2, incl. the rank of the right reading
+uv run python tools/morphology_lab.py              # offline (kosha only): re-score a proposed reading rule on the pinned corpus
 uv run python tools/sandhi_ceiling.py              # ~25 s local (no network): §3 score + ceiling + fault split
 ```
 
-Those three tools are how every table in this file was produced. They read only committed artefacts — the sandhi tool
+The first three tools are how every table in this file was produced. They read only committed artefacts — the sandhi tool
 also calls the splitter itself — and import the same scoring helpers as the tests, so any figure here can be
 regenerated instead of re-derived by hand; `tools/sandhi_ceiling.py --pools pools.json` caches the candidate pools and
 `--reuse pools.json` scores from them, which is how a ranking idea gets measured against an identical search space in
 seconds rather than 25 s per variant (DOCUMENTATION.md §9).
 
+`tests/data/results/*.result.json` now depends on the kosha too, because the published reading is chosen with it: after a
+ranking change the documents are regenerated offline from the pinned raw output
+(`for f in tests/data/results/*.raw.json; do uv run python postprocess_analysis.py -i "$f"; done`, ~7 s), never by a live
+engine run. `postprocess_analysis.py --no-dictionary` reproduces the pre-rule ordering byte for byte.
+
 `test_meter_accuracy.py` passes with **11 warnings** (one per verse vidyut cannot name) and
-`test_morphology_accuracy.py` with **5 warnings** (`vande`, `jagatas`, `asti`, `vraja`, `śucaḥ`). Those warnings *are*
+`test_morphology_accuracy.py` with **5 warnings** (`vande`, `jagatas`, `vraja`, `śucaḥ`, `ahaṃ`). Those warnings *are*
 the deliverable: an engine limit is reported, never hidden. How each fixture was built and which further rules were
 ruled out lives in [DOCUMENTATION.md](DOCUMENTATION.md) §9 (splitting), §10 (metre), §11 (word readings) and §12
 (the optional lexical scorer).
@@ -207,8 +242,9 @@ The numbers above are **master**. The gensim + sentencepiece lexical-scorer expe
 - **Metre naming.** Two ways to close the eleven ⚠️ rows: ship our own jāti/vṛtta table in this project, or fix vidyut
   upstream (`meters.tsv` needs `jati` rows and `try_match` needs to respect declared length). Kept as a future task —
   whichever is chosen, §1's table is the acceptance test.
-- **Root attestation filter.** Demote a sanskrit_parser reading whose `root` is absent from the vidyut kosha lemma set
-  for that form (would fix `vandā`, `asta`, `vraja`). Must be scored with the §9 harness over all sixteen verses first —
-  a neighbouring rule lost 10 forms to gain 3.
+- **Choosing among context-free readings.** §2.1 closed what a dictionary can settle; the five remaining wrong primaries
+  (`vande`, `jagatas`, `vraja`, `śucaḥ`, `ahaṃ`) need the sentence — case, number and lakāra are properties of the
+  clause, not of the letters. Feeding a padaccheda back into the ranking is a feature decision, not a bug fix; every
+  context-free rule tried so far is listed in §2's table with its measured cost.
 - **Dharmamitrā upstream report.** Its `jagantaḥ` / `sūnantāḥ` type noise is worth reporting; until then it stays an
   unmerged second opinion.

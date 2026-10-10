@@ -379,6 +379,35 @@
             "linga": "strīliṅgam",
             "alternates": [
               {
+                "root": "vandā",
+                "vibhakti": "dvitīyā",
+                "vacana": "dvi",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "vandā",
+                "vacana": "eka",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "vandā",
+                "vacana": "dvi",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "vand",
+                "vacana": "eka",
+                "tags": [
+                  "kartari",
+                  "laṭ",
+                  "prāthamikaḥ",
+                  "uttamapuruṣaḥ",
+                  "ātmanepadam"
+                ]
+              },
+              {
                 "root": "vanda",
                 "vacana": "dvi",
                 "vibhakti": "prathamā",
@@ -389,12 +418,6 @@
                 "vacana": "dvi",
                 "linga": "napuṃsakaliṅgam",
                 "vibhakti": "prathamā"
-              },
-              {
-                "root": "vandā",
-                "vibhakti": "dvitīyā",
-                "vacana": "dvi",
-                "linga": "strīliṅgam"
               },
               {
                 "root": "vanda",
@@ -421,18 +444,6 @@
                 "vibhakti": "saptamī"
               },
               {
-                "root": "vandā",
-                "vacana": "eka",
-                "vibhakti": "saṃbodhana",
-                "linga": "strīliṅgam"
-              },
-              {
-                "root": "vandā",
-                "vacana": "dvi",
-                "vibhakti": "saṃbodhana",
-                "linga": "strīliṅgam"
-              },
-              {
                 "root": "vanda",
                 "vacana": "eka",
                 "vibhakti": "saṃbodhana",
@@ -449,17 +460,6 @@
                 "vacana": "dvi",
                 "linga": "napuṃsakaliṅgam",
                 "vibhakti": "saṃbodhana"
-              },
-              {
-                "root": "vand",
-                "vacana": "eka",
-                "tags": [
-                  "kartari",
-                  "laṭ",
-                  "prāthamikaḥ",
-                  "uttamapuruṣaḥ",
-                  "ātmanepadam"
-                ]
               }
             ]
           }
@@ -506,12 +506,6 @@
             "linga": "strīliṅgam",
             "alternates": [
               {
-                "root": "pārvata",
-                "vacana": "eka",
-                "vibhakti": "prathamā",
-                "linga": "strīliṅgam"
-              },
-              {
                 "root": "pārvati",
                 "vacana": "dvi",
                 "vibhakti": "prathamā",
@@ -530,14 +524,20 @@
                 "vibhakti": "saṃbodhana"
               },
               {
-                "root": "pārvata",
+                "root": "pārvatī",
+                "linga": "strīliṅgam",
                 "tags": [
                   "samāsapūrvapadanāmapadam"
                 ]
               },
               {
-                "root": "pārvatī",
-                "linga": "strīliṅgam",
+                "root": "pārvata",
+                "vacana": "eka",
+                "vibhakti": "prathamā",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "pārvata",
                 "tags": [
                   "samāsapūrvapadanāmapadam"
                 ]

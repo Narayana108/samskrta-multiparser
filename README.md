@@ -77,6 +77,7 @@ app.py (CLI entry point — raw pass)
 
 postprocess_analysis.py (second pass; also a standalone CLI)
 ├── postprocess()               # '<base>.raw.json' → '<base>.result.json'
+├── kosha_attest(), _root_attested()   # ranks a reading by whether the vidyut kosha records its root
 └── output_base(), raw_path(), result_path(), write_document()   # naming helpers
 ```
 
@@ -132,6 +133,10 @@ echo "वागर्थाविव संपृक्तौ वागर्थ
 
 # Second pass alone, on an existing raw document (offline, instant)
 uv run python postprocess_analysis.py -o results/my_shloka
+
+# …or from an explicit raw document, e.g. to regenerate a pinned golden after a ranking change
+uv run python postprocess_analysis.py -i tests/data/results/raghuvamsha-1.1.raw.json
+# --no-dictionary ranks the word readings without the vidyut kosha
 ```
 
 stdout carries only the result document's top-level `input` and `chandas` objects — no
@@ -539,7 +544,7 @@ Splitting quality is tested separately. `tests/data/sandhi_truth.json` records h
 
 Metre accuracy is tested the same way. `tests/data/meter_truth.json` records the published छन्दः of each pinned verse — Devanagari name, IAST spelling, aksharas per pāda, pāda count and source URL (sanskritsahitya.org, cross-checked against its own data repository) — and `tests/test_meter_accuracy.py` runs offline. It asserts the scanned shape equals every published grid, that the five verses whose metre vidyut's table can hold do carry it (`indravajrā`, `sragdharā`, `malinī`), and that an impossible candidate such as the 12-akshara `indravaṃśā` stays visible in `candidates` without vetoing इन्द्रवज्रा. It then prints published truth next to best effort for all sixteen verses; the eleven anuṣṭubh and उपजातिः verses are pinned as `vrtta: null` and each emits a warning naming vidyut and its documented limit (145 vṛtta patterns, no jāti metre), because that gap is upstream and cannot be closed in our code.
 
-Word readings are measured the same way. `tests/data/morphology_truth.json` records, for nine forms from these verses, what the word actually is *in that verse* (published पदच्छेदः plus standard grammar — BG 18.66 `mām ekaṃ śaraṇaṃ vraja`, Raghuvaṃśa 1.1 `jagataḥ pitarau vande`, …), and `tests/test_morphology_accuracy.py` runs offline against the committed result documents. Measured: **sanskrit_parser offers the published reading for all nine** — as primary or inside `alternates` — while our context-free ranking chooses it for **four** (`pitarau`, `deva`, `navāni`, `avyayam`). The other five (`vande`, `jagataḥ`, `asti`, `vraja`, `śucaḥ`) need the sentence to decide, so each warns with the limit that explains it instead of failing. Two ranking rules were tried and rejected on those numbers: finite-verb readings first changes 20 primaries across the sixteen verses (≈8 right, ≈12 wrong — `navāni` read as √nu, `deva` as an imperative), and preferring kosha-attested stems changes 15 (≈3 right, ≈10 wrong). Neither is a gain, so `_morph_rank` stays as it is and every other reading travels in `alternates`.
+Word readings are measured the same way. `tests/data/morphology_truth.json` records, for fifteen forms from these verses, what the word actually is *in that verse* (published पदच्छेदः plus standard grammar — BG 18.66 `mām ekaṃ śaraṇaṃ vraja`, Raghuvaṃśa 1.1 `jagataḥ pitarau vande`, …), and `tests/test_morphology_accuracy.py` runs offline against the committed result documents. Measured: **sanskrit_parser offers the published reading for all fifteen** — as primary or inside `alternates` — while our ranking chooses it for **ten**. The other five (`vande`, `jagataḥ`, `vraja`, `śucaḥ`, `ahaṃ`) need the sentence to decide, so each warns with the limit that explains it instead of failing. One ranking rule earned its place: a reading whose root vidyut's kosha does not record for that exact form is demoted below one it does record — measured over the sixteen verses, 8 of 273 published primaries move and 6 become what the editions read (`asti`, `hi`, `yathāvidhi`, `prakṛti`, `sanni`, `yāti`), with no curated form lost; membership is exact, never prefix, because the kosha lists short homographs such as `aha` for अहम्. Two neighbours were tried and rejected on those numbers: finite-verb readings first changes 20 primaries (≈8 right, ≈12 wrong — `navāni` read as √nu, `deva` as an imperative), and also preferring the longest attested stem changes 36 and loses a curated form. Every other reading still travels in `alternates`, and `postprocess_analysis.py --no-dictionary` reproduces the pre-rule ordering byte for byte.
 
 Regenerate a golden after an intentional change:
 

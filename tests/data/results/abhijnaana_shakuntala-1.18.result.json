@@ -859,6 +859,19 @@
             "linga": "strīliṅgam",
             "alternates": [
               {
+                "root": "tanvin",
+                "vacana": "eka",
+                "vibhakti": "prathamā",
+                "linga": "puṃlliṅgam"
+              },
+              {
+                "root": "tanvī",
+                "linga": "strīliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              },
+              {
                 "root": "tanu#1",
                 "vacana": "eka",
                 "vibhakti": "prathamā",
@@ -871,20 +884,7 @@
                 "linga": "strīliṅgam"
               },
               {
-                "root": "tanvin",
-                "vacana": "eka",
-                "vibhakti": "prathamā",
-                "linga": "puṃlliṅgam"
-              },
-              {
                 "root": "tanu#1",
-                "tags": [
-                  "samāsapūrvapadanāmapadam"
-                ]
-              },
-              {
-                "root": "tanvī",
-                "linga": "strīliṅgam",
                 "tags": [
                   "samāsapūrvapadanāmapadam"
                 ]
@@ -979,23 +979,23 @@
         "words": [
           {
             "form": "hi",
-            "root": "ha",
-            "vibhakti": "saṃbodhana",
-            "vacana": "eka",
-            "linga": "strīliṅgam",
+            "root": "hi",
+            "tags": [
+              "avyayam"
+            ],
             "alternates": [
-              {
-                "root": "hi",
-                "tags": [
-                  "avyayam"
-                ]
-              },
               {
                 "root": "hi#1",
                 "tags": [
                   "avyayam",
                   "nipātam"
                 ]
+              },
+              {
+                "root": "ha",
+                "vacana": "eka",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
               }
             ]
           }
@@ -1169,15 +1169,15 @@
             "linga": "strīliṅgam",
             "alternates": [
               {
-                "root": "kṛta",
-                "vacana": "bahu",
-                "linga": "strīliṅgam",
-                "vibhakti": "ṣaṣṭhī"
-              },
-              {
                 "root": "kṛti",
                 "vacana": "bahu",
                 "linga": "puṃlliṅgam",
+                "vibhakti": "ṣaṣṭhī"
+              },
+              {
+                "root": "kṛta",
+                "vacana": "bahu",
+                "linga": "strīliṅgam",
                 "vibhakti": "ṣaṣṭhī"
               }
             ]

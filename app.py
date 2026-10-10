@@ -2142,8 +2142,14 @@ def main() -> int:
     raw_file = postprocess_analysis.raw_path(base)
     result_file = postprocess_analysis.result_path(base)
 
+    # Word readings are ranked with the vidyut dictionary in the loop: a reading built on a stem the kosha does
+    # not record for that form loses to one it does record. Measured over the sixteen pinned verses this moves
+    # 8 of 273 published primaries, 6 of them onto the reading the printed editions give (see ACCURACY §6).
+    # It is None when the dictionary data is absent, which keeps the previous ranking.
+    attest = postprocess_analysis.kosha_attest(load_kosha())
+
     try:
-        processed = postprocess_analysis.postprocess(output)
+        processed = postprocess_analysis.postprocess(output, attest)
     except ValueError as exc:
         print(f"Error building the result document: {exc}", file=sys.stderr)
         return 1
@@ -2155,7 +2161,7 @@ def main() -> int:
             enrich_dharmamitra_lemmas(dharmamitra_results)
         except Exception as exc:
             print(f"Warning: Dharmamitra lemma enrichment failed: {exc}", file=sys.stderr)
-        processed = postprocess_analysis.postprocess(output)
+        processed = postprocess_analysis.postprocess(output, attest)
 
     # Dharmamitrā sometimes returns more tokens than the verse has words. They are listed in the result
     # document and named here rather than folded into a pada they do not belong to.

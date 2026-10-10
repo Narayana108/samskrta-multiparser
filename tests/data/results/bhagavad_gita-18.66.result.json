@@ -288,17 +288,11 @@
         "words": [
           {
             "form": "aham",
-            "root": "ahan",
+            "root": "aha",
             "vibhakti": "prathamā",
             "vacana": "eka",
             "linga": "napuṃsakaliṅgam",
             "alternates": [
-              {
-                "root": "aha",
-                "vacana": "eka",
-                "linga": "napuṃsakaliṅgam",
-                "vibhakti": "prathamā"
-              },
               {
                 "root": "asmad",
                 "vacana": "eka",
@@ -316,18 +310,6 @@
                 ]
               },
               {
-                "root": "ahan",
-                "vibhakti": "dvitīyā",
-                "vacana": "eka",
-                "linga": "puṃlliṅgam"
-              },
-              {
-                "root": "ahan",
-                "vibhakti": "dvitīyā",
-                "vacana": "eka",
-                "linga": "napuṃsakaliṅgam"
-              },
-              {
                 "root": "aha",
                 "vibhakti": "dvitīyā",
                 "vacana": "eka",
@@ -338,6 +320,24 @@
                 "tags": [
                   "samāsapūrvapadanāmapadam"
                 ]
+              },
+              {
+                "root": "ahan",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "prathamā"
+              },
+              {
+                "root": "ahan",
+                "vibhakti": "dvitīyā",
+                "vacana": "eka",
+                "linga": "puṃlliṅgam"
+              },
+              {
+                "root": "ahan",
+                "vibhakti": "dvitīyā",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam"
               }
             ]
           }
@@ -626,12 +626,6 @@
                 "linga": "strīliṅgam"
               },
               {
-                "root": "śuca",
-                "vacana": "eka",
-                "vibhakti": "prathamā",
-                "linga": "puṃlliṅgam"
-              },
-              {
                 "root": "śuc#2",
                 "vacana": "bahu",
                 "vibhakti": "prathamā",
@@ -781,6 +775,12 @@
                   "prāthamikaḥ",
                   "āgamābhāvayuktaluṅ"
                 ]
+              },
+              {
+                "root": "śuca",
+                "vacana": "eka",
+                "vibhakti": "prathamā",
+                "linga": "puṃlliṅgam"
               }
             ]
           }

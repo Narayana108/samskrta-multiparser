@@ -311,10 +311,25 @@ def test_golden_pair_exists(stem):
     assert result.is_file() and result.stat().st_size > 0, f"missing golden {result}"
 
 
+
+@pytest.fixture(scope="session")
+def dictionary_attest():
+    """The dictionary lookup the reading documents are ranked with.
+
+    Word readings are ordered with vidyut's kosha in the loop (`postprocess_analysis.kosha_attest`), so a pinned
+    reading document is reproducible only when that data is present; it is a pinned dependency of this repo, so
+    its absence is an error rather than a skip.
+    """
+    helper = postprocess_analysis.kosha_attest(app.load_kosha())
+    if helper is None:
+        pytest.fail("vidyut kosha data (VIDYUT_DATA_DIR) is required to reproduce the pinned readings")
+    return helper
+
+
 @pytest.mark.parametrize("stem", VERSES)
-def test_postprocess_reproduces_the_result_document(stem):
+def test_postprocess_reproduces_the_result_document(stem, dictionary_attest):
     """postprocess(pinned raw) must equal the pinned reading document exactly."""
-    rebuilt = postprocess_analysis.postprocess(load_golden(stem, ".raw.json"))
+    rebuilt = postprocess_analysis.postprocess(load_golden(stem, ".raw.json"), dictionary_attest)
     assert rebuilt == load_golden(stem, ".result.json")
 
 

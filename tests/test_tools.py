@@ -52,10 +52,26 @@ def test_meter_audit_explains_every_null_with_a_measured_reason():
 
 
 def test_morphology_ranks_reproduces_the_grammar_scoreboard():
-    """ACCURACY §2: four primaries correct, the right reading still offered for every other form."""
+    """ACCURACY §2: ten primaries correct, and every remaining miss carries a documented limit."""
     out = run_tool("morphology_ranks.py")
-    assert "equals the reference on 4/9 forms" in out
+    assert "equals the reference on 10/15 forms" in out
     assert "NOT OFFERED" not in out, f"the engine stopped offering a known reading:\n{out}"
+    lines = out.splitlines()
+    wrong = [i for i, line in enumerate(lines) if "❌" in line]
+    assert len(wrong) == 5, out
+    for i in wrong:
+        assert lines[i + 1].startswith("  limit"), f"a wrong primary with no documented reason:\n{lines[i]}"
+
+
+def test_morphology_lab_shows_the_shipped_rule_as_a_no_op_and_keeps_the_rejected_one():
+    """ACCURACY §2/§6: re-scoring the corpus with the rule that shipped must move nothing; the rejected
+    longer-stem variant stays measured so it is not tried again blind."""
+    out = run_tool("morphology_lab.py")
+    assert "corpus: 273 published word readings over 16 verses" in out
+    assert "rule current: curated forms with the right reading published first: 10/15" in out
+    assert "primaries moved: 0 of 273" in out, f"the lab no longer matches what postprocess publishes:\n{out}"
+    assert "rule attested-then-longest-root: curated forms with the right reading published first: 9/15" in out
+    assert "primaries moved: 36 of 273" in out
 
 
 @pytest.mark.skipif(

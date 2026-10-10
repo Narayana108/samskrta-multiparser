@@ -629,11 +629,31 @@
           },
           {
             "form": "yāti",
-            "root": "yāt",
-            "vibhakti": "saptamī",
+            "root": "yā",
             "vacana": "eka",
-            "linga": "strīliṅgam",
+            "tags": [
+              "laṭ",
+              "parasmaipadam",
+              "prathamapuruṣaḥ"
+            ],
             "alternates": [
+              {
+                "root": "yā#1",
+                "vacana": "eka",
+                "tags": [
+                  "kartari",
+                  "laṭ",
+                  "parasmaipadam",
+                  "prathamapuruṣaḥ",
+                  "prāthamikaḥ"
+                ]
+              },
+              {
+                "root": "yāt",
+                "vacana": "eka",
+                "vibhakti": "saptamī",
+                "linga": "strīliṅgam"
+              },
               {
                 "root": "yāt",
                 "vacana": "eka",
@@ -671,26 +691,6 @@
                 "vacana": "eka",
                 "vibhakti": "saṃbodhana",
                 "linga": "strīliṅgam"
-              },
-              {
-                "root": "yā",
-                "vacana": "eka",
-                "tags": [
-                  "laṭ",
-                  "parasmaipadam",
-                  "prathamapuruṣaḥ"
-                ]
-              },
-              {
-                "root": "yā#1",
-                "vacana": "eka",
-                "tags": [
-                  "kartari",
-                  "laṭ",
-                  "parasmaipadam",
-                  "prathamapuruṣaḥ",
-                  "prāthamikaḥ"
-                ]
               }
             ]
           }
