@@ -58,10 +58,10 @@ CURATED_PADAS = [
     "saṃbhṛtārthānāṃ",        # genitive plural compound: saṃbhṛta | arthānām
 ]
 
-# Scored over the whole fixture by the gated test: 103/147 with dictionary-validated ranking (the
-# transparent-compound gate contributes four of them), 92/147 without any dictionary, and a
-# candidate-pool ceiling of 127. The floor keeps two padas of margin because processes rank tied
-# candidates differently — the pool itself was measured to drift by one pada between runs.
+# Scored over the whole fixture by the gated test: **104/147** with dictionary-validated ranking (dictionary
+# attestation as the primary key reaches 99, and the transparent-compound gate carries it past 100), 92/147 without any
+# dictionary, and a candidate-pool ceiling of 127. The floor keeps margin because processes rank tied candidates
+# differently — the pool itself was measured to drift by one pada between runs, historically 99–104.
 MIN_MATCHES = 101
 
 live = pytest.mark.skipif(

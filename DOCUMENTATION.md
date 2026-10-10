@@ -510,11 +510,12 @@ Per-word sandhi splitting has no oracle inside the tool, so one was built outsid
   ten-candidate pool contains one for **127/147** — the ceiling any ranking can reach; it drifts by one pada
   between processes, because `parser.split(limit=10)` enumerates candidates in an unspecified order. Ranking
   by morphology alone reaches **92/147**; dictionary attestation as the primary key reaches 99; full
-  `_best_word_split` with `load_kosha()` reaches **104/147**, four of them thanks to the transparent-compound
-  gate (`_MAX_DEEP_PARTS`, `_MIN_DEEP_PART_LEN`), which changes the pick on nine padas; since 2026-10-10 that gate lets a
-  split through when its scarcest part is *at least as* well attested in vidyut's kosha as the whole pada (`>=`, was `>`),
-  which is worth exactly one pada (`paścārdhena` → `paścā | ardhena`) and nothing else moved on the fixture. The gated test
-  floors the score at 101 so that tie-breaking drift between processes cannot fail it while any real regression does.
+  `_best_word_split` with `load_kosha()` reaches **104/147**. The transparent-compound gate
+  (`_MAX_DEEP_PARTS`, `_MIN_DEEP_PART_LEN`) is what carries it from 99 past 100: without the gate a fused atom beats the
+  compound's members on part count. Since 2026-10-10 that gate lets a split through when its scarcest part is *at least
+  as* well attested in vidyut's kosha as the whole pada (`>=`, was `>`), which is worth exactly one pada (`paścārdhena` →
+  `paścā | ardhena`) and moved nothing else on the fixture. The gated test floors the score at 101 so that tie-breaking
+  drift between processes cannot fail it while any real regression does.
 - **How to re-measure it.** `uv run python tools/sandhi_ceiling.py` prints score, ceiling and fault split from one
   process (~25 s local, no network), which is how the ⚠️ pool-limited / ❌ ranking-limited numbers in ACCURACY §3 are
   obtained rather than inferred. `--pools pools.json` dumps every candidate pool *with the three features our ranking

@@ -30,7 +30,7 @@ Measured **2026-10-10** on `sanskrit-parser 0.2.6`, `vidyut 0.4.0` + bundled `da
 | Metre name (§1) | **5 / 16** named; 11 ⚠️ null | zero ❌: vidyut's data has no jāti/anuṣṭubh rows, and our veto only removes wrong names |
 | Right word reading is offered at all (§2) | **15 / 15** ✅ | never silently dropped — it travels in `alternates` |
 | Right word reading published first (§2) | **10 / 15**; 5 ⚠️/❌ | the five need sentence context, or a homograph the dictionary really does record |
-| Word boundaries, whole corpus (§3) | **103 / 147** | ⚠️ 20 padas: the right cut is not in the candidate pool at all; ❌ 24 padas: a correct candidate existed and our ranking did not pick it |
+| Word boundaries, whole corpus (§3) | **104 / 147** | ⚠️ 20 padas: the right cut is not in the candidate pool at all; ❌ 23 padas: a correct candidate existed and our ranking did not pick it |
 
 ## 1. Metre — shape verified on every verse, names limited by vidyut's data
 
