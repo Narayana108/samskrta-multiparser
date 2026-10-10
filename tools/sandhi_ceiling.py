@@ -124,7 +124,11 @@ def main() -> None:
         elif not ok_picked:
             ranking_limited.append((pada, got, row["parts"]))
 
-    print(f"picked {picked_ok}/{len(rows)}   ceiling {ceiling_ok}/{len(rows)}")
+    if args.reuse:
+        # cached pools hold candidates only; our own ranking needs the splitter, so it is not scored here
+        print(f"picked n/a (cached pools carry candidates only)   ceiling {ceiling_ok}/{len(rows)}")
+    else:
+        print(f"picked {picked_ok}/{len(rows)}   ceiling {ceiling_ok}/{len(rows)}")
     print(f"pool-limited (no reference-consistent candidate in the pool): {len(pool_limited)}")
     if not args.reuse:
         room = ceiling_ok - picked_ok

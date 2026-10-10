@@ -78,13 +78,23 @@ def test_morphology_lab_shows_the_shipped_rule_as_a_no_op_and_keeps_the_rejected
     os.environ.get("SAMSKRTA_LIVE_GOLDEN") != "1",
     reason="set SAMSKRTA_LIVE_GOLDEN=1 to run the ~25 s ceiling measurement over all curated padas",
 )
-def test_sandhi_ceiling_splits_the_misses_by_fault():
+def test_sandhi_ceiling_splits_the_misses_by_fault(tmp_path):
     """ACCURACY §3: score, pool ceiling and the ⚠️/❌ split come from one process."""
     out = run_tool("sandhi_ceiling.py", "--examples", "0")
     figures = dict(re.findall(r"(picked|ceiling) (\d+)/147", out))
     assert int(figures["picked"]) >= 99, out          # the same floor as the gated corpus score
     assert int(figures["ceiling"]) >= 125, out        # the pool ceiling drifts by one pada per process
     assert "pool-limited" in out and "ranking-limited" in out, out
+
+    # The cached-pool path is how a ranking idea gets measured against an identical search space: dump the
+    # pools once, then re-score the ceiling from them without calling the splitter again.
+    pools = tmp_path / "pools.json"
+    dumped = run_tool("sandhi_ceiling.py", "--examples", "0", "--pools", str(pools))
+    assert pools.exists() and "candidate pools" in dumped, dumped
+    reused = run_tool("sandhi_ceiling.py", "--examples", "0", "--reuse", str(pools))
+    cached = int(re.search(r"ceiling (\d+)/147", reused).group(1))
+    assert abs(cached - int(figures["ceiling"])) <= 1, reused
+    assert "picked n/a" in reused, f"--reuse must not pretend to score our ranking:\n{reused}"
 
 
 if __name__ == "__main__":
