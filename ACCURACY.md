@@ -144,8 +144,10 @@ sanskrit_parser writes final visarga as `s`, anusvara as `m`.
 | Same code, different processes on the same day | 99–103 / 147 | `parser.split(limit=10)` enumerates in unspecified order → ±4 drift; the gated floor `MIN_MATCHES = 101` absorbs it and still catches real regressions |
 | Ranking by morphology only (the old behaviour) | 92 / 147 | why dictionary attestation is our primary key: +11 from using the kosha |
 
-The four corpus numbers above were measured **in a single process** on 2026-10-10 (`picked 103/147`, `ceiling 127/147`),
-so the 20 / 24 split is a measurement and not arithmetic across runs. The two kinds of miss look completely different:
+`tools/sandhi_ceiling.py` prints all of this from **one process**, so the miss split is a measurement and not
+arithmetic across runs. Two runs on 2026-10-10 gave `picked 103/147` both times with ceiling **127** (⚠️ 20 pool /
+❌ 24 ranking) and **128** (⚠️ 19 / ❌ 25): the candidate pool itself drifts by one pada because
+`parser.split(limit=10)` enumerates in unspecified order. The two kinds of miss look completely different:
 
 | Kind | Example pada | Source of truth | What came out | Verdict |
 |---|---|---|---|---|
@@ -179,7 +181,16 @@ so the 20 / 24 split is a measurement and not arithmetic across runs. The two ki
 uv run pytest -q tests/test_meter_accuracy.py        # offline: truth vs best effort, all 16 verses
 uv run pytest -q tests/test_morphology_accuracy.py   # offline: 9/9 offered, 4/9 chosen first
 SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_sandhi_accuracy.py   # ~50 s live; prints every missed pada
+uv run python tools/meter_audit.py                 # offline: rebuilds §1, with the reason for every null
+uv run python tools/morphology_ranks.py            # offline: rebuilds §2, incl. the rank of the right reading
+uv run python tools/sandhi_ceiling.py              # ~25 s local (no network): §3 score + ceiling + fault split
 ```
+
+Those three tools are how every table in this file was produced. They read only committed artefacts — the sandhi tool
+also calls the splitter itself — and import the same scoring helpers as the tests, so any figure here can be
+regenerated instead of re-derived by hand; `tools/sandhi_ceiling.py --pools pools.json` caches the candidate pools and
+`--reuse pools.json` scores from them, which is how a ranking idea gets measured against an identical search space in
+seconds rather than 25 s per variant (DOCUMENTATION.md §9).
 
 `test_meter_accuracy.py` passes with **11 warnings** (one per verse vidyut cannot name) and
 `test_morphology_accuracy.py` with **5 warnings** (`vande`, `jagatas`, `asti`, `vraja`, `śucaḥ`). Those warnings *are*

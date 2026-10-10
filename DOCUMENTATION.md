@@ -301,6 +301,14 @@ uv run pytest -q                        # offline suite
   curated padas run offline (kosha + sanskrit_parser, ~5 s); the corpus-wide score over all 147 rows
   needs both engines and runs under the same `SAMSKRTA_LIVE_GOLDEN=1` switch (~25 s). It is the test to
   consult before touching `_best_word_split`, `_is_standalone_word` or `load_kosha`.
+- **Measurement tools live in `tools/`, not in `/tmp`.** Anything used to produce or re-check a figure in
+  [ACCURACY.md](ACCURACY.md) is committed so the same probe never has to be written twice:
+  `tools/meter_audit.py` (offline rebuild of ACCURACY §1, printing the measured reason for every unnamed verse),
+  `tools/morphology_ranks.py` (offline rebuild of §2, including the rank at which the right reading survives among
+  the alternates) and `tools/sandhi_ceiling.py` (~25 s local: score, pool ceiling and the ⚠️/❌ fault split). They
+  share `tools/_env.py`, which pins `VIDYUT_DATA_DIR` and the import path exactly like `tests/conftest.py`, and they
+  import the accuracy tests' scoring helpers instead of copying them, so a tool can never report something the suite
+  would disagree with.
 - Output naming: `-o BASE` writes `BASE.raw.json` and `BASE.result.json`; with no `-o`
   the base is `results/<input stem>` (`results/shloka` / `results/pada` for stdin
   input). Parent directories are created on demand, and a trailing `.json`, `.raw` or
@@ -501,6 +509,11 @@ Per-word sandhi splitting has no oracle inside the tool, so one was built outsid
   `_best_word_split` with `load_kosha()` reaches **103/147**, four of them thanks to the transparent-compound
   gate (`_MAX_DEEP_PARTS`, `_MIN_DEEP_PART_LEN`), which changes the pick on nine padas. The gated test floors
   the score at 101 so that tie-breaking drift between processes cannot fail it while any real regression does.
+- **How to re-measure it.** `uv run python tools/sandhi_ceiling.py` prints score, ceiling and fault split from one
+  process (~25 s local, no network), which is how the ⚠️ pool-limited / ❌ ranking-limited numbers in ACCURACY §3 are
+  obtained rather than inferred. `--pools pools.json` dumps every candidate pool; `--reuse pools.json` then scores a
+  proposed ranking against those identical pools in seconds — that is how the rules below were rejected without
+  re-splitting all 147 padas for each variant.
 - **Rankings that were tried and lost** (the figures in this bullet and the next are from the earlier 64-row
   fixture; they are kept because the rejected rules must not be re-tried blind). Reconstructability under
   `Sandhi.join` as a primary key: 39/64. Summed kosha frequency of the parts: 10-22/64. "Prefer more parts
