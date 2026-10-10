@@ -14,6 +14,7 @@ Unified multi-engine Sanskrit analyzer. Runs three independent engines — [sans
 | [`vidyut`](https://pypi.org/project/vidyut/) | **0.4.0**, with the matching [`data-0.4.0`](https://github.com/ambuda-org/vidyut) dataset bundled in this repo | kosha dictionary, dhatu/pratipadika prakriya, chandas (meter), lipi transliteration |
 | [`indic-transliteration`](https://pypi.org/project/indic-transliteration/) | **2.3.82** | SLP1 ↔ IAST ↔ Devanagari conversion |
 | `requests` | `>=2.34.2` | the Dharmamitra HTTP call (no package — remote API) |
+| [`gensim`](https://pypi.org/project/gensim/) + [`sentencepiece`](https://pypi.org/project/sentencepiece/) | **4.4.0** / **0.2.2**, on the `feature/engine-accuracy-tuning` branch only | sanskrit_parser's optional lexical scorer for sandhi candidates; measured in [DOCUMENTATION.md §12.1](DOCUMENTATION.md), deliberately not merged into master |
 
 Only `vidyut>=0.4.0` and `requests>=2.34.2` are pinned in `pyproject.toml`; `sanskrit-parser` and `indic-transliteration` float, so a fresh `uv sync` can resolve newer builds. That matters because the postprocessor matches upstream tag spellings — see [DOCUMENTATION.md §8 item 3](DOCUMENTATION.md).
 

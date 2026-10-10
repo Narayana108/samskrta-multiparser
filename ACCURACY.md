@@ -153,3 +153,6 @@ SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_sandhi_accuracy.py   # ~50 s 
 with **5 warnings** (`vande`, `jagatas`, `asti`, `vraja`, `śucaḥ`). Those warnings are the point of the tests: an engine
 limit is reported, never hidden. See [DOCUMENTATION.md](DOCUMENTATION.md) §9 (splitting), §10 (metre) and §11 (word
 readings) for how each fixture was built and which further rules were ruled out.
+
+The numbers above are **master**. The optional sanskrit_parser lexical scorer (gensim + sentencepiece) and the
+per-field engine-authority measurements live on the branch `feature/engine-accuracy-tuning` — DOCUMENTATION.md §12.

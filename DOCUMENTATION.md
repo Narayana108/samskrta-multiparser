@@ -324,9 +324,10 @@ uv run pytest -q                        # offline suite
   `sanskrit_parser/util/sanskrit_data_wrapper.py:88`). All three are sanskrit_parser/sanskrit_util code
   running against SQLAlchemy 2.0; pinning `sqlalchemy==1.4.54` leaves the same two classes in place, so no
   dependency version removes them. The library also states on stderr that lexical scoring is disabled because
-  gensim/sentencepiece are absent — deliberately: installing both satisfies that notice but measurably
-  *worsens* the output (raghuvamsha-1.1's reading became `vāgarthās | viva`, raghuvamsha-1.5 lost the analysis
-  for its longest fused pada, and each run slowed by ~1.4 s). Fix what is ours to fix; report the rest.
+  gensim/sentencepiece are absent. That notice was satisfied and measured on the branch
+  `feature/engine-accuracy-tuning` (§12.1): installing both changes no aggregate score, regresses one curated
+  pada, and moves every golden — so it stays unmerged here rather than being silenced. Fix what is ours to fix;
+  report the rest.
 
 ## 8. Known issues and maintenance notes
 
@@ -615,3 +616,47 @@ ranking loses one of the four it currently gets right — that is the regression
 - **Dharmamitrā is not used as the reference.** It resolves several of these forms correctly (`vande → vand`) but
   invents real errors elsewhere (`jagantaḥ`, `sūnantāḥ` type noise — §8), so pinning against it would move the goal
   post whenever the remote changes. Its reading stays beside ours in `padaccheda.dharmamitra` for a human to weigh.
+
+## 12. Branch experiment: lexical scoring, and which engine owns which field
+
+Measured on `feature/engine-accuracy-tuning` on 2026-10-10. Master is untouched, so the two branches can be diffed directly.
+
+### 12.1 Installing sanskrit_parser's lexical scorer
+
+`uv add gensim sentencepiece` installs `gensim==4.4.0` and `sentencepiece==0.2.2` (pulling `scipy==1.18.1`,
+`smart-open==8.0.2`, `wrapt==2.5.0`). The models the scorer needs — `sentencepiece.model` (376 KB) and
+`word2vec_model.dat` (7.5 MB) — ship inside the sanskrit_parser wheel under `sanskrit_parser/data/`, so nothing is
+downloaded at run time; `lexical_scorer.gensim_enabled` becomes `True`. Measured effects:
+
+- Aggregate split score unchanged: **103/147** in three consecutive processes (master the same day gave 99, 100 and
+  103 — the drift is documented in §9), with no curated-pada failure in the live corpus run.
+- The stderr notice disappears, as expected.
+- One curated pada regresses deterministically offline: `saṅgo'stvakarmaṇi` now yields
+  `saṅga | ūs | tva | karmaṇi` instead of `saṅgas | astu | akarmaṇi`. The word2vec score re-orders sanskrit_parser's
+  candidate pool, so a junk path enters our top ten and the kosha count no longer sees the right one first:
+  `tests/test_sandhi_accuracy.py::test_curated_pada_is_split_like_a_reader[saṅgo'stvakarmaṇi]` fails (1 failed,
+  12 passed).
+- raghuvamsha-1.1 moves from the committed golden's `vāgartha | āviva` to `vāgarthās | viva`. Neither is the published
+  cut (`vāk arthau iva`), but every affected golden would have to be regenerated before this could merge.
+- **Decision: not merged.** No aggregate gain, one curated regression, goldens move. Kept here as a measured
+  comparison point; re-run §9's harness and ACCURACY.md's numbers before revisiting.
+
+Reproducing either state (verified 2026-10-10): the scorer lives in `.venv`, not in the checkout, so switching
+branches does **not** change it by itself — run `uv sync` after each checkout. On master that prunes
+gensim/sentencepiece and `uv run pytest -q` gives 423 passed; on this branch it reinstalls them
+(`lexical_scorer.gensim_enabled == True`) and the offline suite shows the one curated failure above.
+
+### 12.2 Which engine is more accurate for each field (the nine pinned forms)
+
+| Field | Authority on this evidence | Measurement |
+|---|---|---|
+| Dictionary / stem (what a form can come from) | **vidyut kosha** | the kosha contains the reference stem for **9/9** pinned forms; sanskrit_parser's published primary root is right for **6/9** once its homonym markers (`nava#1`, `avyaya#1`, `śuc#2`) are stripped, and invents nominal stems for the other three: `vandā` (for √vand), `asta` (for √as), `vraja` (for √vraj) |
+| Case / number / gender | neither — both enumerate | kosha entries per surface form are unranked enumerations: `śucas` 86, `vande` 78, `deva` 50, `jagatas` 36, `asti` 35, `navāni` 16, `avyayam` 11, `vraja` 9, `pitarau` 3 (about 33 duplicate rows per form); sanskrit_parser's own counts are in §11 |
+| Finite-verb grammar (lakāra, puruṣa) | **sanskrit_parser only** | kosha krdanta entries carry `lakara=None` and no puruṣa at all, so the kosha cannot express "laṭ uttamapuruṣaḥ"; 6/9 forms have any finite entry there at all |
+
+So the split of duties we already run is the one the data supports: `_kosha_exact` and the kosha entry counts decide
+*word boundaries and stems* from vidyut, while the published `root / vibhakti / vacana / linga / tags` come from
+sanskrit_parser because nothing else emits them. One candidate rule follows directly and has **not** been shipped:
+demote a sanskrit_parser reading whose `root` is absent from the kosha lemma set for that surface form, which would
+fix `vandā`, `asta` and `vraja`. §11 already shows a neighbouring rule (prefer exactly-attested stems) loses 10 forms
+to gain 3, so score it with §9's harness across all sixteen verses first.
