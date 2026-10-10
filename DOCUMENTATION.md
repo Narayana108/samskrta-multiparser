@@ -256,6 +256,14 @@ anuṣṭubh/śloka entry**, so a classical śloka's pādas match lookalikes ins
 real shape in `aksharas_per_pada: [8, 8, 8, 8]`. Do not "fix" the null by promoting a
 candidate; vidyut's data simply does not know the śloka vṛtta.
 
+The gap is upstream, verified against vidyut's own repository on 2026-10-10: `grep -rin "anuSTub|triSTub|jAgatI|upajAti"` over its
+Rust sources, Python bindings and every data file yields **no metre hit at all** (the only matches are unrelated Pāṇinian rows —
+`vidyut-prakriya/src/ganapatha.rs:2226 "jagatI"` is a stem in the gaṇapāṭha, `sutrapatha.tsv:1864` a sūtra). Jātis are not data
+there at all: seven are hard-coded in `vidyut-chandas/src/chandas.rs:98-121` (`vEtAlIyam, upagIti, AryAgIti, gIti, udgIti,
+Aupacchandasikam, AryA`) and `Jati::try_match` compares akshara counts only. So anuṣṭubh cannot be produced by any input; closing it
+means adding rows to `meters.tsv` (or those four jātis in Rust) upstream, or shipping a metre table here. The per-verse comparison and
+both options are written up in [ACCURACY.md](ACCURACY.md) §1.
+
 The catalogue does know the longer classical pādas the corpus now carries. Four eleven-akshara
 pādas classify as `indravajrā`/`indravaṃśā` (Bhagavad Gītā 2.22, 11.15, 15.5 and 15.15 — the jagatī
 family; 2.22 also matches `upendravajrā`/`vaṃśastha`), a fifteen-akshara pāda as `malinī` (Abhijñānaśākuntala
@@ -401,6 +409,9 @@ Ordered by how likely they are to bite:
     (c) The bundled table carries yatis (`|`) that `VrttaPada::try_match` parses and then never uses,
     has no anuṣṭubh/triṣṭubh row and no jāti rows at all. Treat `weight_pattern` as vidyut's scan of
     the text, not as a scansion of the verse.
+    The missing rows were confirmed on 2026-10-10 by grepping vidyut's whole repository for `anuSTub`/`triSTub`/`jAgatI`/`upajAti`: no metre
+    match exists, and the only jātis implemented are the seven hard-coded in `chandas.rs:98-121`. vidyut's *scanner* is fine — it reports
+    `[8, 8, 8, 8]` for every anuṣṭubh pāda in this corpus; only the name is unavailable. See §6 and [ACCURACY.md](ACCURACY.md) §1.
     (d) Its names are not the editions' names. The Gītā verses printed on sanskritsahitya.org carry
     अनुष्टुप् [८] for 2.47 and उपजातिः [११] for 2.22 and 11.15, while vidyut reports `candralekhā` /
     `vasumatī` for the first and only the `indravajrā` / `vaṃśastha` / `upendravajrā` family for the
@@ -532,6 +543,15 @@ Per-word sandhi splitting has no oracle inside the tool, so one was built outsid
   sanskrit_parser's candidate pool for only 11 of the 60 padas it answers there, and it agrees with that
   reference on just **22/64** itself — over the seven newer verses its agreement is high by construction, which
   is precisely why those rows cannot be used to argue for ranking toward it.
+- **Three further candidates, measured and rejected on 2026-10-10** (each scored over one cached candidate pool, so the deltas are
+  ranking-only). Relaxing the deep-split gate — a deeper split may beat a shorter *fully attested* one — scores 99 → **100/147**: it gains
+  `darbhairardhāvalīḍhaiḥ` and `devāṃstava`, loses `pārvatīparameśvarau`, so +1 inside the noise band for a compound this tool already reads
+  correctly. Preferring splits that contain whole indeclinables (`iva`, `api`, …) collapses to **46/147** at limit 10 and **37/147** at limit
+  20: more parts means more chances for a fragment to carry the `avyayam` tag, so `haviryā → ha | vi | ryā` and `saṃpṛktau → sam | pṛktau`,
+  breaking ten of the thirteen curated padas. Raising the pool from `parser.split(word, limit=10)` to `limit=20` (6.7 → 11.2 candidates per
+  pada) leaves the score at **99/147** — no gain for roughly twice the splitting time; the ceiling stays where §9 put it because the extra
+  candidates are more junk, not the missing reading. The same code scored 99, 100 and 103 in three separate processes that day, so read any
+  single run as ±4 padas: `MIN_MATCHES = 101` comes from that spread, not from the best number ever seen.
 - **Re-measuring.** `SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_sandhi_accuracy.py` prints
   every missed pada by name on failure. Rule changes can be re-scored in seconds by generating each
   pada's candidate pool once and re-running the ranking over it; the pool, not the ranking, is the
@@ -565,6 +585,8 @@ verses, and emits a warning naming the engine and its documented limit wherever 
   upasthita — or classifies nothing. Those eleven verses are pinned as `vrtta: null` on purpose; a vidyut that
   learns jāti metres will fail the pin and force a re-measure. Naming them means shipping our own metre table
   (anuṣṭubh pathya plus the triṣṭubh/upajāti variants), which is separate work, not a patch to this summary.
+  The evidence for those missing rows — vidyut's repository contains no anuṣṭubh string anywhere, its table holds 145 vṛtta rows and zero
+  jāti rows, and only seven jātis are compiled into `chandas.rs` — is tabulated verse by verse in [ACCURACY.md](ACCURACY.md) §1.
 - **Spellings come from vidyut.** Metre names in the output are vidyut's own SLP1 → IAST rendering, which writes
   मालिनी as `malinī`; `meter_truth.json` records that spelling next to the published one rather than us editing
   engine text after the fact.

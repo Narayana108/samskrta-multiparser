@@ -4,6 +4,19 @@
 
 Unified multi-engine Sanskrit analyzer. Runs three independent engines — [sanskrit_parser](https://github.com/kmadathil/sanskrit_parser), [Dharmamitra](https://dharmamitra.org) and [vidyut](https://github.com/ambuda-org/vidyut) — on the same input (Devanagari, or any romanization vidyut's lipi can detect: IAST, SLP1, Harvard-Kyoto, ITRANS) and writes a pair of JSON documents under one base name: `<base>.raw.json`, holding everything each engine produced, and `<base>.result.json`, the condensed word-by-word reading.
 
+**Further reading:** [DOCUMENTATION.md](DOCUMENTATION.md) — architecture, the library quirks that shaped the code, and maintenance notes · [ACCURACY.md](ACCURACY.md) — every measured accuracy figure (metre names, word readings, word boundaries) against published sources.
+
+### Engine versions this project runs on
+
+| Package | Version (`uv.lock` today) | What it provides |
+|---|---|---|
+| [`sanskrit-parser`](https://pypi.org/project/sanskrit-parser/) | **0.2.6** | sandhi splitting, per-pada morphological tags (pulls in `sqlalchemy` 2.0.52) |
+| [`vidyut`](https://pypi.org/project/vidyut/) | **0.4.0**, with the matching [`data-0.4.0`](https://github.com/ambuda-org/vidyut) dataset bundled in this repo | kosha dictionary, dhatu/pratipadika prakriya, chandas (meter), lipi transliteration |
+| [`indic-transliteration`](https://pypi.org/project/indic-transliteration/) | **2.3.82** | SLP1 ↔ IAST ↔ Devanagari conversion |
+| `requests` | `>=2.34.2` | the Dharmamitra HTTP call (no package — remote API) |
+
+Only `vidyut>=0.4.0` and `requests>=2.34.2` are pinned in `pyproject.toml`; `sanskrit-parser` and `indic-transliteration` float, so a fresh `uv sync` can resolve newer builds. That matters because the postprocessor matches upstream tag spellings — see [DOCUMENTATION.md §8 item 3](DOCUMENTATION.md).
+
 ## Overview
 
 This tool analyzes Sanskrit text (single words or full shloka lines) through three parallel engines, each producing raw structured output without merging or filtering. The engines are:
