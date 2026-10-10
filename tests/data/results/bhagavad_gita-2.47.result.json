@@ -5,7 +5,7 @@
   },
   "padaccheda": {
     "dharmamitra": "karmaṇi | eva | adhikāraḥ | te | mā | phaleṣu | kadācana | mā | karma | phala | hetuḥ | bhūḥ | mā | te | saṅgaḥ | astu | akarmaṇi",
-    "sanskrit_parser": "karmaṇi | eva | adhikāras | te | mā | phaleṣu | kadā | cana | mā | karmaphalahetus | bhūs | mā | te | saṅgas | astu | akarmaṇi"
+    "sanskrit_parser": "karmaṇye | ava | adhikāras | te | mā | phaleṣu | kadā | cana | mā | karmaphalahetus | bhūs | mā | te | saṅgas | astu | akarmaṇi"
   },
   "padas": [
     {
@@ -53,96 +53,126 @@
       },
       "sanskrit_parser": {
         "padaccheda": [
-          "karmaṇi",
-          "eva",
+          "karmaṇye",
+          "ava",
           "adhikāras",
           "te"
         ],
         "words": [
           {
-            "form": "karmaṇi",
-            "root": "karmaṇi",
+            "form": "karmaṇye",
+            "root": "karmaṇyā",
             "vibhakti": "prathamā",
-            "vacana": "eka",
-            "linga": "napuṃsakaliṅgam",
+            "vacana": "dvi",
+            "linga": "strīliṅgam",
             "alternates": [
               {
-                "root": "karmaṇi",
+                "root": "karmaṇya",
+                "vacana": "dvi",
+                "vibhakti": "prathamā",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "karmaṇya",
+                "vacana": "dvi",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "prathamā"
+              },
+              {
+                "root": "karmaṇyā",
                 "vibhakti": "dvitīyā",
-                "vacana": "eka",
+                "vacana": "dvi",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "karmaṇya",
+                "vibhakti": "dvitīyā",
+                "vacana": "dvi",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "karmaṇya",
+                "vibhakti": "dvitīyā",
+                "vacana": "dvi",
                 "linga": "napuṃsakaliṅgam"
               },
               {
-                "root": "karman",
+                "root": "karmaṇya",
                 "vacana": "eka",
                 "linga": "puṃlliṅgam",
                 "vibhakti": "saptamī"
               },
               {
-                "root": "karman",
+                "root": "karmaṇya",
                 "vacana": "eka",
                 "linga": "napuṃsakaliṅgam",
                 "vibhakti": "saptamī"
               },
               {
-                "root": "karmaṇi",
+                "root": "karmaṇyā",
                 "vacana": "eka",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "karmaṇyā",
+                "vacana": "dvi",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "karmaṇya",
+                "vacana": "eka",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "karmaṇya",
+                "vacana": "dvi",
+                "vibhakti": "saṃbodhana",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "karmaṇya",
+                "vacana": "dvi",
                 "linga": "napuṃsakaliṅgam",
                 "vibhakti": "saṃbodhana"
-              },
-              {
-                "root": "karmaṇi",
-                "linga": "strīliṅgam",
-                "tags": [
-                  "samāsapūrvapadanāmapadam"
-                ]
-              },
-              {
-                "root": "karmaṇi",
-                "linga": "puṃlliṅgam",
-                "tags": [
-                  "samāsapūrvapadanāmapadam"
-                ]
-              },
-              {
-                "root": "karmaṇi",
-                "linga": "napuṃsakaliṅgam",
-                "tags": [
-                  "samāsapūrvapadanāmapadam"
-                ]
               }
             ]
           },
           {
-            "form": "eva",
-            "root": "eva",
+            "form": "ava",
+            "root": "ava",
             "vibhakti": "saṃbodhana",
             "vacana": "eka",
             "linga": "puṃlliṅgam",
             "alternates": [
               {
-                "root": "eva",
+                "root": "av",
                 "vacana": "eka",
-                "linga": "napuṃsakaliṅgam",
-                "vibhakti": "saṃbodhana"
-              },
-              {
-                "root": "eva",
                 "tags": [
-                  "avyayam",
-                  "karmapravacanīyaḥ"
+                  "kartari",
+                  "loṭ",
+                  "madhyamapuruṣaḥ",
+                  "parasmaipadam",
+                  "prāthamikaḥ"
                 ]
               },
               {
-                "root": "eva",
+                "root": "ava",
+                "tags": [
+                  "avyayam"
+                ]
+              },
+              {
+                "root": "ava",
+                "tags": [
+                  "upasargaḥ"
+                ]
+              },
+              {
+                "root": "ava",
                 "linga": "puṃlliṅgam",
-                "tags": [
-                  "samāsapūrvapadanāmapadam"
-                ]
-              },
-              {
-                "root": "eva",
-                "linga": "napuṃsakaliṅgam",
                 "tags": [
                   "samāsapūrvapadanāmapadam"
                 ]
@@ -280,9 +310,13 @@
       "differences": [
         {
           "sanskrit_parser": [
+            "karmaṇye",
+            "ava",
             "adhikāras"
           ],
           "dharmamitra": [
+            "karmaṇi",
+            "eva",
             "adhikāraḥ"
           ]
         }

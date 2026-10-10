@@ -139,7 +139,7 @@ the analysis falls back to the previous order instead of failing.
 | Demote roots absent from the vidyut kosha lemma set for that form (**exact** membership only) | 8 primaries move of 273; 6 curated forms fixed, none lost | ✅ **applied** — see §2.1 |
 | …and prefer the longer attested lemma stem among the recorded ones | 9/15 curated, 36 primaries move | ❌ rejected — four times the blast radius of the rule above for one less correct form; it also cannot fix `aham`, where the short homograph is the recorded word |
 
-## 3. Word boundaries (sandhi) — 103 of 147 padas correct; the ceiling is 127
+## 3. Word boundaries (sandhi) — 104 of 147 padas correct; the ceiling is 127
 
 The thirteen curated padas below are the hard cases the ranking exists to fix; they run offline in ~5 s and all match
 today, so any regression fails the suite:
@@ -167,15 +167,15 @@ sanskrit_parser writes final visarga as `s`, anusvara as `m`.
 
 | Measure | Score | Read this as |
 |---|---|---|
-| Current ranking, run of 2026-10-10 | **103 / 147 correct** ✅ | what the tool picks today; 44 padas wrong ❌ below |
-| …of those 44 misses: no reference-consistent split exists anywhere in sanskrit_parser's candidate pool | **20 padas** ⚠️ | engine limit — the ceiling of *any* ranking is **127/147**; fixing these needs upstream splitting, not our ordering |
-| …of those 44 misses: a correct candidate was in the pool and we ranked something else first | **24 padas** ❌ | our error; this is where future ranking work has room (max +24) |
-| Same code, different processes on the same day | 99–103 / 147 | `parser.split(limit=10)` enumerates in unspecified order → ±4 drift; the gated floor `MIN_MATCHES = 101` absorbs it and still catches real regressions |
+| Current ranking, runs of 2026-10-10 | **104 / 147 correct** ✅ | what the tool picks today; 43 padas wrong ❌ below |
+| …of those 43 misses: no reference-consistent split exists anywhere in sanskrit_parser's candidate pool | **20 padas** ⚠️ | engine limit — the ceiling of *any* ranking is **127/147**; fixing these needs upstream splitting, not our ordering |
+| …of those 43 misses: a correct candidate was in the pool and we ranked something else first | **23 padas** ❌ | our error; this is where future ranking work has room (max +23) |
+| Same code, different processes on the same day | 99–104 / 147 | `parser.split(limit=10)` enumerates in unspecified order → ±4 drift; the gated floor `MIN_MATCHES = 101` absorbs it and still catches real regressions |
 | Ranking by morphology only (the old behaviour) | 92 / 147 | why dictionary attestation is our primary key: +11 from using the kosha |
 
 `tools/sandhi_ceiling.py` prints all of this from **one process**, so the miss split is a measurement and not
-arithmetic across runs. Two runs on 2026-10-10 gave `picked 103/147` both times with ceiling **127** (⚠️ 20 pool /
-❌ 24 ranking) and **128** (⚠️ 19 / ❌ 25): the candidate pool itself drifts by one pada because
+arithmetic across runs. Two runs on 2026-10-10 after the gate clause below landed gave `picked 104/147` both times, with
+ceiling **127** (⚠️ 20 pool / ❌ 23 ranking) and **128** (⚠️ 19 / ❌ 24): the candidate pool itself drifts by one pada because
 `parser.split(limit=10)` enumerates in unspecified order. The two kinds of miss look completely different:
 
 | Kind | Example pada | Source of truth | What came out | Verdict |
@@ -185,13 +185,22 @@ arithmetic across runs. Two runs on 2026-10-10 gave `picked 103/147` both times 
 | ⚠️ pool-limited — needs better upstream splitting | `yathāvidhihutāgnīnāṃ` | yathā \| vidhi \| huta \| agnīnām | best of ten: `yathāvidhi \| hutāgnīnām`, `yathā \| avidhi \| hutāgnīnām` — nothing at any depth matches the edition | engine limit |
 | ⚠️ pool-limited (long fused pāda) | `so'hamājanmaśuddhānāmāphalodayakarmaṇām` | saḥ \| aham \| ājanma \| śuddhānām \| āphala \| udaya \| karmaṇām | every candidate leaves `āphalodayakarmaṇām` fused into one word | engine limit |
 
-### Split-ranking changes measured and rejected on 2026-10-10 (ranking-only deltas, identical cached pools)
+### Split-ranking changes measured on 2026-10-10 (ranking-only deltas over identical cached pools, `tools/sandhi_lab.py`)
 
-| Change | Measured score (baseline `current` = 99 in that process) | New curated-pada failures | Verdict |
+Every row re-ranks the same dumped candidate pools through `app._rank_with_kosha`, so a rule is judged on exactly what
+the app would publish; the shipped baseline in that process was **104/147** (before it, 103).
+
+| Change | Measured score | New curated-pada failures | Verdict |
 |---|---|---|---|
-| Deep-split gate fix (a deeper split may beat a *shorter* one only if it beats the shortest fully attested one) | 100 (+`darbhairardhāvalīḍhaiḥ`, +`devāṃstava`, −`pārvatīparameśvarau`) | none in the corpus, but it breaks a compound read correctly today | ❌ rejected — +1 inside ±4 noise |
+| Gate accepts an attestation **tie**: a transparent-compound split may beat the whole pada when its scarcest part is *at least as* attested (`>=` where it demanded strictly better) | 104 (+`paścārdhena` → `paścā \| ardhena`) | none in the fixture; on published goldens it also cuts BG 11.15's `kamalāsanastham` at the wrong joint (`kamalā \| āsanastham`, still a miss either way) | ✅ **shipped** — +1, no counted regression; needed a live regeneration of all 16 goldens |
+| Gate part-length floor `_MIN_DEEP_PART_LEN` 5 → 3 | 84 (−20) | `satyāya`→`satī \| āya`, `prajāyai`→`prajās \| yai`, `navāni`→`nava \| āni`, `saṃpṛktau`→`sam \| pṛktau` | ❌ rejected — the floor exists to stop exactly these sandhi fragments |
+| Gate part ceiling `_MAX_DEEP_PARTS` 3 → 4 | 105 (+`śramavivṛtamukhabhraṃśibhiḥ`) | none measured | ⏸ not shipped — one pada of evidence, unmeasured blast radius on words the fixture does not cover, and another live regeneration |
+| Drop the whole-word comparison entirely (gate fires even when the pada itself is attested) | 105 (+`prāṃśulabhye`, +`yathāparādhadaṇḍānāṃ`, +`vinivṛttakāmāḥ`) | `mokṣayiṣyāmi`→`mokṣe \| iṣyāmi`, `madhurāṇāṃ`→`madhu \| rāṇām` | ❌ rejected — it removes the invariant this section documents: a finite verb the dictionary knows stays whole |
+| Compare scarcest-part attestation before part count | 68 (−36) | `saṃpṛktau`→`sam \| pṛktau`, `pitarau`→`pi \| tarau`, `sāgaram`→`sās \| garam` | ❌ rejected — common fragments then outrank real readings |
+| Deep-split gate fix (a deeper split may beat a *shorter* one only if it beats the shortest fully attested one) | 100 (+`darbhairardhāvalīḍhaiḥ`, +`devāṃstava`, −`pārvatīparameśvarau`) in a process whose baseline was 99 | breaks a compound read correctly today | ❌ rejected — inside the ±4 drift |
 | Prefer splits containing whole indeclinables (`iva`, `api`, …) above the part-count key | 46/147 (limit 10), 37/147 (limit 20) | **10 of 13** curated padas, e.g. `haviryā`→`ha \| vi \| ryā`, `saṃpṛktau`→`sam \| pṛktau` | ❌ rejected — catastrophic: more parts means more chances to contain an avyaya fragment |
-| Candidate pool `limit 10 → 20` (6.7 → 11.2 candidates per pada) | 99/147, unchanged from limit 10 | none | ❌ rejected — no measured gain for roughly double the splitting time |
+| Candidate pool `limit 10 → 20` (6.7 → 11.2 candidates per pada) | unchanged | none | ❌ rejected — no measured gain for roughly double the splitting time |
+| vidyut's experimental `vidyut.cheda.Chedaka` as a second splitter | not scoreable: on these padas it returns nothing or junk (`cāhaṃ`→[], `kṛtavāgdvāre`→one fused token, `vinivṛttakāmāḥ`→`vinivft \| takAma \| As`) | — | ❌ dead end — no signal to rank with |
 
 ## 4. Which engine is authoritative for which field
 
@@ -199,7 +208,7 @@ arithmetic across runs. Two runs on 2026-10-10 gave `picked 103/147` both times 
 |---|---|---|
 | Akshara counts, pāda count | vidyut `chandas` | ✅ correct on all 16 verses; ⚠️ ṛ/ṝ are not counted as vowels (`sounds.rs:4`), so a pāda containing ṛ is miscounted by vidyut and by our `_count_aksharas` in step |
 | Metre name | vidyut `chandas` | ⚠️ 145 vṛtta rows, no jāti rows → 11/16 unnamed (§1); ✅ the five it can name are right, ❌ never a wrong published name (the veto holds) |
-| Word boundaries | sanskrit_parser pool + vidyut kosha ranking | ⚠️ ceiling 127/147; ❌ 24 padas still ranked wrong (§3); samāsa resolution needs context we do not have |
+| Word boundaries | sanskrit_parser pool + vidyut kosha ranking | ⚠️ ceiling 127/147; ❌ 23 padas still ranked wrong (§3); samāsa resolution needs context we do not have |
 | Root / stem / dictionary attestation | vidyut kosha (`load_kosha`) | ✅ now a ranking key as well as a display field: readings built on stems the kosha does not record for that form are demoted (§2.1), which fixed 6 curated forms and lost none; ⚠️ sometimes the dictionary itself is against us — it records *aha* ("non-existence") for अहम् and *vandA* for `vande`, so attestation cannot settle those; ⚠️ surface keys only — pause-normalised lookups needed (`vāk`→`vac`) |
 | Vibhakti / vacana / liṅga / lakāra tags | sanskrit_parser | ✅ the only engine that emits lakāra/puruṣa at all (vidyut's kosha krdanta entries carry `lakara=None`); ⚠️ context-free: 432 of 546 forms arrive ambiguous (§2) |
 | Sentence-level reading (padaccheda) | Dharmamitrā (remote) | shown side by side, never merged; ⚠️ returns surface forms with no tags and invents/skips tokens (`jagantaḥ`, a stray `mā`) — which is why it is not the reference key |
@@ -214,6 +223,7 @@ uv run python tools/meter_audit.py                 # offline: rebuilds §1, with
 uv run python tools/morphology_ranks.py            # offline: rebuilds §2, incl. the rank of the right reading
 uv run python tools/morphology_lab.py              # offline (kosha only): re-score a proposed reading rule on the pinned corpus
 uv run python tools/sandhi_ceiling.py              # ~25 s local (no network): §3 score + ceiling + fault split
+uv run python tools/sandhi_lab.py --pools pools.json   # ~2 s local: re-score a proposed split rule on the cached pools
 ```
 
 The first three tools are how every table in this file was produced. They read only committed artefacts — the sandhi tool
@@ -222,10 +232,13 @@ regenerated instead of re-derived by hand; `tools/sandhi_ceiling.py --pools pool
 `--reuse pools.json` scores from them, which is how a ranking idea gets measured against an identical search space in
 seconds rather than 25 s per variant (DOCUMENTATION.md §9).
 
-`tests/data/results/*.result.json` now depends on the kosha too, because the published reading is chosen with it: after a
-ranking change the documents are regenerated offline from the pinned raw output
-(`for f in tests/data/results/*.raw.json; do uv run python postprocess_analysis.py -i "$f"; done`, ~7 s), never by a live
-engine run. `postprocess_analysis.py --no-dictionary` reproduces the pre-rule ordering byte for byte.
+A **word-reading** rule only reorders JSON, so `tests/data/results/*.result.json` is regenerated offline from the pinned
+raw output (`for f in tests/data/results/*.raw.json; do uv run python postprocess_analysis.py -i "$f"; done`, ~7 s);
+`postprocess_analysis.py --no-dictionary` reproduces the pre-rule ordering byte for byte. A **split-ranking** rule is a
+different cost: the chosen split is baked into `.raw.json` by `_analyze_line`, so landing one means re-running all 16
+verses against the live engines (~3 min) — and because `parser.split(limit=10)` enumerates in unspecified order, that run
+moves unrelated splits too (the gate change fixed `paścā | ardhena` in the śākuntala verse while re-cutting BG 11.15's
+`kamalāsanastham`). That is why a split rule needs a measured gain bigger than ±4 before it ships.
 
 `test_meter_accuracy.py` passes with **11 warnings** (one per verse vidyut cannot name) and
 `test_morphology_accuracy.py` with **5 warnings** (`vande`, `jagatas`, `vraja`, `śucaḥ`, `ahaṃ`). Those warnings *are*
@@ -234,7 +247,7 @@ ruled out lives in [DOCUMENTATION.md](DOCUMENTATION.md) §9 (splitting), §10 (m
 (the optional lexical scorer).
 
 The numbers above are **master**. The gensim + sentencepiece lexical-scorer experiment, with its own measured verdict
-(same 103/147, one curated regression, goldens move — not merged), lives on the branch
+(103/147 as it stood then — unchanged by the scorer, one curated regression, goldens move; not merged), lives on the branch
 `feature/engine-accuracy-tuning`; see DOCUMENTATION.md §12.
 
 ## 6. Parked for later (decisions, not bugs)

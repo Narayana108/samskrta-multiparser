@@ -5,7 +5,7 @@
   },
   "padaccheda": {
     "dharmamitra": "paśyāmi | devān | tava | deva | dehe | sarvān | tathā | bhūta | viśeṣa | saṅghān | brahmāṇam | īśam | kamalāsana | stham | ṛṣīn | ca | sarvān | uragān | ca | divyān",
-    "sanskrit_parser": "paśyāmi | devām | stava | deva | dehe | sarvān | tathā | bhūta | viśeṣa | saṅghān | brahmāṇam | īśam | kamalāsanastham | ṛṣīn | ca | sarvān | uragān | ca | divyān"
+    "sanskrit_parser": "paśyāmi | devām | stava | deva | dehe | sarvān | tathā | bhūta | viśeṣa | saṅghān | brahmāṇam | īśam | kamalā | āsanastham | ṛṣīn | ca | sarvān | uragān | ca | divyān"
   },
   "padas": [
     {
@@ -554,22 +554,60 @@
       },
       "sanskrit_parser": {
         "padaccheda": [
-          "kamalāsanastham"
+          "kamalā",
+          "āsanastham"
         ],
         "words": [
           {
-            "form": "kamalāsanastham",
-            "root": "kamalāsanastha",
-            "vibhakti": "dvitīyā",
+            "form": "kamalā",
+            "root": "kamalā",
+            "vibhakti": "prathamā",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "strīliṅgam",
+            "alternates": [
+              {
+                "root": "kamala",
+                "vacana": "eka",
+                "vibhakti": "prathamā",
+                "linga": "strīliṅgam"
+              },
+              {
+                "root": "kamalā",
+                "linga": "strīliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              }
+            ]
+          },
+          {
+            "form": "āsanastham",
+            "root": "āsanastha",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "napuṃsakaliṅgam",
+            "alternates": [
+              {
+                "root": "āsanastha",
+                "vibhakti": "dvitīyā",
+                "vacana": "eka",
+                "linga": "puṃlliṅgam"
+              },
+              {
+                "root": "āsanastha",
+                "vibhakti": "dvitīyā",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam"
+              }
+            ]
           }
         ]
       },
       "differences": [
         {
           "sanskrit_parser": [
-            "kamalāsanastham"
+            "kamalā",
+            "āsanastham"
           ],
           "dharmamitra": [
             "kamalāsana",

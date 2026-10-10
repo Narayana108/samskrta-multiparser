@@ -210,10 +210,11 @@ EXPECTED = {
             "| saṅghān | brahmāṇam | īśam | kamalāsana | stham | ṛṣīn | ca | sarvān "
             "| uragān | ca | divyān"
         ),
-        # deva + dehe becomes devām | stava, and the karmadhāraya stays one word.
+        # deva + dehe becomes devām | stava. The gate's attestation tie now cuts the karmadhāraya at the wrong
+        # joint — kamalā | āsanastham instead of Dharmamitrā's kamalāsana | stham, still counted as a miss.
         "sanskrit_parser_padaccheda": (
             "paśyāmi | devām | stava | deva | dehe | sarvān | tathā | bhūta | viśeṣa "
-            "| saṅghān | brahmāṇam | īśam | kamalāsanastham | ṛṣīn | ca | sarvān | uragān "
+            "| saṅghān | brahmāṇam | īśam | kamalā | āsanastham | ṛṣīn | ca | sarvān | uragān "
             "| ca | divyān"
         ),
     },
@@ -258,7 +259,7 @@ EXPECTED = {
         "chandas_candidates": ["sragdharā"],
         # Dharmamitrā's verse pass never reached the opening compound; a request for that one pada
         # supplied it, so every word of this sragdharā verse is covered. sanskrit_parser cuts
-        # grīvās | bhaṅgā and leaves paścārdhena whole.
+        # grīvās | bhaṅgā and — since the gate accepts an attestation tie — paścā | ardhena as well.
         "dharmamitra_padaccheda": (
             "grīvā | bhaṅga | abhirāmam | muhur | anupatati | syandane | baddha | dṛṣṭiḥ "
             "| paśca | ardhena | praviṣṭaḥ | śara | patana | bhayāt | bhūyasā | pūrva | kāyam "
@@ -268,7 +269,7 @@ EXPECTED = {
         ),
         "sanskrit_parser_padaccheda": (
             "grīvās | bhaṅgā | abhirāmam | muhur | anu | patati | syandane | baddha "
-            "| dṛṣṭis | paścārdhena | praviṣṭas | śara | patana | bhayāt | bhūyasā | pūrva "
+            "| dṛṣṭis | paścā | ardhena | praviṣṭas | śara | patana | bhayāt | bhūyasā | pūrva "
             "| kāyam | darbhais | ardhāvalīḍhais | śrama | vivṛtam | ukha | bhraṃśibhis "
             "| kīrṇa | vartmā | paśya | udagraplutatvāt | viyati | bahutaram | stokam "
             "| urvyām | prayāti"

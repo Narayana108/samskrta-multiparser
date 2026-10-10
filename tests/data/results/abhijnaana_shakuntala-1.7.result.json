@@ -5,7 +5,7 @@
   },
   "padaccheda": {
     "dharmamitra": "grīvā | bhaṅga | abhirāmam | muhur | anupatati | syandane | baddha | dṛṣṭiḥ | paśca | ardhena | praviṣṭaḥ | śara | patana | bhayāt | bhūyasā | pūrva | kāyam | darbhaiḥ | ardha | avalīḍhaiḥ | śrama | vivṛta | mukha | bhraṃśibhiḥ | kīrṇa | vartmā | paśya | udagra | pluta | tvāt | viyati | bahutaram | stokam | urvyām | prayāti",
-    "sanskrit_parser": "grīvās | bhaṅgā | abhirāmam | muhur | anu | patati | syandane | baddha | dṛṣṭis | paścārdhena | praviṣṭas | śara | patana | bhayāt | bhūyasā | pūrva | kāyam | darbhais | ardhāvalīḍhais | śrama | vivṛtam | ukha | bhraṃśibhis | kīrṇa | vartmā | paśya | udagraplutatvāt | viyati | bahutaram | stokam | urvyām | prayāti"
+    "sanskrit_parser": "grīvās | bhaṅgā | abhirāmam | muhur | anu | patati | syandane | baddha | dṛṣṭis | paścā | ardhena | praviṣṭas | śara | patana | bhayāt | bhūyasā | pūrva | kāyam | darbhais | ardhāvalīḍhais | śrama | vivṛtam | ukha | bhraṃśibhis | kīrṇa | vartmā | paśya | udagraplutatvāt | viyati | bahutaram | stokam | urvyām | prayāti"
   },
   "padas": [
     {
@@ -530,26 +530,49 @@
       },
       "sanskrit_parser": {
         "padaccheda": [
-          "paścārdhena"
+          "paścā",
+          "ardhena"
         ],
         "words": [
           {
-            "form": "paścārdhena",
-            "root": "paścārdha",
+            "form": "paścā",
+            "root": "paśca",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "strīliṅgam",
+            "alternates": [
+              {
+                "root": "paścā",
+                "tags": [
+                  "avyayam"
+                ]
+              }
+            ]
+          },
+          {
+            "form": "ardhena",
+            "root": "ardha",
             "vibhakti": "tṛtīyā",
             "vacana": "eka",
-            "linga": "puṃlliṅgam"
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "ardha",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "tṛtīyā"
+              }
+            ]
           }
         ]
       },
       "differences": [
         {
           "sanskrit_parser": [
-            "paścārdhena"
+            "paścā"
           ],
           "dharmamitra": [
-            "paśca",
-            "ardhena"
+            "paśca"
           ]
         }
       ]

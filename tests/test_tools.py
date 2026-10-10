@@ -67,11 +67,11 @@ def test_morphology_lab_shows_the_shipped_rule_as_a_no_op_and_keeps_the_rejected
     """ACCURACY §2/§6: re-scoring the corpus with the rule that shipped must move nothing; the rejected
     longer-stem variant stays measured so it is not tried again blind."""
     out = run_tool("morphology_lab.py")
-    assert "corpus: 273 published word readings over 16 verses" in out
+    assert "corpus: 278 published word readings over 16 verses" in out
     assert "rule current: curated forms with the right reading published first: 10/15" in out
-    assert "primaries moved: 0 of 273" in out, f"the lab no longer matches what postprocess publishes:\n{out}"
+    assert "primaries moved: 0 of 278" in out, f"the lab no longer matches what postprocess publishes:\n{out}"
     assert "rule attested-then-longest-root: curated forms with the right reading published first: 9/15" in out
-    assert "primaries moved: 36 of 273" in out
+    assert "primaries moved: 36 of 278" in out
 
 
 @pytest.mark.skipif(
@@ -86,15 +86,27 @@ def test_sandhi_ceiling_splits_the_misses_by_fault(tmp_path):
     assert int(figures["ceiling"]) >= 125, out        # the pool ceiling drifts by one pada per process
     assert "pool-limited" in out and "ranking-limited" in out, out
 
-    # The cached-pool path is how a ranking idea gets measured against an identical search space: dump the
-    # pools once, then re-score the ceiling from them without calling the splitter again.
+    # The cached-pool path is how a ranking idea gets measured against an identical search space: dump the pools and
+    # their ranking features once, then re-rank them through app._rank_with_kosha without calling the splitter again.
+    # If that stops reproducing the live figures, the cache no longer represents what our ranking chooses from.
     pools = tmp_path / "pools.json"
     dumped = run_tool("sandhi_ceiling.py", "--examples", "0", "--pools", str(pools))
     assert pools.exists() and "candidate pools" in dumped, dumped
     reused = run_tool("sandhi_ceiling.py", "--examples", "0", "--reuse", str(pools))
-    cached = int(re.search(r"ceiling (\d+)/147", reused).group(1))
-    assert abs(cached - int(figures["ceiling"])) <= 1, reused
-    assert "picked n/a" in reused, f"--reuse must not pretend to score our ranking:\n{reused}"
+    cached = dict(re.findall(r"(picked|ceiling) (\d+)/147", reused))
+    for figure in ("picked", "ceiling"):
+        assert abs(int(cached[figure]) - int(figures[figure])) <= 1, f"{figure} drifted:\n{reused}"
+    assert "ranking-limited" in reused, reused
+
+    # `tools/sandhi_lab.py` re-ranks those identical pools, so its baseline row must match what the ceiling tool just
+    # measured from the live engines; if it drifts, the lab is no longer judging what the app would publish. Rules the
+    # lab documents as measured-and-rejected must still lose to that baseline.
+    lab = run_tool("sandhi_lab.py", "--pools", str(pools))
+    scores = dict(re.findall(r"rule (\S+): picked (\d+)/147", lab))
+    assert abs(int(scores["current"]) - int(figures["picked"])) <= 1, lab
+    for rejected in ("deep-gate-min-len-3", "attestation-before-count"):
+        assert int(scores[rejected]) < int(scores["current"]), f"{rejected} is no longer a rejection:\n{lab}"
+    assert "old-gate-strictly-better" in scores, lab
 
 
 if __name__ == "__main__":

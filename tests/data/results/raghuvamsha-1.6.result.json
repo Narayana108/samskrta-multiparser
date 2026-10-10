@@ -5,7 +5,7 @@
   },
   "padaccheda": {
     "dharmamitra": "yathāvidhi | huta | agnīnām | yathākāma | arcita | arthinām | yathā | aparādha | daṇḍānām | yathā | kāla | prabodhinām",
-    "sanskrit_parser": "yathāvidhi | hutāgnīnām | yathākāmārcitārthinām | yathāparādhadaṇḍānām | yathākālaprabodhinām"
+    "sanskrit_parser": "yathāvidhi | hutāgnīnām | yathākāma | arcitā | arthinām | yathāparādhadaṇḍānām | yathākāla | prabodhinām"
   },
   "padas": [
     {
@@ -127,24 +127,98 @@
       },
       "sanskrit_parser": {
         "padaccheda": [
-          "yathākāmārcitārthinām"
+          "yathākāma",
+          "arcitā",
+          "arthinām"
         ],
         "words": [
           {
-            "form": "yathākāmārcitārthinām",
-            "root": "yathākāmārcitārthin",
+            "form": "yathākāma",
+            "root": "yathākāma",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "yathākāma",
+                "vacana": "eka",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "saṃbodhana"
+              },
+              {
+                "root": "yathākāma",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              },
+              {
+                "root": "yathākāma",
+                "linga": "napuṃsakaliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              }
+            ]
+          },
+          {
+            "form": "arcitā",
+            "root": "arcitṛ",
+            "vibhakti": "prathamā",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "ṛc#1",
+                "vacana": "eka",
+                "tags": [
+                  "luṭ",
+                  "parasmaipadam",
+                  "prathamapuruṣaḥ",
+                  "prāthamikaḥ"
+                ]
+              },
+              {
+                "root": "arcita#1",
+                "vacana": "eka",
+                "vibhakti": "prathamā",
+                "linga": "strīliṅgam",
+                "tags": [
+                  "karmaṇi",
+                  "kta",
+                  "kṛdantaḥ",
+                  "ṇijantaḥ"
+                ]
+              },
+              {
+                "root": "arcita",
+                "vacana": "eka",
+                "vibhakti": "prathamā",
+                "linga": "strīliṅgam",
+                "tags": [
+                  "karmaṇi",
+                  "kta",
+                  "kṛdantaḥ",
+                  "prāthamikaḥ"
+                ]
+              }
+            ]
+          },
+          {
+            "form": "arthinām",
+            "root": "arthin",
             "vibhakti": "ṣaṣṭhī",
             "vacana": "bahu",
             "linga": "strīliṅgam",
             "alternates": [
               {
-                "root": "yathākāmārcitārthin",
+                "root": "arthin",
                 "vacana": "bahu",
                 "linga": "puṃlliṅgam",
                 "vibhakti": "ṣaṣṭhī"
               },
               {
-                "root": "yathākāmārcitārthin",
+                "root": "arthin",
                 "vacana": "bahu",
                 "linga": "napuṃsakaliṅgam",
                 "vibhakti": "ṣaṣṭhī"
@@ -156,12 +230,10 @@
       "differences": [
         {
           "sanskrit_parser": [
-            "yathākāmārcitārthinām"
+            "arcitā"
           ],
           "dharmamitra": [
-            "yathākāma",
-            "arcita",
-            "arthinām"
+            "arcita"
           ]
         }
       ]
@@ -271,24 +343,41 @@
       },
       "sanskrit_parser": {
         "padaccheda": [
-          "yathākālaprabodhinām"
+          "yathākāla",
+          "prabodhinām"
         ],
         "words": [
           {
-            "form": "yathākālaprabodhinām",
-            "root": "yathākālaprabodhin",
+            "form": "yathākāla",
+            "root": "yathākāla",
+            "vibhakti": "saṃbodhana",
+            "vacana": "eka",
+            "linga": "puṃlliṅgam",
+            "alternates": [
+              {
+                "root": "yathākāla",
+                "linga": "puṃlliṅgam",
+                "tags": [
+                  "samāsapūrvapadanāmapadam"
+                ]
+              }
+            ]
+          },
+          {
+            "form": "prabodhinām",
+            "root": "prabodhin",
             "vibhakti": "ṣaṣṭhī",
             "vacana": "bahu",
             "linga": "strīliṅgam",
             "alternates": [
               {
-                "root": "yathākālaprabodhin",
+                "root": "prabodhin",
                 "vacana": "bahu",
                 "linga": "puṃlliṅgam",
                 "vibhakti": "ṣaṣṭhī"
               },
               {
-                "root": "yathākālaprabodhin",
+                "root": "prabodhin",
                 "vacana": "bahu",
                 "linga": "napuṃsakaliṅgam",
                 "vibhakti": "ṣaṣṭhī"
@@ -300,12 +389,11 @@
       "differences": [
         {
           "sanskrit_parser": [
-            "yathākālaprabodhinām"
+            "yathākāla"
           ],
           "dharmamitra": [
             "yathā",
-            "kāla",
-            "prabodhinām"
+            "kāla"
           ]
         }
       ]

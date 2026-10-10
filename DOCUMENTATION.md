@@ -510,14 +510,20 @@ Per-word sandhi splitting has no oracle inside the tool, so one was built outsid
   ten-candidate pool contains one for **127/147** — the ceiling any ranking can reach; it drifts by one pada
   between processes, because `parser.split(limit=10)` enumerates candidates in an unspecified order. Ranking
   by morphology alone reaches **92/147**; dictionary attestation as the primary key reaches 99; full
-  `_best_word_split` with `load_kosha()` reaches **103/147**, four of them thanks to the transparent-compound
-  gate (`_MAX_DEEP_PARTS`, `_MIN_DEEP_PART_LEN`), which changes the pick on nine padas. The gated test floors
-  the score at 101 so that tie-breaking drift between processes cannot fail it while any real regression does.
+  `_best_word_split` with `load_kosha()` reaches **104/147**, four of them thanks to the transparent-compound
+  gate (`_MAX_DEEP_PARTS`, `_MIN_DEEP_PART_LEN`), which changes the pick on nine padas; since 2026-10-10 that gate lets a
+  split through when its scarcest part is *at least as* well attested in vidyut's kosha as the whole pada (`>=`, was `>`),
+  which is worth exactly one pada (`paścārdhena` → `paścā | ardhena`) and nothing else moved on the fixture. The gated test
+  floors the score at 101 so that tie-breaking drift between processes cannot fail it while any real regression does.
 - **How to re-measure it.** `uv run python tools/sandhi_ceiling.py` prints score, ceiling and fault split from one
   process (~25 s local, no network), which is how the ⚠️ pool-limited / ❌ ranking-limited numbers in ACCURACY §3 are
-  obtained rather than inferred. `--pools pools.json` dumps every candidate pool; `--reuse pools.json` then scores a
-  proposed ranking against those identical pools in seconds — that is how the rules below were rejected without
-  re-splitting all 147 padas for each variant.
+  obtained rather than inferred. `--pools pools.json` dumps every candidate pool *with the three features our ranking
+  reads* (`exact_all`, `entry_min`, `standalone`); `--reuse pools.json` then re-ranks those identical pools through
+  `app._rank_with_kosha` and prints both `picked` and the ceiling in ~2 s. On top of that cache,
+  `uv run python tools/sandhi_lab.py --pools pools.json` scores a list of proposed rules — including the ones kept here
+  precisely because they lost — and `--show-changes` prints every pada each rule moved. The lab calls the shipped ranker,
+  never a copy of it, so its baseline row is by construction what the app publishes; that is also how the landed gate
+  clause was checked to be a +1 and not noise.
 - **Rankings that were tried and lost** (the figures in this bullet and the next are from the earlier 64-row
   fixture; they are kept because the rejected rules must not be re-tried blind). Reconstructability under
   `Sandhi.join` as a primary key: 39/64. Summed kosha frequency of the parts: 10-22/64. "Prefer more parts

@@ -500,8 +500,8 @@ def _kosha_exact(kosha, dev_word: str) -> Tuple[bool, int]:
 
 # Bounds of the transparent-compound gate in `_best_word_split`: a split only beats a shorter
 # candidate when it has at most this many parts and every part is at least this long. Measured on
-# tests/data/sandhi_truth.json — 2-3 parts with parts >= 5 letters scores 103/147; allowing 1-part
-# fragments or 4-letter parts loses padas to junk such as `mat | is`.
+# tests/data/sandhi_truth.json — 2-3 parts with parts >= 5 letters scores 104/147; allowing 1-part
+# fragments or 4-letter parts loses padas to junk such as `mat | is` (84/147).
 _MAX_DEEP_PARTS = 3
 _MIN_DEEP_PART_LEN = 5
 
@@ -553,7 +553,7 @@ def _rank_with_kosha(candidates):
             cand["exact_all"]
             and 1 < cand["count"] <= _MAX_DEEP_PARTS
             and cand["min_part_len"] >= _MIN_DEEP_PART_LEN
-            and (not whole_attested or cand["entry_min"] > whole_entries)
+            and (not whole_attested or cand["entry_min"] >= whole_entries)
         )
     return max(
         candidates,
@@ -578,8 +578,8 @@ def _best_word_split(parser, dev_word: str, kosha: Optional[Any] = None) -> List
     1. every part is an exactly attested kosha form — this rejects fragments such as
        ``gam | iṣi | āmī`` or ``ava | tu``, so finite verbs stay whole (``mokṣayiṣyāmi``);
     2. the transparent-compound gate: a two- or three-part split whose every part is at least five
-       letters long outranks shorter candidates, but only when its scarcest part is better attested
-       than the whole word. That cuts ``sūryaprabhavas``, ``vajrasamutkīrṇe`` and
+       letters long outranks shorter candidates, but only when its scarcest part is at least as well
+       attested as the whole word. That cuts ``sūryaprabhavas``, ``vajrasamutkīrṇe`` and
        ``saṃbhṛtārthānām`` into their members while leaving a verb such as ``mokṣayiṣyāmi`` alone;
     3. fewer parts — an atom the dictionary knows as one word is left alone;
     4. every part has standalone morphology (case+number, or avyaya);
@@ -587,7 +587,7 @@ def _best_word_split(parser, dev_word: str, kosha: Optional[Any] = None) -> List
     6. longest shortest part, then the sorted part list, keeping output byte-stable.
 
     Measured on the 147 curated padas of ``tests/data/sandhi_truth.json`` (see
-    ``tests/test_sandhi_accuracy.py``): this rule reproduces the reference reading for 103 of them;
+    ``tests/test_sandhi_accuracy.py``): this rule reproduces the reference reading for 104 of them;
     morphology-only ranking — the fallback used when no kosha is available — reaches 92, and the
     candidate pool contains a reference-consistent split for 127. Over all the distinct words of the
     sixteen pinned verses the gate changes nine splits, every one of them a compound read as
