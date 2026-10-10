@@ -1,155 +1,203 @@
-# Measured accuracy
+# Measured accuracy — what is verified correct and what is wrong
 
-Every claim about what this tool gets right lives here, with the reference it was checked against. Nothing in these
-tables comes from our own engines: metre names come from the printed editions ([sanskritsahitya.org](https://www.sanskritsahitya.org),
-cross-checked against [sanskritsahitya-com/data](https://github.com/sanskritsahitya-com/data)), word grammar from those
-editions' पदच्छेदः plus standard Pāṇinian analysis, and word boundaries from the editions' padaccheda tables.
+Every number here comes from the pinned fixtures in `tests/data/` compared against an **independent source of truth**,
+never against our own engines: metre names and akshara grids from the printed editions
+([sanskritsahitya.org](https://www.sanskritsahitya.org), cross-checked with
+[sanskritsahitya-com/data](https://github.com/sanskritsahitya-com/data)), word grammar from those editions' पदच्छेदः
+plus standard Pāṇinian analysis, word boundaries from the editions' padaccheda tables.
+
+## How to read every table
+
+| Mark | Meaning — read this at a glance |
+|---|---|
+| ✅ **correct** | our published output equals the source of truth. Verified, error-free. |
+| ❌ **our error** | the right answer was available and we published a wrong one. Fixable in this repo. |
+| ⚠️ **engine limit** | the engine cannot produce it from what it ships (missing data, no sentence context). Not fixable here — upstream fix or a feature decision. |
+
+A row with `—` in "our answer" means we publish **null on purpose**: the tool refused to print a name it could not
+justify. That is a ⚠️ limit, never a wrong guess.
 
 Measured **2026-10-10** on `sanskrit-parser 0.2.6`, `vidyut 0.4.0` + bundled `data-0.4.0`,
 `indic-transliteration 2.3.82`. Fixtures: [`tests/data/meter_truth.json`](tests/data/meter_truth.json) (16 verses),
 [`tests/data/morphology_truth.json`](tests/data/morphology_truth.json) (9 forms),
-[`tests/data/sandhi_truth.json`](tests/data/sandhi_truth.json) (147 padas). Reproduce with the commands in §5.
+[`tests/data/sandhi_truth.json`](tests/data/sandhi_truth.json) (147 padas). Commands to reproduce: §5.
 
-## 1. Metre: shape right on every verse, names limited by vidyut's table
+## Scoreboard
 
-| Verse | Published छन्दः | Aksharas/pāda | Our `chandas.vrtta` | vidyut candidates | Pādas vidyut scanned | Named? |
-|---|---|---|---|---|---|---|
-| abhijnaana_shakuntala-1.1 | स्रग्धरा (sragdharā) | [21, 21, 21, 21] | `sragdharā` | sragdharā | 3/4 | yes |
-| abhijnaana_shakuntala-1.18 | मालिनी (mālinī) | [15, 15, 15, 15] | `malinī` | malinī | 3/4 | yes |
-| abhijnaana_shakuntala-1.7 | स्रग्धरा (sragdharā) | [21, 21, 21, 21] | `sragdharā` | sragdharā | 2/4 | yes |
-| bhagavad_gita-11.15 | उपजातिः (upajāti) | [11, 11, 11, 11] | `—` | indravajrā, indravaṃśā, upendravajrā | 4/4 | no row in vidyut |
-| bhagavad_gita-2.22 | उपजातिः (upajāti) | [11, 11, 11, 11] | `—` | indravajrā, indravaṃśā, upendravajrā, vaṃśastha | 4/4 | no row in vidyut |
-| bhagavad_gita-15.5 | इन्द्रवज्रा (indravajrā) | [11, 11, 11, 11] | `indravajrā` | indravajrā, indravaṃśā | 4/4 | yes |
-| bhagavad_gita-18.66 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] | `—` | mṛgī | 1/4 | no row in vidyut |
-| bhagavad_gita-2.22 | उपजातिः (upजाति) | [11, 11, 11, 11] | `—` | indravajrā, indravaṃśā, upendravajrā, vaṃśastha | 4/4 | no row in vidyut |
-| bhagavad_gita-2.47 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] | `—` | candralekhā, vasumatī | 2/4 | no row in vidyut |
-| raghuvamsha-1.1 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] | `—` | madalekhā, śuddhavirāṭ | 2/4 | no row in vidyut |
-| raghuvamsha-1.2 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] | `—` | jaloddhatagati | 1/4 | no row in vidyut |
-| raghuvamsha-1.3 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] | `—` | vasumatī | 1/4 | no row in vidyut |
-| raghuvamsha-1.4 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] | `—` | none | 0/4 | no row in vidyut |
-| raghuvamsha-1.5 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] | `—` | none | 0/4 | no row in vidyut |
-| raghuvamsha-1.6 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] | `—` | upasthita | 1/4 | no row in vidyut |
-| raghuvamsha-1.7 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] | `—` | none | 0/4 | no row in vidyut |
+| What we measure | Score | Verdict at a glance |
+|---|---|---|
+| Aksharas per pāda, pāda count (§1) | **16 / 16** ✅ | verified correct on every verse |
+| Metre name (§1) | **5 / 16** named; 11 ⚠️ null | zero ❌: vidyut's data has no jāti/anuṣṭubh rows, and our veto only removes wrong names |
+| Right word reading is offered at all (§2) | **9 / 9** ✅ | never silently dropped — it travels in `alternates` |
+| Right word reading published first (§2) | **4 / 9**; 5 ⚠️/❌ | the five need sentence context no per-pada analysis has |
+| Word boundaries, whole corpus (§3) | **103 / 147** | ⚠️ 20 padas: the right cut is not in the candidate pool at all; ❌ 24 padas: a correct candidate existed and our ranking did not pick it |
 
-- **Counting is correct: 16/16.** `pada_count` and `aksharas_per_pada` equal the published grid on every verse —
-  `[8,8,8,8]` for the nine anuṣṭubh pādas, `[11,11,11,11]` for the four jagatī-family verses, `[21…]`, `[15…]` for the
-  Śākuntala metres. That counting is vidyut's scanner (`Chandas.classify().aksharas`).
-- **Naming: 5/16.** इन्द्रवज्रा (Gītā 15.5, 15.15), स्रग्धरा (Śākuntala 1.1, 1.7) and मालिनी (Śākuntala 1.18, printed by
-  vidyut as `malinī`) come back identical to the edition. The other eleven are pinned as `vrtta: null` on purpose.
+## 1. Metre — shape verified on every verse, names limited by vidyut's data
 
-### Why an 8-akshara pāda is not called anuṣṭubh — this is vidyut's data, not our code
+Read this as: **the "Shape" column is all green; the "Name we publish" column shows what vidyut can and cannot name.**
 
-Verified against vidyut's own repository and the bundled dataset on 2026-10-10:
+| Verse | Published छन्दः (source of truth) | Aksharas/pāda (truth = ours) | Name we publish | Name verdict | vidyut suggested, we did not publish |
+|---|---|---|---|---|---|
+| abhijnaana_shakuntala-1.1 | स्रग्धरा (sragdharā) | [21, 21, 21, 21] ✅ | `sragdharā` | ✅ correct | — |
+| abhijnaana_shakuntala-1.7 | स्रग्धरा (sragdharā) | [21, 21, 21, 21] ✅ | `sragdharā` | ✅ correct | — |
+| abhijnaana_shakuntala-1.18 | मालिनी (mālinī) | [15, 15, 15, 15] ✅ | `malinī` | ✅ correct (vidyut spells it `malinī`) | — |
+| bhagavad_gita-15.5 | इन्द्रवज्रा (indravajrā) | [11, 11, 11, 11] ✅ | `indravajrā` | ✅ correct | indravaṃśā declares 12, pāda scanned 11 → vetoed |
+| bhagavad_gita-15.15 | इन्द्रवज्रा (indravajrā) | [11, 11, 11, 11] ✅ | `indravajrā` | ✅ correct | indravaṃśā declares 12 → vetoed |
+| bhagavad_gita-11.15 | उपजातिः (upajāti) | [11, 11, 11, 11] ✅ | `—` | ⚠️ unnamed: no upajāti row in vidyut | indravajrā and upendravajrā both fit 11 but were matched on **different pādas** → we refuse to pick; indravaṃśā declares 12 → vetoed |
+| bhagavad_gita-2.22 | उपजातिः (upajāti) | [11, 11, 11, 11] ✅ | `—` | ⚠️ unnamed: no upajāti row in vidyut | same pāda disagreement; indravaṃśā and vaṃśastha declare 12 → vetoed |
+| bhagavad_gita-2.47 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] ✅ | `—` | ⚠️ unnamed: no anuṣṭubh row in vidyut | candralekhā declares 15, vasumatī 6 → both vetoed |
+| bhagavad_gita-18.66 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] ✅ | `—` | ⚠️ unnamed: no anuṣṭubh row in vidyut | mṛgī's declared length contradicts 8 → vetoed (only 1/4 pādas classified) |
+| raghuvamsha-1.1 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] ✅ | `—` | ⚠️ unnamed: no anuṣṭubh row in vidyut | madalekhā declares 7, śuddhavirāṭ 10 → both vetoed |
+| raghuvamsha-1.2 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] ✅ | `—` | ⚠️ unnamed: no anuṣṭubh row in vidyut | jaloddhatagati declares 12 → vetoed (only 1/4 pādas classified) |
+| raghuvamsha-1.3 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] ✅ | `—` | ⚠️ unnamed: no anuṣṭubh row in vidyut | vasumatī declares 6 → vetoed |
+| raghuvamsha-1.4 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] ✅ | `—` | ⚠️ unnamed: vidyut classified 0/4 pādas | none at all |
+| raghuvamsha-1.5 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] ✅ | `—` | ⚠️ unnamed: vidyut classified 0/4 pādas | none at all |
+| raghuvamsha-1.6 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] ✅ | `—` | ⚠️ unnamed: no anuṣṭubh row in vidyut | upasthita declares 11 → vetoed |
+| raghuvamsha-1.7 | अनुष्टुप् (anuṣṭubh) | [8, 8, 8, 8] ✅ | `—` | ⚠️ unnamed: vidyut classified 0/4 pādas | none at all |
+
+- **Why each suggestion was dropped — read out of `meters.tsv`, not inferred.** `_summarize_chandas` applies two rules,
+  and both are visible in the table above: a candidate whose declared akshara count (read from
+  `data-0.4.0/chandas/meters.tsv` by `_meter_lengths`) contradicts the pāda vidyut just scanned is vetoed; and a name is
+  published only when every classified pāda agrees — Gītā 11.15 and 2.22 are null because vidyut matched `indravajrā` on
+  some pādas and `upendravajrā` on others, neither of which is the upajāti the edition prints.
+- **✅ Verified correct — counting.** `pada_count` and `aksharas_per_pada` equal the published grid on all sixteen
+  verses (vidyut's scanner, `Chandas.classify().aksharas`).
+- **✅ Verified correct — five names.** इन्द्रवज्रा (Gītā 15.5, 15.15), स्रग्धरा (Śākuntala 1.1, 1.7) and मालिनी
+  (Śākuntala 1.18, printed by vidyut as `malinī`) come back identical to the edition.
+- **⚠️ Engine limit — eleven names.** They stay `vrtta: null` because the name does not exist in vidyut's data. No row
+  here is ❌ our error: `_summarize_chandas` never renames, it only *vetoes* candidates whose declared akshara count
+  contradicts the pāda vidyut just scanned, and publishes a name only when all classified pādas agree. That veto is what
+  turned 0 named verses into 5; everything still unnamed is missing data.
+
+### Why an 8-akshara pāda is not called anuṣṭubh — vidyut's data, verified in their repository (2026-10-10)
 
 | Check | Result |
 |---|---|
-| `grep -rin "anuSTub\|triSTub\|jAgatI\|upajAti"` over the whole vidyut repo (Rust sources, Python bindings, all data files) | **no metre hit at all** — only unrelated Pāṇinian rows (`ganapatha.rs:2226 "jagatI"` is a stem in the gaṇapāṭha; `sutrapatha.tsv:1864` is a sūtra) |
-| `cut -f2 data-0.4.0/chandas/meters.tsv \| sort \| uniq -c` | **145 rows, all `vrtta`; 0 rows of kind `jati`** |
-| jāti metres in code (`vidyut-chandas/src/chandas.rs:98-121`) | exactly seven hard-coded — `vEtAlIyam, upagIti, AryAgIti, gIti, udgIti, Aupacchandasikam, AryA`; none is anuṣṭubh/triṣṭubh/jagatī/upajāti |
-| How a name is chosen (`VrttaPada::try_match`) | gaṇa **prefix** matching over the pāda's weight string; declared length is not enforced, so an 11-akshara pāda can be reported as `indravaṃśā` (which declares 12) |
+| `grep -rin "anuSTub\|triSTub\|jAgatI\|upajAti"` over the whole vidyut repo (Rust, Python bindings, all data files) | **no metre hit at all** — only unrelated Pāṇinian rows (`ganapatha.rs:2226 "jagatI"` is a gaṇapāṭha stem; `sutrapatha.tsv:1864` a sūtra) |
+| `cut -f2 data-0.4.0/chandas/meters.tsv \| sort \| uniq -c` | **145 rows, all kind `vrtta`; 0 rows of kind `jati`** — no anuṣṭubh / triṣṭubh / jagatī / upajāti anywhere |
+| jāti metres in code (`vidyut-chandas/src/chandas.rs:98-121`) | exactly seven hard-coded: `vEtAlIyam, upagIti, AryAgIti, gIti, udgIti, Aupacchandasikam, AryA` — none is a śloka metre; `Jati::try_match` compares akshara counts only |
+| vṛtta matching (`VrttaPada::try_match`) | gaṇa **prefix** match over the weight string; declared length is not enforced, so an 11-akshara pāda can be reported as `indravaṃśā` (which declares 12) — exactly the wrong names our veto removes |
 
-So the pipeline is: vidyut counts correctly → vidyut matches a gaṇa prefix against its 145-row vṛtta table → that name
-is wrong or absent. Our code never renames anything. `_summarize_chandas` (`app.py`) only *vetoes*: it reads each
-candidate's declared akshara count out of `meters.tsv` and demotes any candidate whose length contradicts the pāda
-vidyut just scanned, publishes a name only when all classified pādas agree, keeps every vidyut suggestion in
-`candidates`, and prints the contradiction on stderr. That is what turned 0 named verses into 5 — the remaining gap is
-data that does not exist upstream.
+## 2. Word grammar — the right reading is always offered; our context-free ranking picks it first for 4 of 9
 
-Two ways to close it later (both are decisions, not patches to this summary): an **upstream PR** adding jāti rows /
-anuṣṭubh-triṣṭubh entries to `meters.tsv`, or a metre table shipped in this project. Until then the eleven verses stay
-`vrtta: null` with their real shape in `aksharas_per_pada`.
+Read this as: **"Our published primary" vs "Source of truth"; the last two columns say whether the right answer survived
+in the output and how deep we buried it.**
 
-## 2. Word grammar: the engine offers everything, ranking chooses four of nine
-
-| Form | Verse | Reference reading | Our primary | Alternates kept | Verdict |
+| Form | Verse | Source of truth | Our published primary | Verdict | Right reading still published? (rank among alternates) |
 |---|---|---|---|---|---|
-| `vande` | raghuvamsha-1.1 | vand, eka, laṭ/uttamapuruṣaḥ/ātmanepadam | vandā, prathamā, dvi, strīliṅgam | 13 | visible, not primary |
-| `jagatas` | raghuvamsha-1.1 | jagat, ṣaṣṭhī, eka, napuṃsakaliṅgam | jagat, prathamā, bahu, strīliṅgam | 11 | visible, not primary |
-| `pitarau` | raghuvamsha-1.1 | pitṛ, prathamā, dvi, puṃlliṅgam | pitṛ, prathamā, dvi, puṃlliṅgam | 2 | **primary** |
-| `asti` | raghuvamsha-1.4 | as, eka, laṭ/prathamapuruṣaḥ | asta, saṃbodhana, eka, strīliṅgam | 4 | visible, not primary |
-| `deva` | bhagavad_gita-11.15 | deva, saṃbodhana, eka, puṃlliṅgam | deva, saṃbodhana, eka, puṃlliṅgam | 5 | **primary** |
-| `navāni` | bhagavad_gita-2.22 | nava#1, prathamā, bahu, napuṃsakaliṅgam | nava#1, prathamā, bahu, napuṃsakaliṅgam | 7 | **primary** |
-| `avyayam` | bhagavad_gita-15.5 | avyaya#1, dvitīyā, eka | avyaya#1, prathamā, eka, napuṃsakaliṅgam | 6 | **primary** |
-| `vraja` | bhagavad_gita-18.66 | vraj, eka, loṭ/madhyamapuruṣaḥ | vraja, saṃbodhana, eka, puṃlliṅgam | 4 | visible, not primary |
-| `śucas` | bhagavad_gita-18.66 | śuc, eka, madhyamapuruṣaḥ | śuc#2, prathamā, bahu, strīliṅgam | 26 | visible, not primary |
+| `pitarau` | raghuvamsha-1.1 | pitṛ, prathamā, dvi, puṃlliṅgam | pitṛ, prathamā, dvi, puṃlliṅgam | ✅ correct | it *is* the primary (2 alternates) |
+| `deva` | bhagavad_gita-11.15 | deva, saṃbodhana, eka, puṃlliṅgam | deva, saṃbodhana, eka, puṃlliṅgam | ✅ correct | it *is* the primary (5 alternates) |
+| `navāni` | bhagavad_gita-2.22 | nava#1, prathamā, bahu, napuṃsakaliṅgam | nava#1, prathamā, bahu, napuṃsakaliṅgam | ✅ correct | it *is* the primary (7 alternates) |
+| `avyayam` | bhagavad_gita-15.5 | avyaya, dvitīyā **or** prathamā, eka | avyaya#1, prathamā, eka, napuṃsakaliṅgam | ✅ correct (the fixture accepts both cases) | it *is* the primary (6 alternates) |
+| `asti` | raghuvamsha-1.4 | as, eka, laṭ / prathamapuruṣaḥ | asta, saṃbodhana, eka, strīliṅgam | ❌ wrong primary — ⚠️ needs the sentence | yes, **alternate #1 of 4** |
+| `vraja` | bhagavad_gita-18.66 | vraj, eka, loṭ / madhyamapuruṣaḥ | vraja, saṃbodhana, eka, puṃlliṅgam | ❌ wrong primary — ⚠️ needs the sentence | yes, **alternate #2 of 4** |
+| `jagatas` | raghuvamsha-1.1 | jagat, ṣaṣṭhī, eka, napuṃsakaliṅgam | jagat, prathamā, bahu, strīliṅgam | ❌ wrong primary — ⚠️ needs the sentence | yes, **alternate #9 of 11** |
+| `vande` | raghuvamsha-1.1 | vand, eka, laṭ / uttamapuruṣaḥ / ātmanepadam | vandā, prathamā, dvi, strīliṅgam | ❌ wrong primary — ⚠️ needs the sentence (and `vandā` is a stem no dictionary records) | yes, **alternate #13 of 13** |
+| `śucas` | bhagavad_gita-18.66 | śuc, eka, madhyamapuruṣaḥ | śuc#2, prathamā, bahu, strīliṅgam | ❌ wrong primary — ⚠️ needs the sentence | yes, **alternate #25 of 26** |
 
-**Offered by sanskrit_parser: 9/9. Made primary by our ranking: 4/9.** The reference reading is never lost — it is in
-the published `alternates` for all nine. Case, number and gender are properties of the *sentence*; sanskrit_parser
-analyses one pada at a time and returns every reading Pāṇini allows for those letters (27 for `śucas`, 14 for `vande`,
-12 for `jagatas`). No ordering of context-free readings can recover them.
+- **✅ Verified correct — nothing is lost.** The reference reading appears in the published output for all nine forms;
+  `tests/test_morphology_accuracy.py::test_published_reading_is_among_the_readings` fails if one ever disappears.
+- **❌/⚠️ Five wrong primaries.** Case, number and gender are properties of the *sentence*. sanskrit_parser analyses one
+  pada at a time and returns every reading Pāṇini allows for those letters (27 for `śucas`, 14 for `vande`), so no
+  ordering of context-free readings can settle these five. They warn in the test suite, they never fail silently.
+- **Ambiguity is normal:** across the sixteen verses **546 pada-words carry morphology and 432 have more than one
+  distinct reading.**
 
-Across the whole sixteen-verse corpus: **546 pada-words carry morphology and 432 of them have more than one distinct
-reading.** Ambiguity is the normal case, not an exception.
+### Ranking rules tried on this fixture and rejected (measured — do not re-try them blind)
 
-### Ranking rules tried on this fixture and rejected (measured, so nobody re-tries them blind)
-
-| Rule | Effect over the 16 verses | Verdict |
+| Rule | Measured effect over the 16 verses | Verdict |
 |---|---|---|
-| Finite verb above nominal reading | changes 20 primaries: ≈8 better (`vande`, `vraja`, `asti`, `yāti`), ≈12 worse (`navāni`→√nu, `deva`→imperative of √dev, `avyayam`→√vyā, `ajanma`, `āsam`) | rejected — net loss |
-| Prefer readings whose stem is exactly attested in the vidyut kosha | changes 15 primaries: ≈3 better, ≈10 worse (`anu`→dvitīyā napuṃsaka) | rejected — net loss |
+| Finite verb above nominal reading | 20 primaries change: ≈8 better (`vande`, `vraja`, `asti`, `yāti`), ≈12 worse (`navāni`→√nu, `deva`→imperative of √dev, `avyayam`→√vyā, `ajanma`, `āsam`) | ❌ rejected — net loss |
+| Prefer readings whose stem is exactly attested in the vidyut kosha | 15 primaries change: ≈3 better, ≈10 worse (`anu`→dvitīyā napuṃsaka) | ❌ rejected — net loss |
 
-## 3. Word boundaries (sandhi): 103/147, with a hard pool ceiling of 127
+## 3. Word boundaries (sandhi) — 103 of 147 padas correct; the ceiling is 127
 
-The thirteen padas below are chosen for the distinct failure modes the ranking exists to fix; they run offline in ~5 s:
+The thirteen curated padas below are the hard cases the ranking exists to fix; they run offline in ~5 s and all match
+today, so any regression fails the suite:
 
-| Pada | Reference parts | Our current split | Match |
+| Pada | Source of truth (edition padaccheda) | Our split | Verdict |
 |---|---|---|---|
-| `mokṣayiṣyāmi` | mokṣayiṣyāmi | `mokṣayiṣyāmi` | match |
-| `gamiṣyāmyupahāsyatām` | gamiṣyāmi \| upahāsyatām | `gamiṣyāmi \| upahāsyatām` | match |
-| `haviryā` | havis \| yā | `havis \| yā` | match |
-| `prapannastanubhiravatu` | prapanna \| tanubhiḥ \| avatu | `prapannas \| tanubhis \| avatu` | match |
-| `sūtrasyevāsti` | sūtrasya \| iva \| asti | `sūtrasya \| iva \| asti` | match |
-| `sarvadharmānparityajya` | sarva \| dharmān \| parityajya | `sarva \| dharmān \| parityajya` | match |
-| `saṃpṛktau` | saṃpṛktau | `sampṛktau` | match |
-| `saṅgo'stvakarmaṇi` | saṅgaḥ \| astu \| akarmaṇi | `saṅgas \| astu \| akarmaṇi` | match |
-| `jīrṇānyanyāni` | jīrṇāni \| anyāni | `jīrṇāni \| anyāni` | match |
-| `vāmanaḥ` | vāmanaḥ | `vāmanas` | match |
-| `sūryaprabhavo` | sūrya \| prabhavaḥ | `sūrya \| prabhavas` | match |
-| `vajrasamutkīrṇe` | vajra \| samutkīrṇe | `vajra \| samutkīrṇe` | match |
-| `saṃbhṛtārthānāṃ` | saṃbhṛta \| arthānām | `sambhṛtā \| arthānām` | match |
+| `mokṣayiṣyāmi` | mokṣayiṣyāmi | `mokṣayiṣyāmi` | ✅ |
+| `gamiṣyāmyupahāsyatām` | gamiṣyāmi \| upahāsyatām | `gamiṣyāmi \| upahāsyatām` | ✅ |
+| `haviryā` | havis \| yā | `havis \| yā` | ✅ |
+| `prapannastanubhiravatu` | prapanna \| tanubhiḥ \| avatu | `prapannas \| tanubhis \| avatu` | ✅ (visarga written `s`) |
+| `sūtrasyevāsti` | sūtrasya \| iva \| asti | `sūtrasya \| iva \| asti` | ✅ |
+| `sarvadharmānparityajya` | sarva \| dharmān \| parityajya | `sarva \| dharmān \| parityajya` | ✅ |
+| `saṃpṛktau` | saṃpṛktau | `sampṛktau` | ✅ (anusvara written `m`) |
+| `saṅgo'stvakarmaṇi` | saṅgaḥ \| astu \| akarmaṇi | `saṅgas \| astu \| akarmaṇi` | ✅ |
+| `jīrṇānyanyāni` | jīrṇāni \| anyāni | `jīrṇāni \| anyāni` | ✅ |
+| `vāmanaḥ` | vāmanaḥ | `vāmanas` | ✅ |
+| `sūryaprabhavo` | sūrya \| prabhavaḥ | `sūrya \| prabhavas` | ✅ |
+| `vajrasamutkīrṇe` | vajra \| samutkīrṇe | `vajra \| samutkīrṇe` | ✅ |
+| `saṃbhṛtārthānāṃ` | saṃbhṛta \| arthānām | `sambhṛtā \| arthānām` | ✅ (stem match, not spelling) |
 
 Parts are compared by **vidyut kosha lemma stem**, never by spelling: sandhi changes spellings (`vāc`/`vāk`) and
-sanskrit_parser writes final visarga as `s`, anusvara as `m` — hence `prapannas | tanubhis` scoring against
-`prapanna | tanubhiḥ`.
+sanskrit_parser writes final visarga as `s`, anusvara as `m`.
 
-| Measure | Score | Meaning |
+### The whole corpus: who is at fault for the misses
+
+| Measure | Score | Read this as |
 |---|---|---|
-| Full corpus, current ranking (run of 2026-10-10) | **103/147** | what the tool picks today |
-| Same code, other processes the same day | 99–100/147 | `parser.split(limit=10)` enumerates candidates in an unspecified order: ±4 drift between processes |
-| Ceiling of any ranking | **127/147** | for 20 padas no reference-consistent split exists inside the candidate pool at all |
-| Ranking by morphology only (old behaviour) | 92/147 | why dictionary attestation is the primary key |
-| Gated test floor (`MIN_MATCHES`) | 101 | fails on a real regression, survives drift |
+| Current ranking, run of 2026-10-10 | **103 / 147 correct** ✅ | what the tool picks today; 44 padas wrong ❌ below |
+| …of those 44 misses: no reference-consistent split exists anywhere in sanskrit_parser's candidate pool | **20 padas** ⚠️ | engine limit — the ceiling of *any* ranking is **127/147**; fixing these needs upstream splitting, not our ordering |
+| …of those 44 misses: a correct candidate was in the pool and we ranked something else first | **24 padas** ❌ | our error; this is where future ranking work has room (max +24) |
+| Same code, different processes on the same day | 99–103 / 147 | `parser.split(limit=10)` enumerates in unspecified order → ±4 drift; the gated floor `MIN_MATCHES = 101` absorbs it and still catches real regressions |
+| Ranking by morphology only (the old behaviour) | 92 / 147 | why dictionary attestation is our primary key: +11 from using the kosha |
 
-### Split-ranking changes measured and rejected on 2026-10-10
+The four corpus numbers above were measured **in a single process** on 2026-10-10 (`picked 103/147`, `ceiling 127/147`),
+so the 20 / 24 split is a measurement and not arithmetic across runs. The two kinds of miss look completely different:
 
-All variants were scored over identical cached candidate pools, so the deltas are ranking-only:
+| Kind | Example pada | Source of truth | What came out | Verdict |
+|---|---|---|---|---|
+| ❌ ranking-limited — fixable in this repo | `cālpaviṣayā` | ca \| alpa \| viṣayā | we chose `cā \| alpaviṣayā`, although a reference-consistent candidate was sitting in the pool | our ordering |
+| ❌ ranking-limited | `kṛtavāgdvāre` | kṛta \| vāk \| dvāre | we chose `kṛta \| vāgdvāre`; a matching cut existed in the pool | our ordering |
+| ⚠️ pool-limited — needs better upstream splitting | `yathāvidhihutāgnīnāṃ` | yathā \| vidhi \| huta \| agnīnām | best of ten: `yathāvidhi \| hutāgnīnām`, `yathā \| avidhi \| hutāgnīnām` — nothing at any depth matches the edition | engine limit |
+| ⚠️ pool-limited (long fused pāda) | `so'hamājanmaśuddhānāmāphalodayakarmaṇām` | saḥ \| aham \| ājanma \| śuddhānām \| āphala \| udaya \| karmaṇām | every candidate leaves `āphalodayakarmaṇām` fused into one word | engine limit |
 
-| Change | Score (same process as `current` = 99) | Curated-pada failures introduced | Verdict |
+### Split-ranking changes measured and rejected on 2026-10-10 (ranking-only deltas, identical cached pools)
+
+| Change | Measured score (baseline `current` = 99 in that process) | New curated-pada failures | Verdict |
 |---|---|---|---|
-| Deep-split gate fix (a deeper split may beat a *shorter* one only if it beats the shortest fully attested one) | 100 (+`darbhairardhāvalīḍhaiḥ`, +`devāṃstava`, −`pārvatīparameśvarau`) | none | rejected — +1 inside ±4 noise, and it breaks a compound read correctly today |
-| Prefer splits containing whole indeclinables (`iva`, `api`, …) above the part-count key | 46/147 (limit 10), 37/147 (limit 20) | 10 of 13 curated padas, e.g. `haviryā`→`ha \| vi \| ryā`, `saṃpṛktau`→`sam \| pṛktau` | rejected — catastrophic: more parts means more chances to contain an avyaya fragment |
-| Candidate pool `limit 10 → 20` (6.7 → 11.2 candidates per pada) | 99/147, unchanged from limit 10 in the same comparison | none | rejected — no accuracy gain measured; costs roughly double the splitting time |
+| Deep-split gate fix (a deeper split may beat a *shorter* one only if it beats the shortest fully attested one) | 100 (+`darbhairardhāvalīḍhaiḥ`, +`devāṃstava`, −`pārvatīparameśvarau`) | none in the corpus, but it breaks a compound read correctly today | ❌ rejected — +1 inside ±4 noise |
+| Prefer splits containing whole indeclinables (`iva`, `api`, …) above the part-count key | 46/147 (limit 10), 37/147 (limit 20) | **10 of 13** curated padas, e.g. `haviryā`→`ha \| vi \| ryā`, `saṃpṛktau`→`sam \| pṛktau` | ❌ rejected — catastrophic: more parts means more chances to contain an avyaya fragment |
+| Candidate pool `limit 10 → 20` (6.7 → 11.2 candidates per pada) | 99/147, unchanged from limit 10 | none | ❌ rejected — no measured gain for roughly double the splitting time |
 
 ## 4. Which engine is authoritative for which field
 
-| Field | Engine we publish | Known upstream limit |
+| Field | Engine we publish from | Status of that output |
 |---|---|---|
-| Akshara counts, pāda count | vidyut `chandas` | correct on all 16 verses; ṛ/ṝ are not counted as vowels (`sounds.rs:4`), so a pāda containing ṛ is miscounted by vidyut and by our `_count_aksharas` in step |
-| Metre name | vidyut `chandas` | 145 vṛtta rows, no jāti rows, no anuṣṭubh/triṣṭubh → 11/16 verses unnamed (§1) |
-| Word boundaries | sanskrit_parser pool + vidyut kosha ranking | ceiling 127/147; samāsa resolution and case government need context we do not have |
-| Root, stem, dictionary attestation | vidyut kosha (`load_kosha`) | surface keys only; pause-normalised lookups needed for `vāk`→`vac` |
-| Vibhakti / vacana / liṅga / lakāra tags | sanskrit_parser | per-pada, context-free: 432 of 546 forms arrive ambiguous (§2) |
-| Sentence-level reading (padaccheda) | Dharmamitrā (remote) | returns surface forms with no tags; skips or invents tokens (`jagantaḥ`, a stray `mā`); never used as the reference key |
+| Akshara counts, pāda count | vidyut `chandas` | ✅ correct on all 16 verses; ⚠️ ṛ/ṝ are not counted as vowels (`sounds.rs:4`), so a pāda containing ṛ is miscounted by vidyut and by our `_count_aksharas` in step |
+| Metre name | vidyut `chandas` | ⚠️ 145 vṛtta rows, no jāti rows → 11/16 unnamed (§1); ✅ the five it can name are right, ❌ never a wrong published name (the veto holds) |
+| Word boundaries | sanskrit_parser pool + vidyut kosha ranking | ⚠️ ceiling 127/147; ❌ 24 padas still ranked wrong (§3); samāsa resolution needs context we do not have |
+| Root / stem / dictionary attestation | vidyut kosha (`load_kosha`) | ✅ contains the reference stem for 9/9 pinned forms where sanskrit_parser's primary root is right for only 6/9 (it invents `vandā`, `asta`, `vraja`); ⚠️ surface keys only — pause-normalised lookups needed (`vāk`→`vac`) |
+| Vibhakti / vacana / liṅga / lakāra tags | sanskrit_parser | ✅ the only engine that emits lakāra/puruṣa at all (vidyut's kosha krdanta entries carry `lakara=None`); ⚠️ context-free: 432 of 546 forms arrive ambiguous (§2) |
+| Sentence-level reading (padaccheda) | Dharmamitrā (remote) | shown side by side, never merged; ⚠️ returns surface forms with no tags and invents/skips tokens (`jagantaḥ`, a stray `mā`) — which is why it is not the reference key |
 
 ## 5. Reproducing these numbers
 
 ```bash
-uv run pytest -q tests/test_meter_accuracy.py        # offline: prints truth vs best effort for all 16 verses
-uv run pytest -q tests/test_morphology_accuracy.py   # offline: 9/9 offered, 4/9 chosen, warnings name the limit
+uv run pytest -q tests/test_meter_accuracy.py        # offline: truth vs best effort, all 16 verses
+uv run pytest -q tests/test_morphology_accuracy.py   # offline: 9/9 offered, 4/9 chosen first
 SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_sandhi_accuracy.py   # ~50 s live; prints every missed pada
 ```
 
-`test_meter_accuracy.py` currently passes with **11 warnings** (one per verse vidyut cannot name), `test_morphology_accuracy.py`
-with **5 warnings** (`vande`, `jagatas`, `asti`, `vraja`, `śucaḥ`). Those warnings are the point of the tests: an engine
-limit is reported, never hidden. See [DOCUMENTATION.md](DOCUMENTATION.md) §9 (splitting), §10 (metre) and §11 (word
-readings) for how each fixture was built and which further rules were ruled out.
+`test_meter_accuracy.py` passes with **11 warnings** (one per verse vidyut cannot name) and
+`test_morphology_accuracy.py` with **5 warnings** (`vande`, `jagatas`, `asti`, `vraja`, `śucaḥ`). Those warnings *are*
+the deliverable: an engine limit is reported, never hidden. How each fixture was built and which further rules were
+ruled out lives in [DOCUMENTATION.md](DOCUMENTATION.md) §9 (splitting), §10 (metre), §11 (word readings) and §12
+(the optional lexical scorer).
+
+The numbers above are **master**. The gensim + sentencepiece lexical-scorer experiment, with its own measured verdict
+(same 103/147, one curated regression, goldens move — not merged), lives on the branch
+`feature/engine-accuracy-tuning`; see DOCUMENTATION.md §12.
+
+## 6. Parked for later (decisions, not bugs)
+
+- **Metre naming.** Two ways to close the eleven ⚠️ rows: ship our own jāti/vṛtta table in this project, or fix vidyut
+  upstream (`meters.tsv` needs `jati` rows and `try_match` needs to respect declared length). Kept as a future task —
+  whichever is chosen, §1's table is the acceptance test.
+- **Root attestation filter.** Demote a sanskrit_parser reading whose `root` is absent from the vidyut kosha lemma set
+  for that form (would fix `vandā`, `asta`, `vraja`). Must be scored with the §9 harness over all sixteen verses first —
+  a neighbouring rule lost 10 forms to gain 3.
+- **Dharmamitrā upstream report.** Its `jagantaḥ` / `sūnantāḥ` type noise is worth reporting; until then it stays an
+  unmerged second opinion.

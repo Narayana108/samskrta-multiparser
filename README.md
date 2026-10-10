@@ -4,7 +4,7 @@
 
 Unified multi-engine Sanskrit analyzer. Runs three independent engines — [sanskrit_parser](https://github.com/kmadathil/sanskrit_parser), [Dharmamitra](https://dharmamitra.org) and [vidyut](https://github.com/ambuda-org/vidyut) — on the same input (Devanagari, or any romanization vidyut's lipi can detect: IAST, SLP1, Harvard-Kyoto, ITRANS) and writes a pair of JSON documents under one base name: `<base>.raw.json`, holding everything each engine produced, and `<base>.result.json`, the condensed word-by-word reading.
 
-**Further reading:** [DOCUMENTATION.md](DOCUMENTATION.md) — architecture, the library quirks that shaped the code, and maintenance notes · [ACCURACY.md](ACCURACY.md) — every measured accuracy figure (metre names, word readings, word boundaries) against published sources.
+**Further reading:** [DOCUMENTATION.md](DOCUMENTATION.md) — architecture, the library quirks that shaped the code, and maintenance notes · [ACCURACY.md](ACCURACY.md) — every measured accuracy figure (metre names, word readings, word boundaries) against published sources; each row is marked **✅ correct**, **❌ our error** or **⚠️ engine limit**, with a scoreboard at the top.
 
 ### Engine versions this project runs on
 
