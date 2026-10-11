@@ -119,7 +119,7 @@ top.
 ```bash
 uv run pytest -q                    # offline: 444 passed, 34 skipped — no network, deterministic
 SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_golden_outputs.py \
-    tests/test_sandhi_accuracy.py tests/test_tools.py          # ~155 s, needs network + both engines
+    tests/test_sandhi_accuracy.py tests/test_tools.py   # 157 passed in ~200 s; needs network + both engines
 ```
 
 The offline half proves the reading pass still reproduces each pinned `<stem>.result.json` from its pinned raw file and
