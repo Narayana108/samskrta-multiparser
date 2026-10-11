@@ -329,20 +329,19 @@ uv run pytest -q                          # offline suite
   input). Parent directories are created on demand, and a trailing `.json`, `.raw` or
   `.result` on the base is stripped — feeding a generated file back into `-o`/`-i`
   reproduces its sibling pair.
-- stdout carries only the reading document's top-level `input` and `chandas` objects, re-read from the file that was just
-  written; warnings, errors and the postprocessor's size summary all go to stderr. Piping an analysis run therefore yields
-  a small JSON object, never the full dump — and since vidyut's reliability note travels inside `chandas` (§12), the caveat
-  about its metre names is in that output too.
+- stdout carries every library warning — Python's own format, nothing filtered — followed by the reading document's
+  top-level `input` and `chandas` objects, re-read from the file that was just written; the tool's own notes and the
+  postprocessor's size summary go to stderr. Piping an analysis run therefore yields warning lines plus a small JSON
+  object, never the full dump: parse from the first `{`. Since vidyut's reliability note travels inside `chandas` (§12),
+  the caveat about its metre names is in that output too.
 - Exit codes for `samskrta`: **0** the analysis is complete (a Dharmamitrā failure only degrades its own section, with a
   `Warning:` on stderr); **1** an input problem — unreadable `-i` file, an ambiguous or empty `input/`, or the reading
   document could not be built from the raw one; **2** a *local* engine (sanskrit_parser or vidyut) could not run at all —
   both documents, error objects included, are written first, because a silent half-run is worse than a failing one;
   **3** an output file could not be written (`OSError`). `samskrta-postprocess` uses only 0 and 1.
-- **There is no `--quiet`, deliberately.** stdout already carries nothing but the two summary objects, so every remaining
-  stderr line explains an engine limit or a degraded section (Dharmamitrā timeout, a metre name demoted to `candidates`,
-  tokens that rebuilt no word, dictionary fallback). A flag that silenced them would hide exactly the information this
-  project exists to surface.
-  The sidecar exists so a run can be audited after its terminal is gone, not so anything can be hidden from it.
+- **There is no `--quiet`, deliberately.** Every line a run prints explains an engine limit, an upstream warning or a
+  degraded section (Dharmamitrā timeout, a metre name demoted to `candidates`, tokens that rebuilt no word, dictionary
+  fallback). A flag that silenced them would hide exactly the information this project exists to surface.
 - On import, sanskrit_parser sets its own logger to DEBUG and attaches a stderr handler.
   `_quiet_library_logging()` raises those two loggers to WARNING *after* the import — before it the
   handlers do not exist yet — otherwise every run writes ~3.5 MB of split traces per śloka into whatever
@@ -357,11 +356,12 @@ uv run pytest -q                          # offline suite
   gensim/sentencepiece are absent — deliberately: installing both satisfies that notice but measurably
   *worsens* the output (raghuvamsha-1.1's reading became `vāgarthās | viva`, raghuvamsha-1.5 lost the analysis
   for its longest fused pada, and each run slowed by ~1.4 s). Fix what is ours to fix; report the rest.
-- **Every warning also lands in `<base>.warnings.json`.** `install_warning_capture()` replaces `warnings.showwarning` with
-  a hook that prints first — Python's own format, the identical line as before — and records second. The sidecar holds one
-  entry per distinct message (category, text, where it first fired, how often), written beside the two documents after they
-  are written, never instead of them (§12). If writing it fails, that is reported on stderr and the exit code stays what
-  the analysis earned. `samskrta-postprocess` writes none: its pass imports no engine.
+- **Warnings print on stdout.** `show_warnings_on_stdout()` replaces `warnings.showwarning` with a hook that formats through
+  the public `warnings.formatwarning` and writes to `sys.stdout`: byte-for-byte Python's own line, nothing filtered,
+  deduplicated or reworded — only the stream changes, so everything a human reads about a run arrives in one place. The
+  ambient printer is deliberately not called: test runners replace it with one that ignores the stream argument. The hook is
+  installed before any engine import, which is why even the import-time `SAWarning` shows up. There is no file to audit
+  afterwards because nothing is written anywhere else; `samskrta-postprocess` imports no engine and prints none of these.
 
 ## 8. Known issues and maintenance notes
 
@@ -707,8 +707,8 @@ each right reading survived.
 
 ## 12. Output document schemas
 
-The README describes what the documents are *for*; this appendix is the field-by-field reference for every file a run
-writes — the two analysis documents and the warning sidecar — so a consumer parsing them has one place to read.
+The README describes what the documents are *for*; this appendix is the field-by-field reference for both, so a
+consumer parsing them has one place to read.
 
 ### `meta` — provenance, first key of `<base>.raw.json`
 
@@ -991,34 +991,3 @@ result document (<base>.result.json: padaccheda + engine-keyed padas + chandas w
 ```
 
 This turns a ~90 KB raw document into a ~7 KB reading while preserving the linguistic content of both comparison engines.
-
-### `<base>.warnings.json` — the warning sidecar
-
-Written by `app.write_warnings_document()` after the two analysis documents, and only when some library warning actually
-fired during that run:
-
-```json
-{
-  "meta": { … },                          // the same provenance block as the raw document
-  "note": "Every warning listed here also appeared on stderr during the run; nothing was suppressed. 'count' is how many times that warning fired.",
-  "warnings": [
-    {
-      "category": "SAWarning",
-      "message": "Mapper[AbstractNominal(nominal)] does not indicate a 'polymorphic_identity', yet is part of an inheritance hierarchy that has a 'polymorphic_on' column of 'form.pos_id'. …",
-      "location": "/home/rsi/.local/share/mise/installs/python/3.12.13/lib/python3.12/site-packages/sanskrit_util/schema.py:545",
-      "count": 1
-    }
-  ]
-}
-```
-
-- One entry per **distinct message**: the same complaint arriving from several call sites (`LegacyAPIWarning` fires on
-  every lookup) is one row with a rising `count`; `location` keeps where it first fired. Message and category are the key,
-  because two call sites are not two facts.
-- It never replaces or edits either analysis document: warnings stay out of `<base>.result.json` by design, so the reading
-  stays a reading and its bytes stay reproducible from the raw pair alone.
-- Best-effort by contract: an `OSError` while writing it is reported on stderr and leaves the exit code exactly what the
-  analysis earned — the warnings themselves were already printed, so nothing is lost by that failure.
-- `location` holds an absolute path into whoever's site-packages, so goldens pin this file's **structure**, never its
-  text: another machine or interpreter legitimately writes different paths.
-- `samskrta-postprocess` writes none of these: the offline pass imports no engine and therefore raises no engine warning.

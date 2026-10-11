@@ -1265,9 +1265,7 @@ def test_both_documents_are_written_even_when_a_local_engine_fails(tmp_path, mon
     monkeypatch.setattr(sys, "argv", ["app.py", "shloka", "-i", src, "-o", base])
     assert app.main() == 2   # exit code 2 says the comparison is incomplete; it does not suppress either document
     written = sorted(p.name for p in tmp_path.iterdir() if p.suffix == ".json")
-    assert written[:2] == ["analysis.raw.json", "analysis.result.json"]
-    # A library warning may add its sidecar beside them; it never stands in for either analysis document.
-    assert all(name.endswith((".raw.json", ".result.json", ".warnings.json")) for name in written)
+    assert written == ["analysis.raw.json", "analysis.result.json"]
     raw = json.loads(postprocess_analysis.raw_path(base).read_text(encoding="utf-8"))
     assert raw["engine_outputs"]["vidyut"] == {
         "error": "Vidyut data directory not found"
@@ -1384,111 +1382,63 @@ def test_unanimous_names_still_win_without_a_length_table():
 
 
 # ---------------------------------------------------------------------------
-# Warning capture: stderr keeps every warning, the sidecar records what fired
+# Warning routing: every library warning is shown, on stdout
 # ---------------------------------------------------------------------------
 
 
 @contextlib.contextmanager
-def _capturing_warnings():
-    """Install the print-then-record hook for one test body, then restore everything.
+def _stdout_warnings():
+    """Route warnings to stdout for one test body and hand back what was printed.
 
     It is installed inside the test rather than in a fixture because pytest wraps each phase in its own
-    ``catch_warnings`` block: a hook put in place during setup is replaced again before the test runs. The default
-    printer is swapped for one that collects lines, so a test can see that printing happened without depending on
-    which printer (CPython's or pytest's) was current when ``app`` was imported.
+    ``catch_warnings`` block: a hook put in place during setup is replaced again before the test runs.
     """
-    saved_list = list(app._CAPTURED_WARNINGS)
     saved_hook = warnings.showwarning
-    run = SimpleNamespace(printed=[], recorded=[])
-    app._CAPTURED_WARNINGS.clear()
-
-    def collect(message, category, filename, lineno, file=None, line=None):
-        run.printed.append(f"{filename}:{lineno}: {category.__name__}: {message}")
-
-    app.install_warning_capture()
-    app._DEFAULT_SHOW_WARNING = collect
+    printed = io.StringIO()
+    app.show_warnings_on_stdout()
     try:
         with warnings.catch_warnings():
-            # 'always' so a repeated warning reaches the hook every time instead of being deduplicated by the filter.
+            # 'always' so a repeated warning prints every time instead of being deduplicated by the filter.
             warnings.simplefilter("always")
-            yield run
+            with contextlib.redirect_stdout(printed):
+                yield printed
     finally:
-        # Snapshot before undoing the hook, so assertions written after the block still see what was recorded.
-        run.recorded.extend(app.captured_warnings())
-        app._CAPTURED_WARNINGS[:] = saved_list
-        app._DEFAULT_SHOW_WARNING = saved_hook
         warnings.showwarning = saved_hook
 
 
-def test_a_warning_is_printed_and_then_recorded():
-    with _capturing_warnings() as run:
+def test_a_warning_is_printed_on_stdout_in_python_s_own_format():
+    with _stdout_warnings() as printed:
         warnings.warn("Mapper needs a polymorphic identity", UserWarning)
-    assert len(run.printed) == 1, "recording never replaces printing"
-    assert "UserWarning: Mapper needs a polymorphic identity" in run.printed[0]
-    assert [(e["category"], e["message"], e["count"]) for e in run.recorded] == [
-        ("UserWarning", "Mapper needs a polymorphic identity", 1)
-    ]
-    assert run.recorded[0]["location"].startswith(str(Path(__file__)))
+    text = printed.getvalue()
+    assert "UserWarning: Mapper needs a polymorphic identity" in text, text
+    assert str(Path(__file__)) in text, "the line names where the warning fired"
 
 
-def test_a_repeated_warning_is_recorded_once_with_its_count():
-    with _capturing_warnings() as run:
+def test_a_repeated_warning_prints_every_time_it_fires():
+    with _stdout_warnings() as printed:
         for _ in range(3):
             warnings.warn("legacy data API", DeprecationWarning)
-    assert len(run.printed) == 3, "every firing still prints"
-    # One row per distinct warning, counted — the same complaint from another call site is not a new fact.
-    assert [(e["message"], e["count"]) for e in run.recorded] == [("legacy data API", 3)]
+    # Counted on the formatted prefix, not the message text: Python echoes the offending source line too, and that line
+    # repeats the message.
+    assert printed.getvalue().count("DeprecationWarning: legacy data API") == 3, "nothing is deduplicated away"
 
 
-def test_the_sidecar_document_lists_every_warning_with_provenance(tmp_path):
-    with _capturing_warnings():
-        warnings.warn("first", UserWarning)
-        warnings.warn("first", UserWarning)
-        warnings.warn("second", RuntimeWarning)
-        path = app.write_warnings_document(str(tmp_path / "verse"))
-    assert path == tmp_path / "verse.warnings.json"
-    document = json.loads(path.read_text(encoding="utf-8"))
-    assert list(document) == ["meta", "note", "warnings"]
-    assert document["meta"]["tool_version"] == postprocess_analysis.TOOL_VERSION
-    assert [(w["message"], w["count"]) for w in document["warnings"]] == [("first", 2), ("second", 1)]
-    assert "nothing was suppressed" in document["note"]
+def test_a_real_process_puts_its_engine_warnings_on_stdout():
+    """A subprocess: pytest's own capture hides what a plain run writes to each stream.
 
-
-def test_no_sidecar_is_written_when_the_run_warned_about_nothing(tmp_path):
-    with _capturing_warnings():
-        assert app.write_warnings_document(str(tmp_path / "verse")) is None
-    assert list(tmp_path.iterdir()) == []
-
-
-def test_a_real_process_prints_its_warnings_and_records_the_same_ones(tmp_path):
-    """A subprocess: pytest's own capture hides what a plain run writes to stderr.
-
-    The warning is raised on purpose so the check cannot pass vacuously; the engine import beside it is the real
-    source (`sanskrit_util/schema.py` raises an `SAWarning` while importing), and whatever it adds must be recorded
-    too — nothing printed may be missing from the sidecar.
+    The deliberate warning guarantees a line to look for; whatever the engine imports add (`SAWarning` from
+    ``sanskrit_util/schema.py``, ``MovedIn20Warning``) has to land on stdout beside it, not only on stderr.
     """
     script = (
-        "import json, sys, warnings\n"
+        "import warnings\n"
         "import app\n"
-        "app.install_warning_capture()\n"
-        "try:\n"
-        "    import sanskrit_parser\n"
-        "except Exception as exc:\n"
-        "    print(f'engine import failed: {exc}', file=sys.stderr)\n"
-        "warnings.warn('polymorphic identity missing', UserWarning, stacklevel=1)\n"
-        f"path = app.write_warnings_document({str(tmp_path / 'verse')!r})\n"
-        "print(json.dumps({'path': str(path), 'recorded': app.captured_warnings()}))\n"
+        "app.show_warnings_on_stdout()\n"
+        "warnings.warn('deliberate', UserWarning)\n"
+        "import sanskrit_parser\n"
     )
-    result = subprocess.run(
-        [sys.executable, "-c", script], capture_output=True, text=True, cwd=str(Path(app.__file__).parent)
-    )
-    assert result.returncode == 0, result.stderr
-    payload = json.loads(result.stdout.strip().splitlines()[-1])
-    messages = [entry["message"] for entry in payload["recorded"]]
-    assert "polymorphic identity missing" in messages
-    # Every recorded warning is still on stderr in Python's own format, and the file names where it came from.
-    for entry in payload["recorded"]:
-        assert f"{entry['category']}: {entry['message']}" in result.stderr
-        assert entry["location"].rsplit(":", 1)[0] in result.stderr
-    document = json.loads(Path(payload["path"]).read_text(encoding="utf-8"))
-    assert [w["message"] for w in document["warnings"]] == messages
+    proc = subprocess.run([sys.executable, "-c", script], cwd=str(Path(app.__file__).parent),
+                          capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stderr
+    assert "UserWarning: deliberate" in proc.stdout, proc.stdout + proc.stderr
+    upstream = ("SAWarning", "MovedIn20Warning", "LegacyAPIWarning")
+    assert any(name in proc.stdout for name in upstream), f"no engine warning reached stdout:\n{proc.stdout}"

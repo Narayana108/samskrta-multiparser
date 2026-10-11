@@ -76,15 +76,16 @@ uv run samskrta-postprocess (-i RAW.json | -o BASE) [--no-dictionary]
 | 0 | analysis complete (a Dharmamitrā failure only degrades its own section, with a `Warning:` on stderr) | reading document written |
 | 1 | input problem: unreadable `-i`, ambiguous/empty `input/`, or the reading document could not be built from the raw one | any failure |
 | 2 | a *local* engine (sanskrit_parser or vidyut) could not run at all — both documents, error objects included, are written first | |
-| 3 | an output file could not be written (`OSError`) — the two analysis documents only; failing to write `<base>.warnings.json` is reported and changes nothing | |
+| 3 | an output file could not be written (`OSError`) — only the two analysis documents are covered by this code | |
 
-stdout carries only the reading document's top-level `input` and `chandas` objects — the metre caveat travels inside
-`chandas`, which is why it lives in the JSON instead of flickering past on the console. Every warning, engine error and
-the postprocessor's size summary goes to stderr, and each distinct warning is additionally recorded in
-`<base>.warnings.json`. There is no `--quiet`, deliberately: those lines are the point of the tool
-([DOCUMENTATION.md §7](DOCUMENTATION.md)).
+stdout carries every library warning — in Python's own format, nothing filtered — followed by the reading document's
+top-level `input` and `chandas` objects; the metre caveat travels inside `chandas`, which is why it lives in the JSON
+instead of flickering past on the console. A warning line may therefore precede the JSON: parse from the first `{` if
+you pipe. The tool's own notes (`Warning:` for a degraded section, the provenance mismatch note, an incomplete run) stay
+on stderr with the libraries' log noise. There is no `--quiet`, deliberately: those warning lines are the point of the
+tool ([DOCUMENTATION.md §7](DOCUMENTATION.md)).
 
-## The documents a run writes
+## The two documents
 
 - **`<base>.raw.json`** — what each engine said, before any merging: full sanskrit_parser output (including every split
   candidate it offered), Dharmamitrā's token stream with locally-filled lemmas and the per-pada follow-up requests,
@@ -104,9 +105,6 @@ the postprocessor's size summary goes to stderr, and each distinct warning is ad
   its name is not. Reproducible from any raw file, offline and byte-stable. It carries no provenance block of its own: a
   reading inherits the engines recorded in its raw pair, and re-processing a raw document written by other versions
   prints a one-line note on stderr rather than passing silently.
-- **`<base>.warnings.json`** — written only when some library warning fired during the run: each distinct warning with
-  its category, message, where it first appeared and how many times it fired. Nothing is filtered; every one of those
-  lines still reaches stderr in Python's own format.
 
 Full field-by-field schemas, with example JSON for each engine and for the reading document:
 [DOCUMENTATION.md §12](DOCUMENTATION.md).

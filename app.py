@@ -37,9 +37,8 @@ Output:
       (override with -o BASE — a trailing '.json' is stripped, directories are created)
     - '<base>.result.json': the condensed comparison document for the same base; its 'chandas' object carries vidyut's
       reliability note about metre names
-    - '<base>.warnings.json': written only when a library warning fired — each distinct one, printed to stderr as always
-      and recorded here with how often it repeated (never inside either analysis document)
-    - stdout: only the result document's top-level 'input' and 'chandas' objects
+    - stdout: every library warning in Python's own format, then only the result document's top-level 'input' and
+      'chandas' objects
 
 Error policy:
     Dharmamitra is a remote service and therefore optional: when it cannot be
@@ -81,68 +80,26 @@ def _quiet_library_logging() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Warning capture
+# Warning routing
 # ---------------------------------------------------------------------------
-# Upstream libraries warn on every run — the SQLAlchemy `SAWarning` from `sanskrit_util/schema.py:545`,
-# `LegacyAPIWarning` from its data wrapper, and whatever a newer engine adds. All of them still reach stderr in
-# Python's own format; in addition each unique one is recorded in `<base>.warnings.json` next to the two documents,
-# so the conditions of a run can be audited after the terminal is gone. Nothing is filtered or reworded: the hook
-# prints first and records second.
+# Upstream libraries warn on every run — the SQLAlchemy `SAWarning` from `sanskrit_util/schema.py:545`, the
+# `LegacyAPIWarning` from its data wrapper, and whatever a newer engine adds. Every one of them is shown in Python's own
+# format, nothing filtered or reworded; only the stream changes, so everything a human reads about a run arrives on one
+# stream (stdout) while stderr keeps just the libraries' log noise.
 
-_DEFAULT_SHOW_WARNING = warnings.showwarning
-_CAPTURED_WARNINGS: List[Dict[str, Any]] = []
-
-
-def _show_and_record_warning(message: Any, category: Any, filename: str, lineno: int,
-                             file: Any = None, line: Optional[str] = None) -> None:
-    """Print a warning exactly as Python would, then record it for the warnings document."""
-    _DEFAULT_SHOW_WARNING(message, category, filename, lineno, file, line)
-    text = str(message).strip()
-    label = getattr(category, "__name__", str(category))
-    # Keyed on what was warned about, not on where it was raised: one upstream complaint arrives from several call
-    # sites in a single run (sanskrit_parser's data wrapper repeats itself per lookup), and a document full of
-    # duplicates would say nothing. 'location' keeps the first place it fired; 'count' is every firing.
-    for entry in _CAPTURED_WARNINGS:
-        if (entry["message"], entry["category"]) == (text, label):
-            entry["count"] += 1
-            return
-    _CAPTURED_WARNINGS.append({"category": label, "message": text, "location": f"{filename}:{lineno}", "count": 1})
+# `warnings.formatwarning` is Python's own formatter, so the line a run prints is byte-for-byte what an unpatched
+# interpreter would print. The ambient `warnings.showwarning` is deliberately not called: test runners and other hosts
+# replace it with a printer of their own that ignores the stream argument.
+def _show_warning_on_stdout(message: Any, category: Any, filename: str, lineno: int,
+                            file: Any = None, line: Optional[str] = None) -> None:
+    """Print a warning in Python's own format, on stdout instead of on stderr."""
+    sys.stdout.write(warnings.formatwarning(message, category, filename, lineno, line))
 
 
-def install_warning_capture() -> None:
-    """Route warnings through print-then-record (idempotent, and never installs itself twice)."""
-    if warnings.showwarning is not _show_and_record_warning:
-        warnings.showwarning = _show_and_record_warning
-
-
-def captured_warnings() -> List[Dict[str, Any]]:
-    """The unique warnings seen so far, in order of first occurrence."""
-    return list(_CAPTURED_WARNINGS)
-
-
-def write_warnings_document(base: str, indent: Optional[int] = None) -> Optional[Path]:
-    """Write `<base>.warnings.json` when the run produced any warning; returns None when it wrote nothing.
-
-    The two analysis documents are the contract; this sidecar only records which library warnings the engines
-    raised on that machine, with how often each fired. It is best-effort by design: a failure to write it is
-    reported on stderr and leaves the exit code alone, because the warnings themselves were already printed.
-    """
-    if not _CAPTURED_WARNINGS:
-        return None
-    path = Path(f"{base}.warnings.json")
-    document = {
-        "meta": postprocess_analysis.meta(DATA_DIR),
-        "note": ("Every warning listed here also appeared on stderr during the run; nothing was suppressed. "
-                 "'count' is how many times that warning fired."),
-        "warnings": captured_warnings(),
-    }
-    try:
-        postprocess_analysis.write_document(path, document, indent)
-    except OSError as exc:
-        print(f"Note: could not write {path}: {exc} — the warnings above are still on stderr.", file=sys.stderr)
-        return None
-    print(f"Note: {len(_CAPTURED_WARNINGS)} library warning(s) recorded in {path}.", file=sys.stderr)
-    return path
+def show_warnings_on_stdout() -> None:
+    """Route warnings to stdout (idempotent, and never installs itself twice)."""
+    if warnings.showwarning is not _show_warning_on_stdout:
+        warnings.showwarning = _show_warning_on_stdout
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -2089,9 +2046,9 @@ def main() -> int:
             stay on disk with an 'error' entry naming the failure, but the comparison is incomplete.
         3 — an output document could not be written (disk or permission error).
 
-        stderr carries every engine-limit note and warning and is never silenced; stdout stays machine-readable. Each
-        distinct warning is additionally recorded in '<base>.warnings.json' beside the pair (best-effort: failing to write
-        that sidecar changes no exit code, because the warnings were already printed).
+        stderr carries the library's own log noise and is never silenced; stdout carries what a human reads — every
+        warning in Python's own format, then the two summary objects. Nothing about an engine limit or a degraded
+        section is hidden from either stream.
     """
     parser = argparse.ArgumentParser(
         description="samskrta-multiparser — Unified multi-engine Sanskrit analyzer"
@@ -2122,8 +2079,8 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    # Installed before any engine import so even the SAWarning raised while importing sanskrit_util is recorded.
-    install_warning_capture()
+    # Installed before any engine import so even the SAWarning raised while importing sanskrit_util reaches stdout.
+    show_warnings_on_stdout()
 
     # Determine input file. Without -i there is exactly one place an input may live: input/.
     if args.input:
@@ -2263,9 +2220,7 @@ def main() -> int:
         print(f"Error writing output: {exc}", file=sys.stderr)
         return 3
 
-    # Every warning that reached stderr is also recorded beside the documents, so an audit survives the terminal.
-    write_warnings_document(base, indent)
-    # stdout stays machine-readable: exactly the two objects, nothing else.
+    # stdout carries everything a human reads about the run: warnings first, then exactly the two summary objects.
     postprocess_analysis.print_input_and_chandas(result_file, indent)
 
     if failed_local_engines:
