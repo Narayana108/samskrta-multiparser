@@ -5,6 +5,8 @@ Analyse a Sanskrit verse with three independent engines — **Dharmamitrā** (HT
 `<base>.raw.json`, the untouched engine output, and `<base>.result.json`, a pada-by-pada reading that lines their
 answers up side by side. Nothing is merged into a consensus: where the engines disagree, the document says so.
 
+How it works, every engine quirk we work around, and the full output schemas: [DOCUMENTATION.md](DOCUMENTATION.md).
+
 ## Known limits — read before trusting an answer
 
 Measured on sixteen pinned verses against published padaccheda and metre tables; every figure and its provenance is in
@@ -12,7 +14,8 @@ Measured on sixteen pinned verses against published padaccheda and metre tables;
 
 - **Word boundaries: 104 of 147 padas** match the published split exactly. Of the rest, ⚠️20 are pool-limited — no
   reference-consistent split exists in what sanskrit_parser proposed for that line — and ❌23 are ranking-limited: the
-  right split is in the pool but our ranking does not choose it today. The ceiling with this candidate set is 127 (§9).
+  right split is in the pool but our ranking does not choose it today. The ceiling with this candidate set is 127 — live
+  passes measure 126–128, because sanskrit_parser's own candidate pool drifts per process (§9).
 - **Metre is named for exactly 5 of the 16 verses.** vidyut scans every verse correctly (`aksharas_per_pada` matches
   the published grid on all sixteen) but its 145-row table contains no jāti metre, so अनुष्टुप् and उपजातिः can never be
   named; it reports lookalike vṛtta names or `null`. Naming them is a metre-table problem, not a scanning problem (§10).
@@ -73,22 +76,20 @@ uv run samskrta-postprocess (-i RAW.json | -o BASE) [--no-dictionary]
 | 0 | analysis complete (a Dharmamitrā failure only degrades its own section, with a `Warning:` on stderr) | reading document written |
 | 1 | input problem: unreadable `-i`, ambiguous/empty `input/`, or the reading document could not be built from the raw one | any failure |
 | 2 | a *local* engine (sanskrit_parser or vidyut) could not run at all — both documents, error objects included, are written first | |
-| 3 | an output file could not be written (`OSError`) | |
+| 3 | an output file could not be written (`OSError`) — the two analysis documents only; failing to write `<base>.warnings.json` is reported and changes nothing | |
 
-stdout carries only the reading document's top-level `input` and `chandas` objects; every warning, engine error and
-the postprocessor's size summary goes to stderr. There is no `--quiet`, deliberately: those lines are the point of the
-tool ([DOCUMENTATION.md §7](DOCUMENTATION.md)).
+stdout carries only the reading document's top-level `input` and `chandas` objects — the metre caveat travels inside
+`chandas`, which is why it lives in the JSON instead of flickering past on the console. Every warning, engine error and
+the postprocessor's size summary goes to stderr, and each distinct warning is additionally recorded in
+`<base>.warnings.json`. There is no `--quiet`, deliberately: those lines are the point of the tool
+([DOCUMENTATION.md §7](DOCUMENTATION.md)).
 
-## The two documents
+## The documents a run writes
 
 - **`<base>.raw.json`** — what each engine said, before any merging: full sanskrit_parser output (including every split
   candidate it offered), Dharmamitrā's token stream with locally-filled lemmas and the per-pada follow-up requests,
-  vidyut's sandhi chains plus kosha readings, prakriya derivations and `chandas` per pāda. Not reproducible: it re-hits
-  the network and lets sanskrit_parser enumerate candidates in an order it does not specify (§3).
-- **`<base>.result.json`** — one entry per pada with each engine's split side by side, a `differences` field naming the
-  disagreements, chosen-word morphology, metre summary. Reproducible from any raw file, offline and byte-stable.
-
-Both start with the same provenance block, so a figure can always be traced to the engines that produced it:
+  vidyut's sandhi chains plus kosha readings, prakriya derivations and `chandas` per pāda. It opens with the provenance
+  block, so any figure can be traced back to the engines that produced it:
 
 ```json
 "meta": { "tool_version": "1.0.0",
@@ -96,8 +97,18 @@ Both start with the same provenance block, so a figure can always be traced to t
           "vidyut_data": "data-0.4.0" }
 ```
 
-Re-processing a raw document written by different engine versions prints a one-line note on stderr rather than passing
-silently. Full field-by-field schemas, with example JSON for each engine and for the reading document:
+  It is not reproducible: it re-hits the network and lets sanskrit_parser enumerate candidates in an order it does not
+  specify (§3).
+- **`<base>.result.json`** — one entry per pada with each engine's split side by side, a `differences` field naming the
+  disagreements, chosen-word morphology, and vidyut's metre summary with a `note` on what its counts are worth and what
+  its name is not. Reproducible from any raw file, offline and byte-stable. It carries no provenance block of its own: a
+  reading inherits the engines recorded in its raw pair, and re-processing a raw document written by other versions
+  prints a one-line note on stderr rather than passing silently.
+- **`<base>.warnings.json`** — written only when some library warning fired during the run: each distinct warning with
+  its category, message, where it first appeared and how many times it fired. Nothing is filtered; every one of those
+  lines still reaches stderr in Python's own format.
+
+Full field-by-field schemas, with example JSON for each engine and for the reading document:
 [DOCUMENTATION.md §12](DOCUMENTATION.md).
 
 ## Environment variables
@@ -117,7 +128,7 @@ top.
 ## Tests
 
 ```bash
-uv run pytest -q                    # offline: 444 passed, 34 skipped — no network, deterministic
+uv run pytest -q                    # offline: 449 passed, 34 skipped — no network, deterministic
 SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_golden_outputs.py \
     tests/test_sandhi_accuracy.py tests/test_tools.py   # 157 passed in ~200 s; needs network + both engines
 ```

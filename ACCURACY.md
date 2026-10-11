@@ -173,10 +173,14 @@ sanskrit_parser writes final visarga as `s`, anusvara as `m`.
 | Same code, different processes on the same day | 99–104 / 147 | `parser.split(limit=10)` enumerates in unspecified order → ±4 drift; the gated floor `MIN_MATCHES = 101` absorbs it and still catches real regressions |
 | Ranking by morphology only (the old behaviour) | 92 / 147 | why dictionary attestation is our primary key: +11 from using the kosha |
 
-`tools/sandhi_ceiling.py` prints all of this from **one process**, so the miss split is a measurement and not
-arithmetic across runs. Two runs on 2026-10-10 after the gate clause below landed gave `picked 104/147` both times, with
-ceiling **127** (⚠️ 20 pool / ❌ 23 ranking) and **128** (⚠️ 19 / ❌ 24): the candidate pool itself drifts by one pada because
-`parser.split(limit=10)` enumerates in unspecified order. The two kinds of miss look completely different:
+`tools/sandhi_ceiling.py` splits each pada **once** and scores the pools that split produced, so the miss split measures
+one search space instead of arithmetic across runs — and `--reuse` on the file it dumps reproduces those figures exactly
+(measured today: live 104 picked / 126 ceiling, reuse 104 / 126). Runs on 2026-10-10 and 2026-10-11 all gave
+`picked 104/147`; the ceiling came out **126** (⚠️ 21 pool / ❌ 22 ranking), **127** (⚠️ 20 / ❌ 23) and **128**
+(⚠️ 19 / ❌ 24): the candidate pool itself drifts by up to two padas per process because `parser.split(limit=10)` enumerates
+in unspecified order. So `tests/test_tools.py` pins a cached re-rank against **the very process that wrote those pools** —
+exact equality there — rather than against another live pass; comparing two live passes would measure sanskrit_parser's
+jitter, not our cache. The two kinds of miss look completely different:
 
 | Kind | Example pada | Source of truth | What came out | Verdict |
 |---|---|---|---|---|
@@ -192,7 +196,7 @@ the app would publish; the shipped baseline in that process was **104/147** (bef
 
 | Change | Measured score | New curated-pada failures | Verdict |
 |---|---|---|---|
-| Reject every split vidyut's own sandhi table cannot produce — chain `Splitter.split_at(...).is_valid` over the parts and demote it below what the table can build | 103 (−1) | **zero padas fixed**; one broken: `saṃbhṛtārthānāṃ`, where our correct `sambhṛtā \| arthānām` is itself judged illegal, so the fused word wins | ❌ rejected — vidyut's `data-0.4.0/sandhi/rules.csv` calls only **126/147** of the reference cuts legal strictly, 143/147 with visarga/final-s folded (the lab prints that line), so it is not a sound legality oracle; building the map costs ~0.05 s for the whole corpus, and every junk joint in our ranking-limited padas (`mām \| ekam`, `cā \| alpaviṣayā`) is "legal", so legality separates nothing where we actually miss |
+| Reject every split vidyut's own sandhi table cannot produce — chain `Splitter.split_at(...).is_valid` over the parts and demote it below what the table can build | 103 (−1) on 2026-10-10's pools, **104 (+0)** re-measured 2026-10-11 | **zero padas fixed**; one broken: `saṃbhṛtārthānāṃ`, where our correct `sambhṛtā \| arthānām` is itself judged illegal, so the fused word wins — and that pada's correct candidate is not in every process's pool, which is why the score gap moves | ❌ rejected on coverage, not on the ±1: vidyut's `data-0.4.0/sandhi/rules.csv` calls only **126/147** of the reference cuts legal strictly, 143/147 with visarga/final-s folded (the lab prints that line), so it is not a sound legality oracle; building the map costs ~0.05 s for the whole corpus, and every junk joint in our ranking-limited padas (`mām \| ekam`, `cā \| alpaviṣayā`) is "legal", so legality separates nothing where we actually miss |
 | Gate accepts an attestation **tie**: a transparent-compound split may beat the whole pada when its scarcest part is *at least as* attested (`>=` where it demanded strictly better) | 104 (+`paścārdhena` → `paścā \| ardhena`) | none in the fixture; on published goldens it also cuts BG 11.15's `kamalāsanastham` at the wrong joint (`kamalā \| āsanastham`, still a miss either way) | ✅ **shipped** — +1, no counted regression; needed a live regeneration of all 16 goldens |
 | Gate part-length floor `_MIN_DEEP_PART_LEN` 5 → 3 | 84 (−20) | `satyāya`→`satī \| āya`, `prajāyai`→`prajās \| yai`, `navāni`→`nava \| āni`, `saṃpṛktau`→`sam \| pṛktau` | ❌ rejected — the floor exists to stop exactly these sandhi fragments |
 | Gate part ceiling `_MAX_DEEP_PARTS` 3 → 4 | 105 (+`śramavivṛtamukhabhraṃśibhiḥ`) | none measured | ⏸ not shipped — one pada of evidence, unmeasured blast radius on words the fixture does not cover, and another live regeneration |
@@ -226,7 +230,7 @@ SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_sandhi_accuracy.py   # ~50 s 
 uv run python tools/meter_audit.py                 # offline: rebuilds §1, with the reason for every null
 uv run python tools/morphology_ranks.py            # offline: rebuilds §2, incl. the rank of the right reading
 uv run python tools/morphology_lab.py              # offline (kosha only): re-score a proposed reading rule on the pinned corpus
-uv run python tools/sandhi_ceiling.py              # ~25 s local (no network): §3 score + ceiling + fault split
+uv run python tools/sandhi_ceiling.py              # ~16 s local (no network): §3 score + ceiling + fault split
 uv run python tools/sandhi_lab.py --pools pools.json   # ~2 s local: re-score a proposed split rule on the cached pools,
                                                        #   and report how many reference cuts vidyut's sandhi table calls
                                                        #   legal (126/147 strictly, 143/147 with visarga/final-s folded)
@@ -236,7 +240,7 @@ The first three tools are how every table in this file was produced. They read o
 also calls the splitter itself — and import the same scoring helpers as the tests, so any figure here can be
 regenerated instead of re-derived by hand; `tools/sandhi_ceiling.py --pools pools.json` caches the candidate pools and
 `--reuse pools.json` scores from them, which is how a ranking idea gets measured against an identical search space in
-seconds rather than 25 s per variant (DOCUMENTATION.md §9).
+seconds rather than ~16 s per variant (measured 2026-10-11; DOCUMENTATION.md §9).
 
 A **word-reading** rule only reorders JSON, so `tests/data/results/*.result.json` is regenerated offline from the pinned
 raw output (`for f in tests/data/results/*.raw.json; do uv run samskrta-postprocess -i "$f"; done`, ~7 s);

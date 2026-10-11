@@ -318,7 +318,7 @@ uv run pytest -q                          # offline suite
   [ACCURACY.md](ACCURACY.md) is committed so the same probe never has to be written twice:
   `tools/meter_audit.py` (offline rebuild of ACCURACY §1, printing the measured reason for every unnamed verse),
   `tools/morphology_ranks.py` (offline rebuild of §2, including the rank at which the right reading survives among
-  the alternates) and `tools/sandhi_ceiling.py` (~25 s local: score, pool ceiling and the ⚠️/❌ fault split). The two
+  the alternates) and `tools/sandhi_ceiling.py` (~16 s local: score, pool ceiling and the ⚠️/❌ fault split). The two
   labs — `tools/morphology_lab.py` (word-reading rules, kosha only) and `tools/sandhi_lab.py` (split-ranking rules over
   cached pools, plus the legality-coverage line of §9) — re-score a proposed rule in seconds; both are pinned by tests. They
   share `tools/_env.py`, which pins `VIDYUT_DATA_DIR` and the import path exactly like `tests/conftest.py`, and they
@@ -329,10 +329,10 @@ uv run pytest -q                          # offline suite
   input). Parent directories are created on demand, and a trailing `.json`, `.raw` or
   `.result` on the base is stripped — feeding a generated file back into `-o`/`-i`
   reproduces its sibling pair.
-- stdout carries only the reading document's top-level `input` and `chandas` objects,
-  re-read from the file that was just written; warnings, errors and the postprocessor's
-  size summary all go to stderr. Piping an analysis run therefore yields a small JSON
-  object, never the full dump.
+- stdout carries only the reading document's top-level `input` and `chandas` objects, re-read from the file that was just
+  written; warnings, errors and the postprocessor's size summary all go to stderr. Piping an analysis run therefore yields
+  a small JSON object, never the full dump — and since vidyut's reliability note travels inside `chandas` (§12), the caveat
+  about its metre names is in that output too.
 - Exit codes for `samskrta`: **0** the analysis is complete (a Dharmamitrā failure only degrades its own section, with a
   `Warning:` on stderr); **1** an input problem — unreadable `-i` file, an ambiguous or empty `input/`, or the reading
   document could not be built from the raw one; **2** a *local* engine (sanskrit_parser or vidyut) could not run at all —
@@ -342,6 +342,7 @@ uv run pytest -q                          # offline suite
   stderr line explains an engine limit or a degraded section (Dharmamitrā timeout, a metre name demoted to `candidates`,
   tokens that rebuilt no word, dictionary fallback). A flag that silenced them would hide exactly the information this
   project exists to surface.
+  The sidecar exists so a run can be audited after its terminal is gone, not so anything can be hidden from it.
 - On import, sanskrit_parser sets its own logger to DEBUG and attaches a stderr handler.
   `_quiet_library_logging()` raises those two loggers to WARNING *after* the import — before it the
   handlers do not exist yet — otherwise every run writes ~3.5 MB of split traces per śloka into whatever
@@ -356,6 +357,11 @@ uv run pytest -q                          # offline suite
   gensim/sentencepiece are absent — deliberately: installing both satisfies that notice but measurably
   *worsens* the output (raghuvamsha-1.1's reading became `vāgarthās | viva`, raghuvamsha-1.5 lost the analysis
   for its longest fused pada, and each run slowed by ~1.4 s). Fix what is ours to fix; report the rest.
+- **Every warning also lands in `<base>.warnings.json`.** `install_warning_capture()` replaces `warnings.showwarning` with
+  a hook that prints first — Python's own format, the identical line as before — and records second. The sidecar holds one
+  entry per distinct message (category, text, where it first fired, how often), written beside the two documents after they
+  are written, never instead of them (§12). If writing it fails, that is reported on stderr and the exit code stays what
+  the analysis earned. `samskrta-postprocess` writes none: its pass imports no engine.
 
 ## 8. Known issues and maintenance notes
 
@@ -545,8 +551,8 @@ Per-word sandhi splitting has no oracle inside the tool, so one was built outsid
   garbage sets collide), and folding surface forms onto stems before comparison as too brittle.
 - **Measured, on that fixture.** vidyut's `recursive_split` chains contained a reference-consistent reading
   for 33 of the 63 padas they covered (measured back when the fixture had 64 rows). sanskrit_parser's
-  ten-candidate pool contains one for **127/147** — the ceiling any ranking can reach; it drifts by one pada
-  between processes, because `parser.split(limit=10)` enumerates candidates in an unspecified order. Ranking
+  ten-candidate pool contains one for **126–128 of the 147** — the ceiling any ranking can reach; it drifts by up to two
+  padas between processes, because `parser.split(limit=10)` enumerates candidates in an unspecified order. Ranking
   by morphology alone reaches **92/147**; dictionary attestation as the primary key reaches 99; full
   `_best_word_split` with `load_kosha()` reaches **104/147**. The transparent-compound gate
   (`_MAX_DEEP_PARTS`, `_MIN_DEEP_PART_LEN`) is what carries it from 99 past 100: without the gate a fused atom beats the
@@ -554,11 +560,13 @@ Per-word sandhi splitting has no oracle inside the tool, so one was built outsid
   as* well attested in vidyut's kosha as the whole pada (`>=`, was `>`), which is worth exactly one pada (`paścārdhena` →
   `paścā | ardhena`) and moved nothing else on the fixture. The gated test floors the score at 101 so that tie-breaking
   drift between processes cannot fail it while any real regression does.
-- **How to re-measure it.** `uv run python tools/sandhi_ceiling.py` prints score, ceiling and fault split from one
-  process (~25 s local, no network), which is how the ⚠️ pool-limited / ❌ ranking-limited numbers in ACCURACY §3 are
-  obtained rather than inferred. `--pools pools.json` dumps every candidate pool *with the three features our ranking
-  reads* (`exact_all`, `entry_min`, `standalone`); `--reuse pools.json` then re-ranks those identical pools through
-  `app._rank_with_kosha` and prints both `picked` and the ceiling in ~2 s. On top of that cache,
+- **How to re-measure it.** `uv run python tools/sandhi_ceiling.py` prints score, ceiling and fault split from one process
+  (~16 s local, no network), which is how the ⚠️ pool-limited / ❌ ranking-limited numbers in ACCURACY §3 are obtained rather
+  than inferred. Each pada is split **once** and scored from that same sample: an earlier version called `_best_word_split`
+  again while scoring, so its headline came from a different pool than the one it dumped and the two figures disagreed by a
+  pada on 2026-10-11. `--pools pools.json` dumps every candidate pool *with the three features our ranking reads*
+  (`exact_all`, `entry_min`, `standalone`); `--reuse pools.json` then re-ranks those identical pools through
+  `app._rank_with_kosha` and reproduces both figures in ~1 s. On top of that cache,
   `uv run python tools/sandhi_lab.py --pools pools.json` scores a list of proposed rules — including the ones kept here
   precisely because they lost — and `--show-changes` prints every pada each rule moved. The lab calls the shipped ranker,
   never a copy of it, so its baseline row is by construction what the app publishes; that is also how the landed gate
@@ -699,10 +707,10 @@ each right reading survived.
 
 ## 12. Output document schemas
 
-The README describes what the documents are *for*; this appendix is the field-by-field reference for both, so a
-consumer parsing them has one place to read.
+The README describes what the documents are *for*; this appendix is the field-by-field reference for every file a run
+writes — the two analysis documents and the warning sidecar — so a consumer parsing them has one place to read.
 
-### `meta` — provenance, first key of both documents
+### `meta` — provenance, first key of `<base>.raw.json`
 
 ```json
 {
@@ -718,8 +726,9 @@ consumer parsing them has one place to read.
 }
 ```
 
-- Written by `postprocess_analysis.meta()`, which both passes call, so the pair always names the same tool and engines;
-  `tests/test_golden_outputs.py` pins that equality. `tool_version` equals the package version in `pyproject.toml`.
+- Written by `postprocess_analysis.meta()` and placed at the head of `<base>.raw.json` only. The reading document carries no
+  copy: it is derived, so its engines are whatever its raw pair recorded, and a second block could disagree with the first.
+  `tool_version` equals the package version in `pyproject.toml`.
 - `vidyut_data` records the data directory's **name**, not its path: goldens must stay byte-identical on every machine,
   and a checkout elsewhere would otherwise rewrite all sixteen pairs. The same reason excludes the interpreter version,
   which changes no output byte.
@@ -907,15 +916,19 @@ further. That is an engine gap, not a step this tool skipped.
 
 ### `<base>.result.json`
 
-- `meta`: provenance, identical to the raw document's (§12 above).
+- No provenance block of its own: `<base>.raw.json` names the tool and engines, and this document inherits them from that
+  pair (§12 `meta`). A pass running on different engines than the raw file records nothing new here — it says so on stderr
+  instead of writing a second copy that could contradict the first.
 - `padaccheda`: each engine's full word sequence for the śloka as one pipe-joined line.
 - `padas`: one entry per pada **as written in the input**, keyed by engine. Per-engine `words` carry morphology:
   Dharmamitra tokens carry kosha `lemma`/`type`; sanskrit_parser forms carry `root`, `vibhakti`, `vacana`, `linga`, plus
   `"alternates"` — every other reading the engine offered for that form, omitted when it offered only one. A Dharmamitra
   side that came from a word-level request instead of the verse pass carries `"request": "pada"`.
-- `chandas`: vidyut's verse-level meter summary (`vrtta`, `candidates`, per-pāda akshara counts). A name whose declared
-  length contradicts its pāda stays in `candidates` but cannot decide `vrtta`; `vrtta: null` usually means vidyut's table
-  has no metre for that shape at all (§10).
+- `chandas`: vidyut's verse-level meter summary (`vrtta`, `candidates`, per-pāda akshara counts) plus `note`. A name whose
+  declared length contradicts its pāda stays in `candidates` but cannot decide `vrtta`; `vrtta: null` usually means
+  vidyut's table has no metre for that shape at all (§10). `note` says so in the document itself — the counts are
+  accurate, a candidate name mostly is not — because stdout prints this object and a reader should not have to remember a
+  stderr line from a run they already left. vidyut's own copy under `engine_outputs.vidyut.chandas` stays untouched.
 - `differences`: aligned regions where the two engines split a pada differently (only present when they disagree).
 - `dharmamitra_unmatched`: Dharmamitra tokens from the verse pass that rebuild no word of the verse — reported, never
   filed under a pada (key omitted when empty).
@@ -973,8 +986,39 @@ difflib region diff between engines
     ↓
 vidyut chandas summary copied to the verse level (_summarize_chandas, app.py)
     ↓
-result document (<base>.result.json: meta + padaccheda + engine-keyed padas + chandas
+result document (<base>.result.json: padaccheda + engine-keyed padas + chandas with its reliability note
                 [+ dharmamitra_unmatched when a token rebuilds no word])
 ```
 
 This turns a ~90 KB raw document into a ~7 KB reading while preserving the linguistic content of both comparison engines.
+
+### `<base>.warnings.json` — the warning sidecar
+
+Written by `app.write_warnings_document()` after the two analysis documents, and only when some library warning actually
+fired during that run:
+
+```json
+{
+  "meta": { … },                          // the same provenance block as the raw document
+  "note": "Every warning listed here also appeared on stderr during the run; nothing was suppressed. 'count' is how many times that warning fired.",
+  "warnings": [
+    {
+      "category": "SAWarning",
+      "message": "Mapper[AbstractNominal(nominal)] does not indicate a 'polymorphic_identity', yet is part of an inheritance hierarchy that has a 'polymorphic_on' column of 'form.pos_id'. …",
+      "location": "/home/rsi/.local/share/mise/installs/python/3.12.13/lib/python3.12/site-packages/sanskrit_util/schema.py:545",
+      "count": 1
+    }
+  ]
+}
+```
+
+- One entry per **distinct message**: the same complaint arriving from several call sites (`LegacyAPIWarning` fires on
+  every lookup) is one row with a rising `count`; `location` keeps where it first fired. Message and category are the key,
+  because two call sites are not two facts.
+- It never replaces or edits either analysis document: warnings stay out of `<base>.result.json` by design, so the reading
+  stays a reading and its bytes stay reproducible from the raw pair alone.
+- Best-effort by contract: an `OSError` while writing it is reported on stderr and leaves the exit code exactly what the
+  analysis earned — the warnings themselves were already printed, so nothing is lost by that failure.
+- `location` holds an absolute path into whoever's site-packages, so goldens pin this file's **structure**, never its
+  text: another machine or interpreter legitimately writes different paths.
+- `samskrta-postprocess` writes none of these: the offline pass imports no engine and therefore raises no engine warning.
