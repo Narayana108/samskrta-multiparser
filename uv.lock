@@ -1642,8 +1642,8 @@ wheels = [
 
 [[package]]
 name = "samskrta-multiparser"
-version = "0.1.0"
-source = { virtual = "." }
+version = "1.0.0"
+source = { editable = "." }
 dependencies = [
     { name = "indic-transliteration" },
     { name = "requests" },
@@ -1658,10 +1658,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "indic-transliteration" },
-    { name = "requests", specifier = ">=2.34.2" },
-    { name = "sanskrit-parser" },
-    { name = "vidyut", specifier = ">=0.4.0" },
+    { name = "indic-transliteration", specifier = ">=2.3.82,<3" },
+    { name = "requests", specifier = ">=2.34.2,<3" },
+    { name = "sanskrit-parser", specifier = ">=0.2.6,<0.3" },
+    { name = "vidyut", specifier = ">=0.4.0,<0.5" },
 ]
 
 [package.metadata.requires-dev]
