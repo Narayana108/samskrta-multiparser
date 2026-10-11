@@ -80,8 +80,9 @@ uv run samskrta-postprocess (-i RAW.json | -o BASE) [--no-dictionary]
 
 stdout carries every library warning — in Python's own format, nothing filtered — followed by the reading document's
 top-level `input` and `chandas` objects; the metre caveat travels inside `chandas`, which is why it lives in the JSON
-instead of flickering past on the console. A warning line may therefore precede the JSON: parse from the first `{` if
-you pipe. The tool's own notes (`Warning:` for a degraded section, the provenance mismatch note, an incomplete run) stay
+instead of flickering past on the console. A warning line may therefore precede the JSON: start reading at the line that
+opens the object, since a warning message can itself contain `{`. The tool's own notes (`Warning:` for a degraded section,
+the provenance mismatch note, an incomplete run) stay
 on stderr with the libraries' log noise. There is no `--quiet`, deliberately: those warning lines are the point of the
 tool ([DOCUMENTATION.md §7](DOCUMENTATION.md)).
 

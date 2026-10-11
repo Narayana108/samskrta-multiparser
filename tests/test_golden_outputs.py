@@ -640,7 +640,18 @@ def test_live_run_reproduces_the_golden_pair(stem, tmp_path, capsys):
     assert decomposed == padas
     assert all(parts for parts in sp["word_decompositions"].values())
 
-    printed = json.loads(capsys.readouterr().out)
+    lines = capsys.readouterr().out.splitlines(keepends=True)
+    # Warnings share stdout with the JSON now (§7). The summary object starts at the first line that opens it — warning
+    # text may contain braces, so scanning for '{' anywhere would stop inside a warning. Everything before that line has
+    # to be the libraries' own warnings: on stdout, not hidden on stderr.
+    first_json = next((i for i, line in enumerate(lines) if line.startswith("{")), None)
+    assert first_json is not None, "stdout must still carry the summary object"
+    # Any of the three categories the engines produce; which one fires depends on what this process imported before.
+    before = "".join(lines[:first_json])
+    assert any(name in before for name in ("SAWarning", "MovedIn20Warning", "LegacyAPIWarning")), (
+        f"no library warning reached stdout:\n{before}"
+    )
+    printed, _ = json.JSONDecoder().raw_decode("".join(lines[first_json:]))
     assert list(printed) == ["input", "chandas"]
 
 

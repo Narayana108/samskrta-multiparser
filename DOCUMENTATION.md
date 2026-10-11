@@ -332,8 +332,9 @@ uv run pytest -q                          # offline suite
 - stdout carries every library warning — Python's own format, nothing filtered — followed by the reading document's
   top-level `input` and `chandas` objects, re-read from the file that was just written; the tool's own notes and the
   postprocessor's size summary go to stderr. Piping an analysis run therefore yields warning lines plus a small JSON
-  object, never the full dump: parse from the first `{`. Since vidyut's reliability note travels inside `chandas` (§12),
-  the caveat about its metre names is in that output too.
+  object, never the full dump. Start reading at the line that opens the object — a warning message can itself contain `{`,
+  so scanning for the first brace anywhere stops inside a warning. Since vidyut's reliability note travels inside
+  `chandas` (§12), the caveat about its metre names is in that output too.
 - Exit codes for `samskrta`: **0** the analysis is complete (a Dharmamitrā failure only degrades its own section, with a
   `Warning:` on stderr); **1** an input problem — unreadable `-i` file, an ambiguous or empty `input/`, or the reading
   document could not be built from the raw one; **2** a *local* engine (sanskrit_parser or vidyut) could not run at all —
