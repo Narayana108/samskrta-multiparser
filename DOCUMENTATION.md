@@ -11,18 +11,21 @@ SLP1, Harvard-Kyoto, ITRANS) writes a **pair** of documents under one base name;
 reading pass can also be re-run on its own over an existing raw document:
 
 ```
-any-script text
+any-script text      read_input() — '-i FILE', stdin ('-'), or the single .txt in input/
       │  detect_script() → name; to_devanagari() → Devanagari; preprocess_input() → separators and digits as spaces
       ▼
  app.py ──────────────────────────────► <base>.raw.json             (engine dump)
  │   ├── run_sanskrit_parser()   local  (fatal when unavailable)
- │   ├── run_dharmamitra()       remote HTTP, + kosha lemma enrichment (tolerated)
- │   └── run_vidyut()            local  (fatal when unavailable; emits chandas)
-      │  postprocess_analysis.postprocess() — called in-process by main()
+ │   │     ├── _best_word_split()            ranks the per-word candidates (§3, §9)
+ │   │     └── fill_missing_pada_readings()  one word-level DM request per empty pada (§8 item 14)
+ │   ├── run_dharmamitra()       remote HTTP, + enrich_dharmamitra_lemmas() (tolerated)
+ │   └── run_vidyut()            local  (fatal when unavailable; _summarize_chandas() → chandas)
+      │  postprocess_analysis.postprocess() — group_dm_tokens_by_word(), build_padas();
+      │  called in-process by main(), or standalone via samskrta-postprocess -o BASE
       ▼
  <base>.result.json                                               (reading document)
 
- postprocess_analysis.py -o BASE   → rewrites the reading pass alone, offline
+ output_base() / raw_path() / result_path() name the pair; write_document() writes either one.
 ```
 
 `app.py` imports `postprocess_analysis` and calls its `postprocess()`, so a single run
@@ -53,8 +56,8 @@ Three consequences worth knowing:
   control and only its section degrades. When a *local* engine cannot run at all the
   run fails: `_run_local_engine` normalizes both shapes an engine can fail in (a raised
   exception, and vidyut's habit of *returning* `{"error": "Vidyut data directory not found"}`)
-  into one error object, prints `Error: <engine>: …`, and `main()` exits 1 after writing
-  both documents. A run that silently loses an engine is worse than a failing one.
+  into one error object, prints `Error: <engine>: …`, and `main()` exits **2** after writing
+  both documents. A run that silently loses an engine is worse than a failing one; §7 lists all four codes.
 - **`engine_errors` in `<base>.result.json`.** `postprocess()` scans all three
   engine dicts for an `error` key and emits `"engine_errors": {engine: message}` only
   when at least one engine failed. Without it, a crashed engine is indistinguishable
@@ -109,11 +112,13 @@ Input normalization happens once, in this order:
   structure is kept, and only the padding around a line is trimmed. Running it twice
   changes nothing (idempotent).
 
-What gets *recorded* differs from what gets *analyzed*: `input.devanagari` holds the
-canonicalized user text with its separators verbatim, while `input.iast` and every
-engine receive the cleaned text. A comma- and hyphen-riddled IAST input therefore shows
-its punctuation back in `input.devanagari` yet produces byte-identical dharmamitra and
-vidyut subtrees (verified on Raghuvaṃśa 1.2).
+What gets *recorded* is what got *analyzed*: both `input.devanagari` and `input.iast` hold the **cleaned** text, so no
+separator or digit ever reaches a pada list. Digits are dropped exactly like separators because pasted verse numbers —
+`॥ 66॥`, Devanagari `॥६६॥`, a trailing `॥ 15 ॥` from an edition page — otherwise become tokens no engine can analyze, and
+the reader who copies a verse out of a printed book should not have to edit it first. `tests/test_golden_outputs.py` pins
+that both fields are free of dandas and digits for all sixteen verses; Raghuvaṃśa 1.4 records
+`अथ वा कृतवाग्द्वारे वंशेऽस्मिन्पूर्वसूरिभिः …` with the avagraha intact, and Bhagavad Gītā 2.22 shows the joined hyphenated
+word `जीर्णान्य्अन्यानि` in both scripts (verified against the pinned pairs).
 
 Conversion helpers in `app.py`:
 
@@ -155,7 +160,7 @@ tokens, pass through unsplit rather than being cut at a false boundary.
 The reading pass is reproducible: the same `<base>.raw.json` always yields a
 byte-identical `<base>.result.json`. The rules that buy that stability:
 
-- **Ranked, never first-seen.** SP split candidates go through `_best_word_split`, which ranks all ten with the vidyut kosha in hand: exact dictionary attestation of every part first (this is what keeps `mokṣayiṣyāmi` one word and rejects fragments such as `ava | tu`), then fewest parts, then standalone morphology for every part, then rarity of the scarcest part, then longest shortest part, then the sorted list. Without a kosha it falls back to the older morphology-first keys. Morphology goes through `_morph_rank`, which orders *case-tagged readings* grammatically (prathamā … saṃbodhana), puts an `avyayam` reading above a bare compound marker such as `samāsapūrvapadanāmapadam`, then vacana, then fewer residual tags — and it only chooses the **primary** reading: every distinct reading sanskrit_parser offered for that form is kept in `alternates` (§8). Vidyut split chains are scored by `_chain_score` = (kosha-attested parts, −len(chain)).
+- **Ranked, never first-seen.** SP split candidates go through `_best_word_split`, which ranks all ten with the vidyut kosha in hand: exact dictionary attestation of every part first (this is what keeps `mokṣayiṣyāmi` one word and rejects fragments such as `ava | tu`), then fewest parts, then standalone morphology for every part, then rarity of the scarcest part, then longest shortest part, then the sorted list. Without a kosha it falls back to the older morphology-first keys. Morphology goes through `_morph_rank`, which orders *case-tagged readings* grammatically (prathamā … saṃbodhana), puts an `avyayam` reading above a bare compound marker such as `samāsapūrvapadanāmapadam` — which is why `yathā` and `tathā` come out as indeclinables rather than as compound halves — then vacana, then fewer residual tags — and it only chooses the **primary** reading: every distinct reading sanskrit_parser offered for that form is kept in `alternates` (§8). Vidyut split chains are scored by `_chain_score` = (kosha-attested parts, −len(chain)).
 - **Anusvara-normalized keys.** `saṃpṛktau` and `sampṛktau` must collide onto one
   key; `postprocess_analysis._norm_anusvara` does that, and the *key* is normalized at
   collection time so collisions resolve by rank rather than by dict insertion
@@ -240,7 +245,7 @@ data-0.4.0/            # VIDYUT_DATA_DIR (default ./data-0.4.0)
 ├── kosha/             # inflected SLP1 keys → PadaEntry objects (~1M stems; never index per run)
 ├── prakriya/          # derivation data used by vidyut.prakriya.Vyakarana
 ├── chandas/meters.tsv # meter definitions for Chandas.classify
-├── sandhi/rules.csv   # rules for Splitter.from_csv (split_at takes a BYTE offset)
+├── sandhi/rules.csv   # rules for Splitter.from_csv (split_at takes a BYTE offset into the SLP1 form)
 └── cheda/             # present in the archive; this project does not read it
 ```
 
@@ -282,10 +287,14 @@ their IAST twins and their goldens under `tests/data/results/`.
 
 ```bash
 uv sync                                   # runtime deps + pytest (dev group)
-uv run python app.py shloka             # ~2-3 s for one śloka; reads input/<one>.txt → results/<stem>.{raw,result}.json
-uv run python postprocess_analysis.py -o results/<stem>   # offline, instant
-uv run pytest -q                        # offline suite
+uv run samskrta shloka                    # ~2-3 s for one śloka; reads input/<one>.txt → results/<stem>.{raw,result}.json
+uv run samskrta-postprocess -o results/<stem>   # offline, instant
+uv run pytest -q                          # offline suite
 ```
+
+`samskrta` and `samskrta-postprocess` are the `[project.scripts]` entry points declared in
+`pyproject.toml`; they wrap the same two modules, so `uv run python app.py …` and
+`uv run python postprocess_analysis.py …` keep working unchanged.
 
 - `tests/conftest.py` pins `VIDYUT_DATA_DIR` to the bundled data and puts the project
   root on `sys.path`. Tests are deterministic and never call the Dharmamitra API;
@@ -293,12 +302,12 @@ uv run pytest -q                        # offline suite
 - Each test verse has a pinned pair in `tests/data/results/` (`<stem>.raw.json`,
   `<stem>.result.json`, pretty-printed so diffs stay reviewable). Regenerate one after an
   intentional change with
-  `uv run python app.py shloka -f pretty -i tests/data/<stem>.txt -o tests/data/results/<stem>`.
+  `uv run samskrta shloka -f pretty -i tests/data/<stem>.txt -o tests/data/results/<stem>`.
   The offline half of `tests/test_golden_outputs.py` then proves `postprocess()` still reproduces
   the reading document exactly; the live half re-runs all three engines, needs network access, and
   is skipped unless `SAMSKRTA_LIVE_GOLDEN=1`.
 - A ranking-only change never needs an engine run: regenerate each reading document from its pinned raw file with
-  `uv run python postprocess_analysis.py -i tests/data/results/<stem>.raw.json` (~0.5 s each, all sixteen in ~7 s). That
+  `uv run samskrta-postprocess -i tests/data/results/<stem>.raw.json` (~0.5 s each, all sixteen in ~7 s). That
   pass now reads the vidyut kosha to rank word readings (§11), so the documents depend on `data-0.4.0/kosha`;
   `--no-dictionary` reproduces the pre-rule ordering byte for byte.
 - `tests/test_sandhi_accuracy.py` scores splitting against the curated padaccheda of §9. Thirteen
@@ -309,7 +318,9 @@ uv run pytest -q                        # offline suite
   [ACCURACY.md](ACCURACY.md) is committed so the same probe never has to be written twice:
   `tools/meter_audit.py` (offline rebuild of ACCURACY §1, printing the measured reason for every unnamed verse),
   `tools/morphology_ranks.py` (offline rebuild of §2, including the rank at which the right reading survives among
-  the alternates) and `tools/sandhi_ceiling.py` (~25 s local: score, pool ceiling and the ⚠️/❌ fault split). They
+  the alternates) and `tools/sandhi_ceiling.py` (~25 s local: score, pool ceiling and the ⚠️/❌ fault split). The two
+  labs — `tools/morphology_lab.py` (word-reading rules, kosha only) and `tools/sandhi_lab.py` (split-ranking rules over
+  cached pools, plus the legality-coverage line of §9) — re-score a proposed rule in seconds; both are pinned by tests. They
   share `tools/_env.py`, which pins `VIDYUT_DATA_DIR` and the import path exactly like `tests/conftest.py`, and they
   import the accuracy tests' scoring helpers instead of copying them, so a tool can never report something the suite
   would disagree with.
@@ -322,9 +333,15 @@ uv run pytest -q                        # offline suite
   re-read from the file that was just written; warnings, errors and the postprocessor's
   size summary all go to stderr. Piping an analysis run therefore yields a small JSON
   object, never the full dump.
-- Exit codes: `app.py` exits 1 when a local engine (sanskrit_parser, vidyut) could not
-  run at all — both documents, error objects included, are written first; an offline
-  Dharmamitra API only produces a warning and exit 0.
+- Exit codes for `samskrta`: **0** the analysis is complete (a Dharmamitrā failure only degrades its own section, with a
+  `Warning:` on stderr); **1** an input problem — unreadable `-i` file, an ambiguous or empty `input/`, or the reading
+  document could not be built from the raw one; **2** a *local* engine (sanskrit_parser or vidyut) could not run at all —
+  both documents, error objects included, are written first, because a silent half-run is worse than a failing one;
+  **3** an output file could not be written (`OSError`). `samskrta-postprocess` uses only 0 and 1.
+- **There is no `--quiet`, deliberately.** stdout already carries nothing but the two summary objects, so every remaining
+  stderr line explains an engine limit or a degraded section (Dharmamitrā timeout, a metre name demoted to `candidates`,
+  tokens that rebuilt no word, dictionary fallback). A flag that silenced them would hide exactly the information this
+  project exists to surface.
 - On import, sanskrit_parser sets its own logger to DEBUG and attaches a stderr handler.
   `_quiet_library_logging()` raises those two loggers to WARNING *after* the import — before it the
   handlers do not exist yet — otherwise every run writes ~3.5 MB of split traces per śloka into whatever
@@ -349,12 +366,16 @@ Ordered by how likely they are to bite:
    (~130 MB) and kosha FST (~220 MB), so the default of two workers adds ~700 MB resident on long
    inputs — set `SAMSKRTA_WORKERS=1` instead of swapping. Spawn also costs about a second per
    worker, which is why `_sp_worker_count` refuses to pool short inputs at all.
-3. **Unpinned upstreams vs hard-coded tag spellings.** `postprocess_analysis.py` matches IAST tag
-   strings (`prathamāvibhaktiḥ`, `bahuvacanam`, `puṃlliṅgam`) and the residual tag
-   `samāsapūrvapadanāmapadam`. `pyproject.toml` pins only `vidyut>=0.4.0`;
-   `sanskrit-parser` and `indic-transliteration` float, so a wording change upstream
-   silently degrades morphology extraction to empty fields rather than failing loudly.
-   Pin them before relying on the processed output in a pipeline.
+3. **Upstream tag spellings vs our string matching.** `postprocess_analysis.py` matches IAST tag strings
+   (`prathamāvibhaktiḥ`, `bahuvacanam`, `puṃlliṅgam`) and the residual tag
+   `samāsapūrvapadanāmapadam`. A wording change upstream therefore degrades morphology extraction to empty
+   fields rather than failing loudly — which is why `pyproject.toml` now bounds every engine:
+   `sanskrit-parser>=0.2.6,<0.3`, `indic-transliteration>=2.3.82,<3`, `vidyut>=0.4.0,<0.5`,
+   `requests>=2.34.2,<3` (installed today: 0.2.6 / 2.3.82 / 0.4.0 / 2.34.2). Raising a bound is an accuracy
+   change, not a housekeeping one: run the gated trio of §7 and re-check ACCURACY.md's scoreboard before
+   committing regenerated goldens. Every output document records the versions that produced it in its `meta`
+   block (§12), so a figure can always be traced to them. `sqlalchemy` arrives transitively through
+   sanskrit-parser and stays unbounded; pinning it changes nothing (see the warnings note above).
 4. **`_norm_anusvara` is duplicated** between `app.py` and `postprocess_analysis.py`. Deliberate:
    the postprocessor stays stdlib-only so it can be run against any raw JSON without
    importing the heavy engine stack. Change one, remember the other.
@@ -384,6 +405,11 @@ Ordered by how likely they are to bite:
    parts ≥ 4 characters with ≥ 2 kosha entries and at least one standalone (non-`Krdanta`,
    non-`Tinanta`) entry; `recursive_split` caps depth 2 / 4 parts in `run_vidyut`. Loosening
    the thresholds re-admits spurious splits where short strings match verb roots.
+   The same gate has a measured cost: with parts required to be ≥ 4 characters, real short words — `iva`, `yā`, `tu` —
+   are suppressed as split parts too, which is one more reason vidyut's chains stay a raw-document third opinion (§9).
+   One more trap in the same splitter: `Splitter.split_at(word, i)` takes a **byte** offset into the SLP1 form, not a
+   Python character index. Passing a character position mis-splits non-ASCII words — `rūpāṇi` came back as `rū | pāṇi` —
+   which is why `run_vidyut` converts positions explicitly before calling it.
 8. **Vidyut kosha section cost.** `run_vidyut` performs one FST lookup per candidate part per
    token; that loop dominates runtime of the vidyut engine. `_kosha_entry_info` /
    `_kosha_info_from_entries` exist so a single lookup feeds count, standalone test and lemma —
@@ -482,6 +508,18 @@ Ordered by how likely they are to bite:
     papered over: nothing in this tool filters warnings or engine errors, a run that loses an engine never
     passes the golden tests, and its output documents say which engine failed.
 
+18. **sanskrit_parser's vakya (sentence) parse is deliberately not run.** It is the only component with sentence
+    context, so it is the natural fix for the five readings §11 cannot settle per-pada. Measured before removal it cost
+    more than every other engine combined and produced a graph for one pāda in nine verses, i.e. it never reached a
+    usable answer on this corpus. The component was deleted rather than tuned; re-introducing it needs those two numbers
+    beaten, not just a successful import.
+19. **Splitting is driven one pada-line at a time, and the limits differ by mode.** `parser.split(line, limit=5)` asks
+    for five candidate readings of each line — ten in pada mode — because the sandhi graph search is superlinear in the
+    number of words it spans: handing sanskrit_parser a multi-pāda string explodes its candidate pool and buys nothing,
+    since §9 shows the per-word pool already contains a reference-consistent split for 127 of 147 padas. Every item of
+    every candidate is then tagged with `parser.sandhi_analyzer.getMorphologicalTags(item, tmap=True)`, which is where
+    root and vibhakti / vacana / linga come from (`tmap` maps the tags to human-readable IAST).
+
 ## 9. Splitting quality: how it is measured
 
 Per-word sandhi splitting has no oracle inside the tool, so one was built outside it.
@@ -576,6 +614,9 @@ Per-word sandhi splitting has no oracle inside the tool, so one was built outsid
   pada) leaves the score at **99/147** — no gain for roughly twice the splitting time; the ceiling stays where §9 put it because the extra
   candidates are more junk, not the missing reading. The same code scored 99, 100 and 103 in three separate processes that day, so read any
   single run as ±4 padas: `MIN_MATCHES = 101` comes from that spread, not from the best number ever seen.
+- **A legality veto was measured on 2026-10-11 and rejected (−1).** Demoting every split that vidyut's own sandhi table cannot produce fixes zero padas and breaks `saṃbhṛtārthānāṃ`, whose real joint
+  (`sambhṛtā | arthānām`) is missing from `data-0.4.0/sandhi/rules.csv`: vidyut calls only 126/147 of our reference cuts legal strictly, 143/147 with visarga/final-s folded, so that table cannot act as a
+  legality oracle. The rule stays in `tools/sandhi_lab.py`, which prints the coverage line; ACCURACY §3 carries the numbers and the precondition any future veto must satisfy.
 - **Re-measuring.** `SAMSKRTA_LIVE_GOLDEN=1 uv run pytest -q tests/test_sandhi_accuracy.py` prints
   every missed pada by name on failure. Rule changes can be re-scored in seconds by generating each
   pada's candidate pool once and re-running the ranking over it; the pool, not the ranking, is the
@@ -655,3 +696,285 @@ each right reading survived.
 - **Dharmamitrā is not used as the reference.** It resolves several of these forms correctly (`vande → vand`) but
   invents real errors elsewhere (`jagantaḥ`, `sūnantāḥ` type noise — §8), so pinning against it would move the goal
   post whenever the remote changes. Its reading stays beside ours in `padaccheda.dharmamitra` for a human to weigh.
+
+## 12. Output document schemas
+
+The README describes what the documents are *for*; this appendix is the field-by-field reference for both, so a
+consumer parsing them has one place to read.
+
+### `meta` — provenance, first key of both documents
+
+```json
+{
+  "meta": {
+    "tool_version": "1.0.0",
+    "engines": {
+      "sanskrit_parser": "0.2.6",
+      "vidyut": "0.4.0",
+      "indic_transliteration": "2.3.82"
+    },
+    "vidyut_data": "data-0.4.0"
+  }
+}
+```
+
+- Written by `postprocess_analysis.meta()`, which both passes call, so the pair always names the same tool and engines;
+  `tests/test_golden_outputs.py` pins that equality. `tool_version` equals the package version in `pyproject.toml`.
+- `vidyut_data` records the data directory's **name**, not its path: goldens must stay byte-identical on every machine,
+  and a checkout elsewhere would otherwise rewrite all sixteen pairs. The same reason excludes the interpreter version,
+  which changes no output byte.
+- Engine versions are read from installed distribution metadata; an engine that is importable but not installed as a
+  distribution records `null` rather than guessing.
+- Rebuilding `<base>.result.json` from a raw document written by *different* engines prints a stderr note naming both
+  sides (`note_provenance_difference`, §7), and so does a raw document with no `meta` block at all — those were produced
+  before provenance was recorded. A reading is never silently re-attributed to newer engines (§8 item 3).
+
+### `<base>.raw.json`
+
+```json
+{
+  "meta": { … },
+  "input": {
+    "devanagari": "वागर्थाविव संपृक्तौ...",
+    "iast": "vāgarthāviva saṃpṛktau..."
+  },
+  "engine_outputs": {
+    "sanskrit_parser": { … },
+    "dharmamitra": { … },
+    "vidyut": { … }
+  }
+}
+```
+
+Both working scripts are recorded under `input`, cleaned of separators and numbering; which romanization the user typed
+is an input detail, not part of the analysis (§2). A failed engine holds `{"error": "…"}` instead of a payload (§1).
+
+#### [`sanskrit_parser`](https://github.com/kmadathil/sanskrit_parser) output
+
+```json
+{
+  "mode": "pada" | "shloka",
+  "input": "Devanagari text",
+  "sandhi_splits": [
+    {
+      "line_index": 0,
+      "split_index": 0,
+      "split": ["vāgarthās", "viva", "sampṛktau", ...],
+      "items": [
+        {
+          "pada": "vāgarthās",
+          "morphological_tags": [
+            {"root": "vāgartha", "tags": ["bahuvacanam", "prathamāvibhaktiḥ", "puṃlliṅgam"]}
+          ]
+        }
+      ]
+    }
+  ],
+  "word_decompositions": {
+    "saṃpṛktau": [["sam", "pṛktau"]]
+  },
+  "word_morphology": [
+    {"pada": "vāgartha", "morphological_tags": [{"root": "vāgartha", "tags": ["bahuvacanam", "prathamāvibhaktiḥ", "puṃlliṅgam"]}]}
+  ]
+}
+```
+
+`line_index` names the pada-line a candidate came from — splitting is driven one line at a time, never on the whole input.
+`word_morphology` holds the tags of the words the per-word ranking actually chose: `sandhi_splits` only covers whatever
+whole-line candidates the library sampled, so a chosen word can be missing there and would otherwise lose its root, case
+and number in the reading document.
+
+#### [`dharmamitra`](https://dharmamitra.org) output
+
+```json
+{
+  "api_endpoint": "https://dharmamitra.org/api/tagging/",
+  "mode": "unsandhied-lemma-morphosyntax",
+  "input_lines": ["vāgarthāviva saṃpṛktau vāgarthapratipattaye", "jagataḥ pitarau vande pārvatīparameśvarau"],
+  "raw_output": "vāc_arthau_iva_saṃpṛktau_vāc_artha_pratipattaye_jagantaḥ_pitarau_vande_pārvatī_parameśvarau_",
+  "tokens": [
+    {"form": "vāc", "lemma": ["vac", "vāc"], "kosha_type": "sūnantāḥ"},
+    {"form": "arthau", "lemma": ["artha", "arthi"], "kosha_type": "sūnantāḥ"}
+  ]
+}
+```
+
+`lemma` is a list when the vidyut kosha has several stems for that surface form; a token with no kosha match keeps only
+`form`. Word-level follow-up requests are appended to this section as `pada_followups` (§8 item 14).
+
+#### [`vidyut`](https://github.com/ambuda-org/vidyut) output
+
+```json
+{
+  "kosha": [
+    {
+      "iast": "vāk",
+      "punctuation": "",
+      "is_compound": false,
+      "grammatical_entries": [
+        {
+          "type": "sūnantāḥ",
+          "pratipadika": "vāc",
+          "artha": "vācanam",
+          "linga": "strīliṅgam",
+          "vibhakti": "prathamā",
+          "vacana": "dvivacanam"
+        }
+      ],
+      "is_verb": false
+    },
+    {
+      "iast": "saṃpṛktau",
+      "is_compound": true,
+      "sandhi_splits": [
+        "sam + pṛktau",
+        "sam + pra + kta"
+      ]
+    }
+  ],
+  "prakriya": {
+    "dhatus": [
+      {
+        "dhatu": "vac",
+        "krdantas": [
+          {"step": 1, "sutra": "3.1.1", "source": "krt", "terms_iast": "kta", "changed_iast": ["kta"]}
+        ],
+        "tinantas": [
+          {"label": "laṭ/madhyama/eka", "form": "vakti"},
+          {"label": "laṅ/madhyama/eka", "form": "vakta"},
+          {"label": "loṭ/madhyama/eka", "form": "vakṣati"}
+        ]
+      }
+    ],
+    "pratipadikas": [
+      {
+        "lemma": "vāc",
+        "steps": [
+          {"step": 1, "sutra": "1.1.1", "source": "pratyaya", "terms_iast": "sup", "changed_iast": ["sup"]}
+        ]
+      }
+    ]
+  },
+  "meter": [
+    {
+      "line_iast": "vāgarthāviva saṃpṛktau vāgarthapratipattaye",
+      "padas": [
+        {
+          "iast": "vāgarthāviva saṃpṛktau",
+          "meter": "madalekhā",
+          "akshara_count": 8,
+          "weight_pattern": "GGGLLGGG"
+        },
+        {
+          "iast": "vāgarthapratipattaye",
+          "meter": "śuddhavirāṭ",
+          "akshara_count": 8,
+          "weight_pattern": "GGGLLGLG"
+        }
+      ]
+    }
+  ],
+  "chandas": {
+    "vrtta": null,
+    "candidates": ["madalekhā", "śuddhavirāṭ"],
+    "pada_count": 4,
+    "classified_pada_count": 2,
+    "aksharas_per_pada": [8, 8, 8, 8]
+  }
+}
+```
+
+A pāda whose classification yields several akshara groups reports them joined by ` | ` in one `weight_pattern`, with
+`meter` set only when a vṛtta matched. `chandas` summarizes those pāda matches for the whole verse: `vrtta` names a meter
+only when every pāda classifies to the same one, otherwise it stays `null` and vidyut's own suggestions appear in
+`candidates`. vidyut's bundled catalogue (`data-0.4.0/chandas/meters.tsv`, 145 vṛttas) contains no anuṣṭubh/śloka
+pattern, so a classical śloka reports `null` there while `aksharas_per_pada: [8, 8, 8, 8]` shows its real shape (§10). A
+line is cut into pādas only when its akshara total is even and above 12; shorter or odd lines go to the classifier whole.
+
+`kosha[]` entries are classified by `_kosha_entry_info`: a hit whose repr contains `Tinanta` is labelled `tīnantāḥ`,
+otherwise `entry.is_avyaya` decides between `avyayam` and `sūnantāḥ`; the lemma is kept either way. Up to **eight**
+deduplicated readings per surface form are published, formatted by `_format_pada_entry_json` — pratipadika / artha /
+linga / vibhakti / vacana for nominal forms, dhatu / gaṇa / prayoga / lakāra / puruṣa / vacana for finite verbs (the
+whole-entry dedup key is §3's last rule).
+
+`prakriya` is opt-in and sampled, never automatic: `vidyut.prakriya.Vyakarana().derive(...)` is called explicitly by
+`run_vidyut()`, and nothing in vidyut's kosha, sandhi or chandas path consults `data-0.4.0/prakriya/` on its own — the
+other modules read their own directories (§6). For a root it records the krdanta derivation from `prakriya.history`
+(sūtra code, source, terms, which terms changed) plus three fixed tīnanta samples (`lat` / `laṭ` / `loṭ`, madhyama,
+ekavacana, kartari prayoga); for a nominal stem `Pratipadika.basic(lemma)` covers up to five stems. **There is no
+prakriya for avyayas** — vidyut derives nāma and ākhyāta only — so an indeclinable carries its kosha label and nothing
+further. That is an engine gap, not a step this tool skipped.
+
+### `<base>.result.json`
+
+- `meta`: provenance, identical to the raw document's (§12 above).
+- `padaccheda`: each engine's full word sequence for the śloka as one pipe-joined line.
+- `padas`: one entry per pada **as written in the input**, keyed by engine. Per-engine `words` carry morphology:
+  Dharmamitra tokens carry kosha `lemma`/`type`; sanskrit_parser forms carry `root`, `vibhakti`, `vacana`, `linga`, plus
+  `"alternates"` — every other reading the engine offered for that form, omitted when it offered only one. A Dharmamitra
+  side that came from a word-level request instead of the verse pass carries `"request": "pada"`.
+- `chandas`: vidyut's verse-level meter summary (`vrtta`, `candidates`, per-pāda akshara counts). A name whose declared
+  length contradicts its pāda stays in `candidates` but cannot decide `vrtta`; `vrtta: null` usually means vidyut's table
+  has no metre for that shape at all (§10).
+- `differences`: aligned regions where the two engines split a pada differently (only present when they disagree).
+- `dharmamitra_unmatched`: Dharmamitra tokens from the verse pass that rebuild no word of the verse — reported, never
+  filed under a pada (key omitted when empty).
+- `engine_errors`: only when an engine failed (§1); its absence in a pinned golden is part of the pin.
+
+```json
+{
+  "pada": "vāgarthapratipattaye",
+  "dharmamitra": {
+    "padaccheda": ["vāc", "artha", "pratipattaye"],
+    "words": [
+      {"form": "vāc", "lemma": ["vac", "vāc"], "type": "sūnantāḥ"},
+      {"form": "artha", "lemma": "artha", "type": "sūnantāḥ"},
+      {"form": "pratipattaye", "lemma": "pratipat", "type": "sūnantāḥ"}
+    ]
+  },
+  "sanskrit_parser": {
+    "padaccheda": ["vāgartha", "pratipattaye"],
+    "words": [
+      {"form": "vāgartha", "root": "vāgartha", "vibhakti": "saṃbodhana", "vacana": "eka", "linga": "puṃlliṅgam", "alternates": [{"root": "vāgartha", "linga": "puṃlliṅgam", "tags": ["samāsapūrvapadanāmapadam"]}]},
+      {"form": "pratipattaye", "root": "pratipatti", "vibhakti": "caturthī", "vacana": "eka", "linga": "strīliṅgam"}
+    ]
+  },
+  "differences": [
+    {"sanskrit_parser": ["vāgartha"], "dharmamitra": ["vāc", "artha"]}
+  ]
+}
+```
+
+- `dharmamitra` is `null` when neither the verse-level request nor that pada's own word request produced any token for it.
+- A lemma **list** means the vidyut kosha has several stems matching that surface form (genuine ambiguity, not a guess).
+  No lemma key means the kosha had no match.
+- `differences` regions come from `difflib` alignment; agreeing parts (`pratipattaye` above) are omitted and a `null` side
+  marks a split-count mismatch.
+- All comparison is anusvara-normalized: `saṃpṛktau` and `sampṛktau` count as equal.
+
+### How the reading document is built
+
+```
+raw engine outputs (<base>.raw.json)
+    ↓
+sanskrit_parser per-word split ranking (_best_word_split, app.py)
+    ↓
+Dharmamitra token lemma enrichment via vidyut kosha (app.py)
+    ↓
+word-level Dharmamitra requests for padas the verse pass left empty,
+appended to the raw document as pada_followups (fill_missing_pada_readings, app.py)
+    ↓
+DM token grouping under input padas — coverage DP over anusvara-normalized IAST
+(group_dm_tokens_by_word), then gap fill from pada_followups (build_padas)
+    ↓
+SP morphology collection + ranking across all sandhi splits
+    ↓
+difflib region diff between engines
+    ↓
+vidyut chandas summary copied to the verse level (_summarize_chandas, app.py)
+    ↓
+result document (<base>.result.json: meta + padaccheda + engine-keyed padas + chandas
+                [+ dharmamitra_unmatched when a token rebuilds no word])
+```
+
+This turns a ~90 KB raw document into a ~7 KB reading while preserving the linguistic content of both comparison engines.
