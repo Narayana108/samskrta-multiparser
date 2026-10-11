@@ -718,10 +718,9 @@ def _clean_raw() -> dict:
 
 def test_postprocess_clean_fixture_end_to_end():
     normalized = postprocess_analysis.postprocess(_clean_raw())
-    # Provenance itself is pinned by tests/test_golden_outputs.py; here it only has to be present, so the fixture
-    # comparison below stays about the reading.
-    provenance = normalized.pop("meta")
-    assert set(provenance["engines"]) == {"sanskrit_parser", "vidyut", "indic_transliteration"}
+    # Provenance belongs to the raw document; a rebuilt reading carries no copy of its own. The whole shape is pinned
+    # below, so this stays about the reading and not about which engines are installed.
+    assert "meta" not in normalized
     assert normalized == {
         "input": {"iast": "agnim īḷe"},
         "padaccheda": {"dharmamitra": "agnim", "sanskrit_parser": "agni | īḷe"},
@@ -802,7 +801,7 @@ def test_postprocess_without_engine_outputs_at_all():
     assert "engine_errors" not in normalized
 
 
-def test_postprocess_passes_vidyut_chandas_summary_through():
+def test_postprocess_adds_the_reliability_note_to_vidyut_chandas():
     raw = _clean_raw()
     chanda = {
         "vrtta": None,
@@ -812,7 +811,12 @@ def test_postprocess_passes_vidyut_chandas_summary_through():
         "aksharas_per_pada": [21, 21, 21, 21],
     }
     raw["engine_outputs"]["vidyut"] = {"chandas": chanda, "meter": []}
-    assert postprocess_analysis.postprocess(raw)["chandas"] == chanda
+    summary = postprocess_analysis.postprocess(raw)["chandas"]
+    assert {k: v for k, v in summary.items() if k != "note"} == chanda
+    # Both halves of the caveat: the counts hold up, the names usually do not.
+    assert "aksharas_per_pada" in summary["note"] and "candidates" in summary["note"]
+    # vidyut's own words stay untouched in the raw document; only the reading carries the note.
+    assert raw["engine_outputs"]["vidyut"]["chandas"] == chanda
 
 
 def test_postprocess_records_vidyut_error_and_omits_chandas():
@@ -830,7 +834,7 @@ def test_postprocess_reports_a_token_that_rebuilds_no_word():
     raw["engine_outputs"]["dharmamitra"]["tokens"].insert(0, {"form": "mā"})
     normalized = postprocess_analysis.postprocess(raw)
     assert normalized["dharmamitra_unmatched"] == ["mā"]
-    assert list(normalized) == ["meta", "input", "padaccheda", "padas", "dharmamitra_unmatched"]
+    assert list(normalized) == ["input", "padaccheda", "padas", "dharmamitra_unmatched"]
     # The pada columns are untouched by the extra token.
     assert [p["dharmamitra"]["padaccheda"] if p["dharmamitra"] else None for p in normalized["padas"]] == [
         ["agnim"], None
@@ -925,7 +929,9 @@ def test_cli_stdout_is_only_input_and_chandas(tmp_path, monkeypatch, capsys):
     assert _run_cli(monkeypatch, "-o", str(base)) == 0
     printed = json.loads(capsys.readouterr().out)
     assert list(printed) == ["input", "chandas"]
-    assert printed["chandas"] == chanda
+    assert {k: v for k, v in printed["chandas"].items() if k != "note"} == chanda
+    # The caveat rides out to stdout with the counts — which is why it lives inside the document.
+    assert "aksharas_per_pada" in printed["chandas"]["note"] and "candidates" in printed["chandas"]["note"]
     assert printed["input"] == {"iast": "agnim īḷe"}
 
 

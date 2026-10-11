@@ -371,9 +371,10 @@ def test_result_document_shape(stem):
     result = load_golden(stem, ".result.json")
     expected = EXPECTED[stem]
     extra = ["dharmamitra_unmatched"] if "dharmamitra_unmatched" in expected else []
-    assert list(result) == ["meta", "input", "padaccheda", "padas", *extra, "chandas"]
-    # Both documents of a pair must name the same tool and engines; if they differ, one half was rewritten by another pass.
-    assert result["meta"] == load_golden(stem, ".raw.json")["meta"]
+    assert list(result) == ["input", "padaccheda", "padas", *extra, "chandas"]
+    # Provenance lives in the raw half of the pair only. A reading document is derived from it, and a second copy here
+    # could drift out of step with the engines that actually produced the readings.
+    assert "meta" not in result
     assert result.get("dharmamitra_unmatched", []) == expected.get("dharmamitra_unmatched", [])
     assert "engine_errors" not in result  # a clean golden run has no failed engine
 
@@ -381,6 +382,12 @@ def test_result_document_shape(stem):
     assert chandas["aksharas_per_pada"] == expected["aksharas_per_pada"]
     assert chandas["candidates"] == expected["chandas_candidates"]
     assert chandas["pada_count"] == 4
+    # The metre caveat travels inside the document, so it reaches stdout with the chandas object instead of only
+    # flickering past on stderr during the run that produced it.
+    note = chandas["note"]
+    assert "aksharas_per_pada" in note and "candidates" in note
+    # Adding it must not touch the raw half — that document stays vidyut's own words, verbatim.
+    assert "note" not in load_golden(stem, ".raw.json")["engine_outputs"]["vidyut"]["chandas"]
 
     padas = result["padas"]
     assert len(padas) == expected["padas"]

@@ -34,7 +34,8 @@ Output structure::
         "candidates": ["sragdharā"],        # vṛtta names vidyut did suggest
         "pada_count": 4,
         "classified_pada_count": 3,
-        "aksharas_per_pada": [21, 21, 21, 21]
+        "aksharas_per_pada": [21, 21, 21, 21],
+        "note": "…"                         # why the counts can be trusted and the names usually cannot
       },                                    # only when vidyut produced results
       "engine_errors": {                    # only when an engine failed
         "dharmamitra": "Dharmamitra API request timed out"
@@ -69,8 +70,9 @@ RESULT_SUFFIX = ".result.json"
 # ---------------------------------------------------------------------------
 # Provenance: which tool and which engines wrote this document
 # ---------------------------------------------------------------------------
-# Both documents of the pair carry a 'meta' block, because every accuracy figure in ACCURACY.md is only meaningful
-# together with the engine versions that produced it. `TOOL_VERSION` mirrors pyproject.toml's version.
+# `<base>.raw.json` carries a 'meta' block, because every accuracy figure in ACCURACY.md is only meaningful together
+# with the engine versions that produced it; the reading document inherits it from its raw pair. `TOOL_VERSION` mirrors
+# pyproject.toml's version.
 TOOL_VERSION = "1.0.0"
 
 _ENGINE_DISTRIBUTIONS = {
@@ -135,7 +137,7 @@ def note_provenance_difference(raw: Dict[str, Any], writer: Dict[str, Any]) -> N
         print(
             "Note: this raw document was written by "
             + ", ".join(f"{key}: {old!r} -> {new!r}" for key, (old, new) in sorted(differing.items()))
-            + "; the result document records the engines used for this pass.",
+            + "; the reading below is attributed to the engines installed now.",
             file=sys.stderr,
         )
 
@@ -682,6 +684,17 @@ def build_padaccheda(padas: List[Dict[str, Any]]) -> Dict[str, Optional[str]]:
     }
 
 
+# Travels with every chandas summary — in the document, therefore also on stdout — because a reader who sees a metre
+# name will otherwise trust it. Measured over the sixteen pinned verses: akshara counts correct on all sixteen, a name
+# published for five (§10 of DOCUMENTATION.md and ACCURACY.md §1).
+_CHANDAS_NOTE = (
+    "vidyut's akshara counting is accurate — aksharas_per_pada matches the published grid on every pinned verse — but "
+    "its metre names are not reliable: the classifier matches gaṇa prefixes, so a name whose declared length contradicts "
+    "the pāda it was matched to (mṛgī [3] for an 8-akshara pāda) is kept in 'candidates' and excluded from the vote, and "
+    "its table holds no jāti metre at all, so anuṣṭubh and upajāti can never be named. A non-null 'vrtta' therefore means "
+    "'vidyut's nearest vṛtta pattern', not the metre the edition prints; where that label matters, read it off the verse."
+)
+
 def postprocess(raw: Dict[str, Any], attest: Optional[Any] = None,
                 vidyut_data_dir: Optional[str] = None) -> Dict[str, Any]:
     """Condense raw engine output into the readable padaccheda/padas form.
@@ -690,13 +703,15 @@ def postprocess(raw: Dict[str, Any], attest: Optional[Any] = None,
         raw: Raw multi-engine analysis output (multi-engine-analysis.json content)
         attest: optional dictionary lookup mapping a surface form to its kosha lemma stems, used to rank word
             readings (`collect_sp_morphology`); None keeps the previous ranking
-        vidyut_data_dir: data directory to record in 'meta'; resolved from the environment when omitted
+        vidyut_data_dir: data directory used for this pass; compared against the raw document's 'meta' and reported on
+            stderr when they differ (the result document itself records no provenance)
 
     Returns:
-        Processed dict with meta, input, padaccheda and padas; plus engine_errors when an
-        engine reported a failure instead of results. The raw document's 'mode' key is
-        ignored — it is a command-line choice, not part of the reading. 'meta' describes this pass, not the
-        engines that wrote the raw document; when the two disagree a note says so on stderr.
+        Processed dict with input, padaccheda and padas; plus chandas when vidyut produced it and engine_errors when an
+        engine reported a failure instead of results. The raw document's 'mode' key is ignored — it is a command-line
+        choice, not part of the reading. Provenance lives in `<base>.raw.json` only: this pass still compares its own
+        engine versions with the raw document's `meta` and says so on stderr when they differ, but it does not copy
+        that block into the reading document.
 
     Raises:
         ValueError: When the raw output has no usable 'input.iast' string.
@@ -753,7 +768,6 @@ def postprocess(raw: Dict[str, Any], attest: Optional[Any] = None,
     )
 
     processed: Dict[str, Any] = {
-        "meta": writer,
         "input": inp,
         "padaccheda": build_padaccheda(padas),
         "padas": padas,
@@ -764,10 +778,13 @@ def postprocess(raw: Dict[str, Any], attest: Optional[Any] = None,
     if dm_unmatched:
         processed["dharmamitra_unmatched"] = [t.get("form", "") for t in dm_unmatched]
 
-    # vidyut's verse-level meter summary passes through as it is; the raw output
-    # keeps the per-pāda detail under engine_outputs.vidyut.meter.
+    # vidyut's verse-level meter summary passes through as it is, plus one note that travels with it (and with the
+    # document to stdout): the counts are sound, the names usually are not. The dict is copied because the caller in
+    # app.py still holds the raw document and must keep its own untouched chandas.
     if isinstance(vidyut_output.get("chandas"), dict):
-        processed["chandas"] = vidyut_output["chandas"]
+        chandas = dict(vidyut_output["chandas"])
+        chandas["note"] = _CHANDAS_NOTE
+        processed["chandas"] = chandas
 
     if engine_errors:
         processed["engine_errors"] = engine_errors

@@ -1,13 +1,4 @@
 {
-  "meta": {
-    "tool_version": "1.0.0",
-    "engines": {
-      "sanskrit_parser": "0.2.6",
-      "vidyut": "0.4.0",
-      "indic_transliteration": "2.3.82"
-    },
-    "vidyut_data": "data-0.4.0"
-  },
   "input": {
     "devanagari": "सर्वस्य चाहं हृदि सन्निविष्टो\nमत्तः स्मृतिर्ज्ञानमपोहनं च\nवेदैश्च सर्वैरहमेव वेद्यो\nवेदान्तकृद्वेदविदेव चाहम्",
     "iast": "sarvasya cāhaṃ hṛdi sanniviṣṭo\nmattaḥ smṛtirjñānamapohanaṃ ca\nvedaiśca sarvairahameva vedyo\nvedāntakṛdvedavideva cāham"
@@ -1099,6 +1090,7 @@
       11,
       11,
       11
-    ]
+    ],
+    "note": "vidyut's akshara counting is accurate — aksharas_per_pada matches the published grid on every pinned verse — but its metre names are not reliable: the classifier matches gaṇa prefixes, so a name whose declared length contradicts the pāda it was matched to (mṛgī [3] for an 8-akshara pāda) is kept in 'candidates' and excluded from the vote, and its table holds no jāti metre at all, so anuṣṭubh and upajāti can never be named. A non-null 'vrtta' therefore means 'vidyut's nearest vṛtta pattern', not the metre the edition prints; where that label matters, read it off the verse."
   }
 }
