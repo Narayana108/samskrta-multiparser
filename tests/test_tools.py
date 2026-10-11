@@ -108,6 +108,14 @@ def test_sandhi_ceiling_splits_the_misses_by_fault(tmp_path):
         assert int(scores[rejected]) < int(scores["current"]), f"{rejected} is no longer a rejection:\n{lab}"
     assert "old-gate-strictly-better" in scores, lab
 
+    # The legality veto loses on score, and for a stronger reason than the score: vidyut's own sandhi table refuses to
+    # call most of the reference readings' joints legal at all (ACCURACY §3), so it cannot be used to reject a reading.
+    # If that coverage ever reaches the whole corpus, the veto is worth re-measuring; until then `rules.csv` stays out
+    # of the ranking path.
+    assert int(scores["vidyut-legality-veto"]) < int(scores["current"]), lab
+    strict, folded = re.search(r"calls legal: (\d+)/147 strictly, (\d+)/147 with", lab).groups()
+    assert int(strict) <= 130 and int(folded) >= 140, f"vidyut's legality coverage changed:\n{lab}"
+
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))

@@ -185,13 +185,14 @@ ceiling **127** (⚠️ 20 pool / ❌ 23 ranking) and **128** (⚠️ 19 / ❌ 2
 | ⚠️ pool-limited — needs better upstream splitting | `yathāvidhihutāgnīnāṃ` | yathā \| vidhi \| huta \| agnīnām | best of ten: `yathāvidhi \| hutāgnīnām`, `yathā \| avidhi \| hutāgnīnām` — nothing at any depth matches the edition | engine limit |
 | ⚠️ pool-limited (long fused pāda) | `so'hamājanmaśuddhānāmāphalodayakarmaṇām` | saḥ \| aham \| ājanma \| śuddhānām \| āphala \| udaya \| karmaṇām | every candidate leaves `āphalodayakarmaṇām` fused into one word | engine limit |
 
-### Split-ranking changes measured on 2026-10-10 (ranking-only deltas over identical cached pools, `tools/sandhi_lab.py`)
+### Split-ranking changes measured 2026-10-10/11 (ranking-only deltas over identical cached pools, `tools/sandhi_lab.py`)
 
 Every row re-ranks the same dumped candidate pools through `app._rank_with_kosha`, so a rule is judged on exactly what
 the app would publish; the shipped baseline in that process was **104/147** (before it, 103).
 
 | Change | Measured score | New curated-pada failures | Verdict |
 |---|---|---|---|
+| Reject every split vidyut's own sandhi table cannot produce — chain `Splitter.split_at(...).is_valid` over the parts and demote it below what the table can build | 103 (−1) | **zero padas fixed**; one broken: `saṃbhṛtārthānāṃ`, where our correct `sambhṛtā \| arthānām` is itself judged illegal, so the fused word wins | ❌ rejected — vidyut's `data-0.4.0/sandhi/rules.csv` calls only **126/147** of the reference cuts legal strictly, 143/147 with visarga/final-s folded (the lab prints that line), so it is not a sound legality oracle; building the map costs ~0.05 s for the whole corpus, and every junk joint in our ranking-limited padas (`mām \| ekam`, `cā \| alpaviṣayā`) is "legal", so legality separates nothing where we actually miss |
 | Gate accepts an attestation **tie**: a transparent-compound split may beat the whole pada when its scarcest part is *at least as* attested (`>=` where it demanded strictly better) | 104 (+`paścārdhena` → `paścā \| ardhena`) | none in the fixture; on published goldens it also cuts BG 11.15's `kamalāsanastham` at the wrong joint (`kamalā \| āsanastham`, still a miss either way) | ✅ **shipped** — +1, no counted regression; needed a live regeneration of all 16 goldens |
 | Gate part-length floor `_MIN_DEEP_PART_LEN` 5 → 3 | 84 (−20) | `satyāya`→`satī \| āya`, `prajāyai`→`prajās \| yai`, `navāni`→`nava \| āni`, `saṃpṛktau`→`sam \| pṛktau` | ❌ rejected — the floor exists to stop exactly these sandhi fragments |
 | Gate part ceiling `_MAX_DEEP_PARTS` 3 → 4 | 105 (+`śramavivṛtamukhabhraṃśibhiḥ`) | none measured | ⏸ not shipped — one pada of evidence, unmeasured blast radius on words the fixture does not cover, and another live regeneration |
@@ -201,6 +202,9 @@ the app would publish; the shipped baseline in that process was **104/147** (bef
 | Prefer splits containing whole indeclinables (`iva`, `api`, …) above the part-count key | 46/147 (limit 10), 37/147 (limit 20) | **10 of 13** curated padas, e.g. `haviryā`→`ha \| vi \| ryā`, `saṃpṛktau`→`sam \| pṛktau` | ❌ rejected — catastrophic: more parts means more chances to contain an avyaya fragment |
 | Candidate pool `limit 10 → 20` (6.7 → 11.2 candidates per pada) | unchanged | none | ❌ rejected — no measured gain for roughly double the splitting time |
 | vidyut's experimental `vidyut.cheda.Chedaka` as a second splitter | not scoreable: on these padas it returns nothing or junk (`cāhaṃ`→[], `kṛtavāgdvāre`→one fused token, `vinivṛttakāmāḥ`→`vinivft \| takAma \| As`) | — | ❌ dead end — no signal to rank with |
+
+
+**Precondition for any future validity veto:** before a rule may *reject* a reading, show that the oracle accepts the reference — vidyut's sandhi table covers only 143/147 of our curated cuts even with visarga folding, so it can demote truth. A veto that cannot be shown to preserve the reference set is not worth scoring, let alone shipping.
 
 ## 4. Which engine is authoritative for which field
 
@@ -223,7 +227,9 @@ uv run python tools/meter_audit.py                 # offline: rebuilds §1, with
 uv run python tools/morphology_ranks.py            # offline: rebuilds §2, incl. the rank of the right reading
 uv run python tools/morphology_lab.py              # offline (kosha only): re-score a proposed reading rule on the pinned corpus
 uv run python tools/sandhi_ceiling.py              # ~25 s local (no network): §3 score + ceiling + fault split
-uv run python tools/sandhi_lab.py --pools pools.json   # ~2 s local: re-score a proposed split rule on the cached pools
+uv run python tools/sandhi_lab.py --pools pools.json   # ~2 s local: re-score a proposed split rule on the cached pools,
+                                                       #   and report how many reference cuts vidyut's sandhi table calls
+                                                       #   legal (126/147 strictly, 143/147 with visarga/final-s folded)
 ```
 
 The first three tools are how every table in this file was produced. They read only committed artefacts — the sandhi tool
@@ -233,7 +239,7 @@ regenerated instead of re-derived by hand; `tools/sandhi_ceiling.py --pools pool
 seconds rather than 25 s per variant (DOCUMENTATION.md §9).
 
 A **word-reading** rule only reorders JSON, so `tests/data/results/*.result.json` is regenerated offline from the pinned
-raw output (`for f in tests/data/results/*.raw.json; do uv run python postprocess_analysis.py -i "$f"; done`, ~7 s);
+raw output (`for f in tests/data/results/*.raw.json; do uv run samskrta-postprocess -i "$f"; done`, ~7 s);
 `postprocess_analysis.py --no-dictionary` reproduces the pre-rule ordering byte for byte. A **split-ranking** rule is a
 different cost: the chosen split is baked into `.raw.json` by `_analyze_line`, so landing one means re-running all 16
 verses against the live engines (~3 min) — and because `parser.split(limit=10)` enumerates in unspecified order, that run

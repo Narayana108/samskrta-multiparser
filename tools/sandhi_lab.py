@@ -46,6 +46,16 @@ Rules implemented, with what each one scored on 2026-10-10 (the shipped rule sco
                             compare how well attested the scarcest part is before comparing part counts. REJECTED:
                             68/147 — common fragments then outrank real readings (`māmekaṃ` keeps *māme* over mām | ekam).
 
+    vidyut-legality-veto    demote every candidate whose parts cannot be produced by chaining legal cuts of vidyut's own
+                            Splitter (`split_at(...).is_valid` over `data-0.4.0/sandhi/rules.csv`). REJECTED at 103/147,
+                            one pada WORSE: it fixes zero padas and breaks `saṃbhṛtārthānāṃ`, whose real joint
+                            (sambhṛtā | arthānām, ā + ā → ā) is simply absent from vidyut's rule table. The coverage line
+                            the tool prints is the reason it can never be shipped: vidyut calls only 126/147 of the
+                            reference cuts legal strictly, 143/147 with visarga/final-s folded — its sandhi table is not a
+                            sound legality oracle. Building the map costs ~0.05 s for the whole corpus (so speed was never
+                            the obstacle), and `mām | ekam` plus the other junk joints in the 23 ranking-limited padas are
+                            all legal, so legality does not separate truth from junk where we actually miss.
+
 Usage:
     uv run python tools/sandhi_ceiling.py --pools pools.json      # dump the pools once (~25 s)
     uv run python tools/sandhi_lab.py --pools pools.json          # score every rule against them (~2 s each)
@@ -90,6 +100,89 @@ def candidates_of(pool: list) -> list:
             "entry_min": cand["entry_min"],
         })
     return candidates
+
+
+def _legal_pairs(text: str, splitter, cache: dict) -> set:
+    """Every (left, right) fragment pair vidyut's own Splitter calls a valid cut of `text`.
+
+    Args:
+        text: pada in SLP1
+        splitter: vidyut `Splitter` built from `data-0.4.0/sandhi/rules.csv`
+        cache: memo across padas, keyed by the text being cut
+
+    Returns:
+        Set of (first, second) fragment pairs with `is_valid` true
+    """
+    if text not in cache:
+        pairs = set()
+        for position in range(1, len(text)):
+            try:
+                splits = list(splitter.split_at(text, position))
+            except Exception:  # vidyut raises on some malformed residuals; a missing pair only means "unproven"
+                continue
+            pairs.update((s.first, s.second) for s in splits if s.is_valid)
+        cache[text] = pairs
+    return cache[text]
+
+
+def _produced_by_legal_cuts(text: str, parts: tuple, splitter, cache: dict, relaxed: bool = False) -> bool:
+    """Can `parts` be obtained from `text` by chaining legal vidyut cuts? Single-part candidates always can.
+
+    Args:
+        text: pada or residual in SLP1
+        parts: the candidate's claimed parts in SLP1
+        splitter, cache: as in `_legal_pairs`
+        relaxed: compare fragments ignoring a trailing s/M/H/r — how sandhi rewrites a final visarga. Strict is what a
+            veto would enforce; relaxed measures how much of the reference vidyut's table can see at all.
+    """
+    if len(parts) <= 1:
+        return True
+    fold = (lambda x: x.rstrip("sMrH")) if relaxed else (lambda x: x)
+    return any(fold(left) == fold(parts[0])
+               and _produced_by_legal_cuts(right, parts[1:], splitter, cache, relaxed)
+               for left, right in _legal_pairs(text, splitter, cache))
+
+
+def attach_vidyut_legality(rows: list, candidates: dict) -> tuple:
+    """Tag every cached candidate with `vidyut_legal`, and report how much of the reference vidyut accepts.
+
+    Args:
+        rows: truth fixture rows (IAST pada + Devanagari + expected parts)
+        candidates: {pada_iast: candidate dicts} as built by `candidates_of`
+
+    Returns:
+        (reference cuts accepted strictly, reference cuts accepted with visarga/final-s folded) — the second number is
+        the one that matters: vidyut's rule table cannot call ~4% of real readings' joints legal at all
+    """
+    from indic_transliteration import sanscript
+    from vidyut.sandhi import Splitter
+
+    splitter = Splitter.from_csv(Path(app.DATA_DIR) / "sandhi" / "rules.csv")
+    cache: dict = {}
+
+    def slp1(form: str, source: str) -> str:
+        return sanscript.transliterate(form, source, sanscript.SLP1)
+
+    strict = folded = 0
+    for row in rows:
+        pada = slp1(row["devanagari"], sanscript.DEVANAGARI)
+        truth = tuple(slp1(p, sanscript.IAST) for p in row["parts"])
+        strict += int(_produced_by_legal_cuts(pada, truth, splitter, cache))
+        folded += int(_produced_by_legal_cuts(pada, truth, splitter, cache, relaxed=True))
+        for cand in candidates[row["pada"]]:
+            parts = tuple(slp1(p, sanscript.IAST) for p in cand["parts"])
+            cand["vidyut_legal"] = _produced_by_legal_cuts(pada, parts, splitter, cache)
+    return strict, folded
+
+
+def rank_vidyut_legality_veto(candidates: list):
+    """Ranker: candidates vidyut's Splitter cannot produce are demoted below all candidates it can.
+
+    Measured and rejected — see the module docstring. Everything else is the shipped ordering, called through
+    `app._rank_with_kosha` rather than copied.
+    """
+    legal = [c for c in candidates if c.get("vidyut_legal", True)]
+    return app._rank_with_kosha(legal or candidates)
 
 
 def rank_with_gate(max_parts: int, min_len: int):
@@ -187,6 +280,7 @@ RULES = {
     "attestation-before-count": rank_variant(attestation_before_count=True),
     "gate-gte-and-attestation-first": rank_variant(gate_at_least_whole=True, attestation_before_count=True),
     "old-gate-strictly-better": rank_variant(),
+    "vidyut-legality-veto": rank_vidyut_legality_veto,
 }
 
 
@@ -210,6 +304,9 @@ def main() -> None:
                      for row in rows)
     print(f"corpus: {len(rows)} curated padas from {args.pools}, "
           f"{sum(len(v) for v in candidates.values())} cached candidates; ceiling {ceiling_ok}/{len(rows)}")
+    strict_ok, folded_ok = attach_vidyut_legality(rows, candidates)
+    print(f"reference cuts vidyut's own sandhi table calls legal: {strict_ok}/{len(rows)} strictly, "
+          f"{folded_ok}/{len(rows)} with visarga/final-s folded — a legality veto would delete the rest")
 
     # A pada can appear in more than one verse, so the baseline is kept per row, not keyed by spelling.
     baseline, current_picked = [], 0
