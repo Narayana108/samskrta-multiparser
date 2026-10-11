@@ -9,10 +9,11 @@ One process prints every figure so they stay comparable:
     ranking-limited misses inside the ceiling where a correct candidate existed and our ordering did
                     not take it ❌ — this is the room left for ranking work
 
-Splitting every pada twice (once through `_best_word_split`, once raw) makes a full run live: about 25 s with the
-bundled data, no network. A dump made with `--pools` carries each candidate's ranking features, so `--reuse` re-ranks
-the identical pools through `app._rank_with_kosha` and prints the same figures in ~2 s — verified equal on this machine
-(picked 103/147, ceiling 127/147 both ways). That is how a ranking idea gets scored without touching the splitter.
+Splitting every pada once, through the same pools our ranking then chooses from: a full live run takes ~13 s with the
+bundled data, no network. A dump made with `--pools` carries each candidate's ranking features, so `--reuse` re-ranks the
+identical pools through `app._rank_with_kosha` and prints the same figures in ~2 s — verified on 2026-10-11: a live run and
+a reuse of the pools it wrote agree pada for pada. Two *live* runs still differ by up to two padas, because
+`parser.split(limit=10)` samples in unspecified order (DOCUMENTATION §3).
 
 Usage:
     uv run python tools/sandhi_ceiling.py                      # counts plus a few examples of each miss
@@ -162,8 +163,11 @@ def main() -> None:
         pada = row["pada"]
         pool = pools[pada]
         in_pool = any(pada_matches(kosha, pool_parts(c), row["parts"]) for c in pool)
-        # --reuse re-ranks the cached candidates with the shipped ranking function; otherwise split live again.
-        got = rank_cached(pool) if args.reuse else app._best_word_split(engine, devanagari[pada], kosha)
+        # Score the pools this process split (or loaded). Calling `_best_word_split` here would sample the splitter a
+        # second time, and that second sample differs from the first — which is why two live passes disagree by a pada or
+        # two. One sample per pada keeps `picked`, `ceiling` and the fault split describing one search space; the empty
+        # fallback mirrors `_best_word_split`, which leaves an unsplitable word whole.
+        got = rank_cached(pool) or [pada]
         ok_picked = pada_matches(kosha, got, row["parts"])
         picked_ok += int(ok_picked)
         ceiling_ok += int(in_pool or ok_picked)

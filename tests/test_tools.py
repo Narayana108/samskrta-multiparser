@@ -83,36 +83,42 @@ def test_sandhi_ceiling_splits_the_misses_by_fault(tmp_path):
     out = run_tool("sandhi_ceiling.py", "--examples", "0")
     figures = dict(re.findall(r"(picked|ceiling) (\d+)/147", out))
     assert int(figures["picked"]) >= 99, out          # the same floor as the gated corpus score
-    assert int(figures["ceiling"]) >= 125, out        # the pool ceiling drifts by one pada per process
+    assert int(figures["ceiling"]) >= 125, out        # a live pass moves the pool ceiling by up to two padas (§3)
     assert "pool-limited" in out and "ranking-limited" in out, out
 
     # The cached-pool path is how a ranking idea gets measured against an identical search space: dump the pools and
     # their ranking features once, then re-rank them through app._rank_with_kosha without calling the splitter again.
-    # If that stops reproducing the live figures, the cache no longer represents what our ranking chooses from.
+    # If reuse stops reproducing the figures of the process that dumped the pools, the cache no longer matches the space.
     pools = tmp_path / "pools.json"
     dumped = run_tool("sandhi_ceiling.py", "--examples", "0", "--pools", str(pools))
     assert pools.exists() and "candidate pools" in dumped, dumped
     reused = run_tool("sandhi_ceiling.py", "--examples", "0", "--reuse", str(pools))
     cached = dict(re.findall(r"(picked|ceiling) (\d+)/147", reused))
+    source = dict(re.findall(r"(picked|ceiling) (\d+)/147", dumped))
+    # The pools being re-ranked were written by that same process, so reuse must reproduce its figures exactly — any
+    # difference means the cache no longer represents what our ranking chooses from. Two separate live passes need not
+    # agree with each other: sanskrit_parser's candidate pool is unspecified across processes (§3), and consecutive runs
+    # today give ceilings of 126 to 128 over the same sixteen verses.
     for figure in ("picked", "ceiling"):
-        assert abs(int(cached[figure]) - int(figures[figure])) <= 1, f"{figure} drifted:\n{reused}"
+        assert cached[figure] == source[figure], f"{figure} drifted from the run that wrote the pools:\n{reused}"
     assert "ranking-limited" in reused, reused
 
-    # `tools/sandhi_lab.py` re-ranks those identical pools, so its baseline row must match what the ceiling tool just
-    # measured from the live engines; if it drifts, the lab is no longer judging what the app would publish. Rules the
+    # `tools/sandhi_lab.py` re-ranks those identical pools, so its baseline row must match what the ceiling tool
+    # measured from those same pools; if it drifts, the lab is no longer judging what the app would publish. Rules the
     # lab documents as measured-and-rejected must still lose to that baseline.
     lab = run_tool("sandhi_lab.py", "--pools", str(pools))
     scores = dict(re.findall(r"rule (\S+): picked (\d+)/147", lab))
-    assert abs(int(scores["current"]) - int(figures["picked"])) <= 1, lab
+    assert abs(int(scores["current"]) - int(source["picked"])) <= 1, lab
     for rejected in ("deep-gate-min-len-3", "attestation-before-count"):
         assert int(scores[rejected]) < int(scores["current"]), f"{rejected} is no longer a rejection:\n{lab}"
     assert "old-gate-strictly-better" in scores, lab
 
-    # The legality veto loses on score, and for a stronger reason than the score: vidyut's own sandhi table refuses to
-    # call most of the reference readings' joints legal at all (ACCURACY §3), so it cannot be used to reject a reading.
-    # If that coverage ever reaches the whole corpus, the veto is worth re-measuring; until then `rules.csv` stays out
-    # of the ranking path.
-    assert int(scores["vidyut-legality-veto"]) < int(scores["current"]), lab
+    # The legality veto is rejected on coverage, not on a score gap: vidyut's own sandhi table refuses to call most of the
+    # reference readings' joints legal at all (ACCURACY §3), so it cannot be used as an oracle. Its measured score only ever
+    # ties or loses by one pada — the loss is `saṃbhṛtārthānāṃ`, where our correct cut is itself judged illegal, and whether
+    # that candidate appears in a given process's pool varies (103 on 2026-10-10's dump, 104 on today's). If the coverage
+    # line below ever approaches the whole corpus, the veto is worth re-measuring; until then `rules.csv` stays out.
+    assert int(scores["vidyut-legality-veto"]) <= int(scores["current"]), lab
     strict, folded = re.search(r"calls legal: (\d+)/147 strictly, (\d+)/147 with", lab).groups()
     assert int(strict) <= 130 and int(folded) >= 140, f"vidyut's legality coverage changed:\n{lab}"
 
