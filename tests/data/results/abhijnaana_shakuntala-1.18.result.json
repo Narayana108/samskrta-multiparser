@@ -1,4 +1,13 @@
 {
+  "meta": {
+    "tool_version": "1.0.0",
+    "engines": {
+      "sanskrit_parser": "0.2.6",
+      "vidyut": "0.4.0",
+      "indic_transliteration": "2.3.82"
+    },
+    "vidyut_data": "data-0.4.0"
+  },
   "input": {
     "devanagari": "सरसिजमनुविद्धं शैवलेनापि रम्यं\nमलिनमपि हिमांशोर्लक्ष्म लक्ष्मीं तनोति\nइयमधिकमनोज्ञा वल्कलेनापि तन्वी\nकिमिव हि मधुराणां मण्डनं नाकृतीनाम्",
     "iast": "sarasijamanuviddhaṃ śaivalenāpi ramyaṃ\nmalinamapi himāṃśorlakṣma lakṣmīṃ tanoti\niyamadhikamanojñā valkalenāpi tanvī\nkimiva hi madhurāṇāṃ maṇḍanaṃ nākṛtīnām"

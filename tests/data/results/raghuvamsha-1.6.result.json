@@ -1,11 +1,20 @@
 {
+  "meta": {
+    "tool_version": "1.0.0",
+    "engines": {
+      "sanskrit_parser": "0.2.6",
+      "vidyut": "0.4.0",
+      "indic_transliteration": "2.3.82"
+    },
+    "vidyut_data": "data-0.4.0"
+  },
   "input": {
     "devanagari": "यथाविधिहुताग्नीनां यथाकामार्चितार्थिनाम्\nयथापराधदण्डानां यथाकालप्रबोधिनाम्",
     "iast": "yathāvidhihutāgnīnāṃ yathākāmārcitārthinām\nyathāparādhadaṇḍānāṃ yathākālaprabodhinām"
   },
   "padaccheda": {
     "dharmamitra": "yathāvidhi | huta | agnīnām | yathākāma | arcita | arthinām | yathā | aparādha | daṇḍānām | yathā | kāla | prabodhinām",
-    "sanskrit_parser": "yathāvidhi | hutāgnīnām | yathākāma | arcitā | arthinām | yathāparādhadaṇḍānām | yathākāla | prabodhinām"
+    "sanskrit_parser": "yathāvidhi | hutāgnīnām | yathākāma | arcita | arthinām | yathāparādhadaṇḍānām | yathākāla | prabodhinām"
   },
   "padas": [
     {
@@ -128,7 +137,7 @@
       "sanskrit_parser": {
         "padaccheda": [
           "yathākāma",
-          "arcitā",
+          "arcita",
           "arthinām"
         ],
         "words": [
@@ -162,44 +171,42 @@
             ]
           },
           {
-            "form": "arcitā",
-            "root": "arcitṛ",
-            "vibhakti": "prathamā",
+            "form": "arcita",
+            "root": "arcita",
+            "vibhakti": "saṃbodhana",
             "vacana": "eka",
             "linga": "puṃlliṅgam",
+            "tags": [
+              "karmaṇi",
+              "kta"
+            ],
             "alternates": [
               {
-                "root": "ṛc#1",
+                "root": "arcita",
                 "vacana": "eka",
-                "tags": [
-                  "luṭ",
-                  "parasmaipadam",
-                  "prathamapuruṣaḥ",
-                  "prāthamikaḥ"
-                ]
-              },
-              {
-                "root": "arcita#1",
-                "vacana": "eka",
-                "vibhakti": "prathamā",
-                "linga": "strīliṅgam",
+                "linga": "napuṃsakaliṅgam",
+                "vibhakti": "saṃbodhana",
                 "tags": [
                   "karmaṇi",
-                  "kta",
-                  "kṛdantaḥ",
-                  "ṇijantaḥ"
+                  "kta"
                 ]
               },
               {
                 "root": "arcita",
-                "vacana": "eka",
-                "vibhakti": "prathamā",
-                "linga": "strīliṅgam",
+                "linga": "puṃlliṅgam",
                 "tags": [
                   "karmaṇi",
                   "kta",
-                  "kṛdantaḥ",
-                  "prāthamikaḥ"
+                  "samāsapūrvapadanāmapadam"
+                ]
+              },
+              {
+                "root": "arcita",
+                "linga": "napuṃsakaliṅgam",
+                "tags": [
+                  "karmaṇi",
+                  "kta",
+                  "samāsapūrvapadanāmapadam"
                 ]
               }
             ]
@@ -226,17 +233,7 @@
             ]
           }
         ]
-      },
-      "differences": [
-        {
-          "sanskrit_parser": [
-            "arcitā"
-          ],
-          "dharmamitra": [
-            "arcita"
-          ]
-        }
-      ]
+      }
     },
     {
       "pada": "yathāparādhadaṇḍānāṃ",

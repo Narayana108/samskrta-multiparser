@@ -346,7 +346,14 @@ def test_result_document_bytes_are_stable(stem, tmp_path):
 @pytest.mark.parametrize("stem", VERSES)
 def test_raw_document_shape(stem):
     raw = load_golden(stem, ".raw.json")
-    assert list(raw) == ["input", "engine_outputs"]
+    assert list(raw) == ["meta", "input", "engine_outputs"]
+    # Provenance is part of the contract: a document has to say which tool and engines wrote it, because every figure in
+    # ACCURACY.md is measured against exactly those versions — which is why pyproject.toml bounds them.
+    provenance = raw["meta"]
+    assert provenance["tool_version"] == postprocess_analysis.TOOL_VERSION
+    assert set(provenance["engines"]) == {"sanskrit_parser", "vidyut", "indic_transliteration"}
+    assert all(provenance["engines"].values()), f"an engine version is missing: {provenance}"
+    assert str(provenance["vidyut_data"]).startswith("data-"), provenance
     assert set(raw["engine_outputs"]) == {"sanskrit_parser", "dharmamitra", "vidyut"}
     for engine, payload in raw["engine_outputs"].items():
         assert "error" not in payload, f"{engine} failed in the golden run: {payload['error']}"
@@ -364,7 +371,9 @@ def test_result_document_shape(stem):
     result = load_golden(stem, ".result.json")
     expected = EXPECTED[stem]
     extra = ["dharmamitra_unmatched"] if "dharmamitra_unmatched" in expected else []
-    assert list(result) == ["input", "padaccheda", "padas", *extra, "chandas"]
+    assert list(result) == ["meta", "input", "padaccheda", "padas", *extra, "chandas"]
+    # Both documents of a pair must name the same tool and engines; if they differ, one half was rewritten by another pass.
+    assert result["meta"] == load_golden(stem, ".raw.json")["meta"]
     assert result.get("dharmamitra_unmatched", []) == expected.get("dharmamitra_unmatched", [])
     assert "engine_errors" not in result  # a clean golden run has no failed engine
 

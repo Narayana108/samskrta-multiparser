@@ -1,4 +1,13 @@
 {
+  "meta": {
+    "tool_version": "1.0.0",
+    "engines": {
+      "sanskrit_parser": "0.2.6",
+      "vidyut": "0.4.0",
+      "indic_transliteration": "2.3.82"
+    },
+    "vidyut_data": "data-0.4.0"
+  },
   "input": {
     "devanagari": "क्व सूर्यप्रभवो वंशः क्व चाल्पविषया मतिः\nतितीर्षुर्दुस्तरं मोहादुडुपेनास्मि सागरम्",
     "iast": "kva sūryaprabhavo vaṃśaḥ kva cālpaviṣayā matiḥ\ntitīrṣurdustaraṃ mohāduḍupenāsmi sāgaram"

@@ -718,6 +718,10 @@ def _clean_raw() -> dict:
 
 def test_postprocess_clean_fixture_end_to_end():
     normalized = postprocess_analysis.postprocess(_clean_raw())
+    # Provenance itself is pinned by tests/test_golden_outputs.py; here it only has to be present, so the fixture
+    # comparison below stays about the reading.
+    provenance = normalized.pop("meta")
+    assert set(provenance["engines"]) == {"sanskrit_parser", "vidyut", "indic_transliteration"}
     assert normalized == {
         "input": {"iast": "agnim īḷe"},
         "padaccheda": {"dharmamitra": "agnim", "sanskrit_parser": "agni | īḷe"},
@@ -826,7 +830,7 @@ def test_postprocess_reports_a_token_that_rebuilds_no_word():
     raw["engine_outputs"]["dharmamitra"]["tokens"].insert(0, {"form": "mā"})
     normalized = postprocess_analysis.postprocess(raw)
     assert normalized["dharmamitra_unmatched"] == ["mā"]
-    assert list(normalized) == ["input", "padaccheda", "padas", "dharmamitra_unmatched"]
+    assert list(normalized) == ["meta", "input", "padaccheda", "padas", "dharmamitra_unmatched"]
     # The pada columns are untouched by the extra token.
     assert [p["dharmamitra"]["padaccheda"] if p["dharmamitra"] else None for p in normalized["padas"]] == [
         ["agnim"], None
@@ -845,9 +849,25 @@ def test_postprocess_notes_a_word_request_whose_answer_rebuilds_nothing(capsys):
     ]
     normalized = postprocess_analysis.postprocess(raw)
     err = capsys.readouterr().err
-    assert err.startswith("Note: Dharmamitrā's word-level answers rebuilt none of these padas")
+    # This fixture's raw document predates provenance recording, so two notes are printed; their order is not a contract.
+    assert "Note: this raw document has no 'meta' block" in err
+    assert "Note: Dharmamitrā's word-level answers rebuilt none of these padas" in err
     assert "īḷe" in err
     assert normalized["padas"][1]["dharmamitra"] is None
+
+
+def test_postprocess_notes_when_the_raw_document_came_from_other_engines(capsys):
+    """Rebuilding with different engines than wrote the raw document has to be visible, not silent."""
+    raw = _clean_raw()
+    raw["meta"] = {
+        "tool_version": "0.9.0",
+        "engines": {"sanskrit_parser": "0.2.3", "vidyut": "0.3.1", "indic_transliteration": "2.3.82"},
+        "vidyut_data": "data-0.3.1",
+    }
+    postprocess_analysis.postprocess(raw)
+    err = capsys.readouterr().err
+    assert "this raw document was written by" in err
+    assert "'0.9.0' ->" in err and "'data-0.3.1' ->" in err, err
 
 
 # ---------------------------------------------------------------------------

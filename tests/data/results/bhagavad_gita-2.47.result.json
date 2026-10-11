@@ -1,11 +1,20 @@
 {
+  "meta": {
+    "tool_version": "1.0.0",
+    "engines": {
+      "sanskrit_parser": "0.2.6",
+      "vidyut": "0.4.0",
+      "indic_transliteration": "2.3.82"
+    },
+    "vidyut_data": "data-0.4.0"
+  },
   "input": {
     "devanagari": "कर्मण्येवाधिकारस्ते मा फलेषु कदाचन\nमा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि",
     "iast": "karmaṇyevādhikāraste mā phaleṣu kadācana\nmā karmaphalaheturbhūrmā te saṅgo'stvakarmaṇi"
   },
   "padaccheda": {
     "dharmamitra": "karmaṇi | eva | adhikāraḥ | te | mā | phaleṣu | kadācana | mā | karma | phala | hetuḥ | bhūḥ | mā | te | saṅgaḥ | astu | akarmaṇi",
-    "sanskrit_parser": "karmaṇye | ava | adhikāras | te | mā | phaleṣu | kadā | cana | mā | karmaphalahetus | bhūs | mā | te | saṅgas | astu | akarmaṇi"
+    "sanskrit_parser": "karmaṇye | vā | adhikāras | te | mā | phaleṣu | kadā | cana | mā | karmaphalahetus | bhūs | mā | te | saṅgas | astu | akarmaṇi"
   },
   "padas": [
     {
@@ -54,7 +63,7 @@
       "sanskrit_parser": {
         "padaccheda": [
           "karmaṇye",
-          "ava",
+          "vā",
           "adhikāras",
           "te"
         ],
@@ -141,38 +150,46 @@
             ]
           },
           {
-            "form": "ava",
-            "root": "ava",
-            "vibhakti": "saṃbodhana",
+            "form": "vā",
+            "root": "vā",
+            "vibhakti": "prathamā",
             "vacana": "eka",
-            "linga": "puṃlliṅgam",
+            "linga": "strīliṅgam",
             "alternates": [
               {
-                "root": "av",
+                "root": "va",
                 "vacana": "eka",
-                "tags": [
-                  "kartari",
-                  "loṭ",
-                  "madhyamapuruṣaḥ",
-                  "parasmaipadam",
-                  "prāthamikaḥ"
-                ]
+                "vibhakti": "prathamā",
+                "linga": "strīliṅgam"
               },
               {
-                "root": "ava",
+                "root": "ū",
+                "vacana": "eka",
+                "linga": "strīliṅgam",
+                "vibhakti": "tṛtīyā"
+              },
+              {
+                "root": "ū",
+                "vacana": "eka",
+                "linga": "puṃlliṅgam",
+                "vibhakti": "tṛtīyā"
+              },
+              {
+                "root": "vā",
                 "tags": [
                   "avyayam"
                 ]
               },
               {
-                "root": "ava",
+                "root": "vā#1",
                 "tags": [
-                  "upasargaḥ"
+                  "avyayam",
+                  "saṃyojakaḥ"
                 ]
               },
               {
-                "root": "ava",
-                "linga": "puṃlliṅgam",
+                "root": "vā",
+                "linga": "strīliṅgam",
                 "tags": [
                   "samāsapūrvapadanāmapadam"
                 ]
@@ -311,7 +328,7 @@
         {
           "sanskrit_parser": [
             "karmaṇye",
-            "ava",
+            "vā",
             "adhikāras"
           ],
           "dharmamitra": [

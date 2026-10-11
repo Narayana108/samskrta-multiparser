@@ -746,19 +746,19 @@ def cli(tmp_path, monkeypatch):
     return run
 
 
-def test_run_exits_1_when_vidyut_reports_unavailable(cli, capsys):
+def test_run_exits_2_when_vidyut_reports_unavailable(cli, capsys):
     code, doc = cli(
         run_sanskrit_parser=lambda *a: {"word_decompositions": {}},
         run_dharmamitra=lambda *a: {"tokens": []},
         run_vidyut=lambda *a: {"error": "Vidyut data directory not found"},
     )
-    assert code == 1
+    assert code == 2          # a local engine being down makes the comparison incomplete: exit code 2, not 1
     err = capsys.readouterr().err
     assert "Error: vidyut: Vidyut data directory not found" in err
     assert doc["engine_outputs"]["vidyut"] == {"error": "Vidyut data directory not found"}
 
 
-def test_run_exits_1_when_sanskrit_parser_cannot_be_used(cli, capsys):
+def test_run_exits_2_when_sanskrit_parser_cannot_be_used(cli, capsys):
     def missing(*a):
         raise RuntimeError("sanskrit_parser is not installed")
 
@@ -767,7 +767,7 @@ def test_run_exits_1_when_sanskrit_parser_cannot_be_used(cli, capsys):
         run_dharmamitra=lambda *a: {"tokens": []},
         run_vidyut=lambda *a: {"kosha": [], "prakriya": {}, "meter": [], "chandas": {}},
     )
-    assert code == 1
+    assert code == 2
     err = capsys.readouterr().err
     assert "Error: sanskrit_parser: unavailable: sanskrit_parser is not installed" in err
     assert doc["engine_outputs"]["sanskrit_parser"]["error"].startswith("unavailable:")
@@ -788,6 +788,32 @@ def test_run_exits_0_when_only_dharmamitra_is_down(cli, capsys):
     assert doc["engine_outputs"]["dharmamitra"] == {
         "error": "Dharmamitra engine failed: connection refused"
     }
+
+
+def test_run_exits_1_on_an_unreadable_input_and_3_when_output_cannot_be_written(tmp_path, monkeypatch, capsys):
+    """The documented exit codes for the two non-engine failures (README 'Exit codes')."""
+    missing = tmp_path / "no-such-verse.txt"
+    monkeypatch.setattr(sys, "argv", ["app.py", "shloka", "-i", str(missing), "-o", str(tmp_path / "out")])
+    assert app.main() == 1
+    err = capsys.readouterr().err
+    assert str(missing) in err and not err.startswith("Warning"), err
+
+    def unwritable(*_args, **_kwargs):
+        raise OSError("read-only filesystem")
+
+    monkeypatch.setattr(postprocess_analysis, "write_document", unwritable)
+    src = tmp_path / "in.txt"
+    src.write_text("agnim īḷe", encoding="utf-8")
+    monkeypatch.setattr(
+        sys, "argv",
+        ["app.py", "shloka", "-i", str(src), "-o", str(tmp_path / "analysis")],
+    )
+    monkeypatch.setattr(app, "run_sanskrit_parser", lambda *a: {"word_decompositions": {}})
+    monkeypatch.setattr(app, "run_dharmamitra", lambda *a: {"tokens": []})
+    monkeypatch.setattr(
+        app, "run_vidyut", lambda *a: {"kosha": [], "prakriya": {}, "meter": [], "chandas": {}})
+    assert app.main() == 3
+    assert "Error writing output: read-only filesystem" in capsys.readouterr().err
 
 
 # ---------------------------------------------------------------------------
@@ -1234,7 +1260,7 @@ def test_both_documents_are_written_even_when_a_local_engine_fails(tmp_path, mon
     src = _src(tmp_path)
     base = str(tmp_path / "analysis")
     monkeypatch.setattr(sys, "argv", ["app.py", "shloka", "-i", src, "-o", base])
-    assert app.main() == 1
+    assert app.main() == 2   # exit code 2 says the comparison is incomplete; it does not suppress either document
     written = sorted(p.name for p in tmp_path.iterdir() if p.suffix == ".json")
     assert written == ["analysis.raw.json", "analysis.result.json"]
     raw = json.loads(postprocess_analysis.raw_path(base).read_text(encoding="utf-8"))

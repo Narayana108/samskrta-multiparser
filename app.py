@@ -2011,10 +2011,17 @@ def main() -> int:
     and 'chandas' objects to stdout.
 
     Returns:
-        0 on success; 1 when a local engine (sanskrit_parser or vidyut) could not
-        run, or when an output file could not be written — in both cases the documents
-        that were produced are still on disk. A missing Dharmamitra service only logs
-        a warning and still returns 0.
+        Exit code, documented in README and DOCUMENTATION §4:
+
+        0 — both documents written and every engine reported. A Dharmamitra (network) failure only logs a
+            warning and still returns 0: the two offline engines are complete on their own.
+        1 — input problem: no default input file, an unreadable or missing path, nothing to analyse, or the
+            result document could not be built from what the engines returned.
+        2 — a local engine (sanskrit_parser or vidyut) could not run at all; the documents that were produced
+            stay on disk with an 'error' entry naming the failure, but the comparison is incomplete.
+        3 — an output document could not be written (disk or permission error).
+
+        stderr carries every engine-limit note and warning and is never silenced; stdout stays machine-readable.
     """
     parser = argparse.ArgumentParser(
         description="samskrta-multiparser — Unified multi-engine Sanskrit analyzer"
@@ -2075,6 +2082,9 @@ def main() -> int:
     # is an input detail, not part of the analysis. Neither is the mode: it is chosen on the command
     # line and every section of the document already says what kind of reading it is.
     output = {
+        # Provenance first: the reading below is only interpretable together with the engines that produced it,
+        # which is what ACCURACY.md's figures are measured against.
+        "meta": postprocess_analysis.meta(DATA_DIR),
         "input": {
             "devanagari": cleaned,
             "iast": iast_text,
@@ -2149,7 +2159,7 @@ def main() -> int:
     attest = postprocess_analysis.kosha_attest(load_kosha())
 
     try:
-        processed = postprocess_analysis.postprocess(output, attest)
+        processed = postprocess_analysis.postprocess(output, attest, DATA_DIR)
     except ValueError as exc:
         print(f"Error building the result document: {exc}", file=sys.stderr)
         return 1
@@ -2161,7 +2171,7 @@ def main() -> int:
             enrich_dharmamitra_lemmas(dharmamitra_results)
         except Exception as exc:
             print(f"Warning: Dharmamitra lemma enrichment failed: {exc}", file=sys.stderr)
-        processed = postprocess_analysis.postprocess(output, attest)
+        processed = postprocess_analysis.postprocess(output, attest, DATA_DIR)
 
     # Dharmamitrā sometimes returns more tokens than the verse has words. They are listed in the result
     # document and named here rather than folded into a pada they do not belong to.
@@ -2178,7 +2188,7 @@ def main() -> int:
         postprocess_analysis.write_document(result_file, processed, indent)
     except OSError as exc:
         print(f"Error writing output: {exc}", file=sys.stderr)
-        return 1
+        return 3
 
     # stdout stays machine-readable: exactly the two objects, nothing else.
     postprocess_analysis.print_input_and_chandas(result_file, indent)
@@ -2189,7 +2199,7 @@ def main() -> int:
             "could not run; see the error entries in the output.",
             file=sys.stderr,
         )
-        return 1
+        return 2
     return 0
 
 

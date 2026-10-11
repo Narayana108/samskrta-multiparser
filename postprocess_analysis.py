@@ -47,8 +47,10 @@ IAST everywhere except ``input.devanagari``. No external deps (stdlib only).
 import argparse
 import difflib
 import json
+import os
 import re
 import sys
+from importlib import metadata
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -62,6 +64,80 @@ from typing import Any, Dict, List, Optional
 
 RAW_SUFFIX = ".raw.json"
 RESULT_SUFFIX = ".result.json"
+
+
+# ---------------------------------------------------------------------------
+# Provenance: which tool and which engines wrote this document
+# ---------------------------------------------------------------------------
+# Both documents of the pair carry a 'meta' block, because every accuracy figure in ACCURACY.md is only meaningful
+# together with the engine versions that produced it. `TOOL_VERSION` mirrors pyproject.toml's version.
+TOOL_VERSION = "1.0.0"
+
+_ENGINE_DISTRIBUTIONS = {
+    "sanskrit_parser": "sanskrit-parser",
+    "vidyut": "vidyut",
+    "indic_transliteration": "indic-transliteration",
+}
+
+
+def meta(vidyut_data_dir: Optional[str] = None) -> Dict[str, Any]:
+    """Provenance block for an output document: tool version, engine versions, dictionary data directory.
+
+    Only fields that can change a reading are recorded. The interpreter version is deliberately absent and the data
+    directory is stored by name (`data-0.4.0`) rather than as an absolute path, so the same pinned engines give
+    byte-identical documents on any machine we support — `tests/test_golden_outputs.py` compares whole documents.
+
+    Args:
+        vidyut_data_dir: the vidyut data directory in use, when it is known
+
+    Returns:
+        {'tool_version', 'engines': {...}, 'vidyut_data'}; a name is null where it could not be resolved
+    """
+    engines: Dict[str, Optional[str]] = {}
+    for label, distribution in _ENGINE_DISTRIBUTIONS.items():
+        try:
+            engines[label] = metadata.version(distribution)
+        except metadata.PackageNotFoundError:
+            engines[label] = None
+    return {
+        "tool_version": TOOL_VERSION,
+        "engines": engines,
+        "vidyut_data": Path(vidyut_data_dir).name if vidyut_data_dir else None,
+    }
+
+
+def resolve_vidyut_data_dir() -> Optional[str]:
+    """The vidyut data directory this process would use, resolved exactly the way `app.py` resolves it."""
+    try:
+        from app import DATA_DIR  # one resolution rule, not a second copy of it
+
+        return str(DATA_DIR)
+    except Exception:
+        return os.environ.get("VIDYUT_DATA_DIR")
+
+
+def note_provenance_difference(raw: Dict[str, Any], writer: Dict[str, Any]) -> None:
+    """Note on stderr when the raw document was written by other engines than the pass reading it.
+
+    Explains why a rebuilt result document can differ from an older one; says nothing when they agree. It only ever
+    adds information — no engine limit or warning is hidden here.
+    """
+    recorded = raw.get("meta")
+    if not isinstance(recorded, dict):
+        print(
+            "Note: this raw document has no 'meta' block (it predates provenance recording); the reading below is "
+            "attributed to the engines installed now.",
+            file=sys.stderr,
+        )
+        return
+    differing = {key: (recorded.get(key), value) for key, value in writer.items() if recorded.get(key) != value}
+    if differing:
+        print(
+            "Note: this raw document was written by "
+            + ", ".join(f"{key}: {old!r} -> {new!r}" for key, (old, new) in sorted(differing.items()))
+            + "; the result document records the engines used for this pass.",
+            file=sys.stderr,
+        )
 
 
 def output_base(path_str: str) -> str:
@@ -606,18 +682,21 @@ def build_padaccheda(padas: List[Dict[str, Any]]) -> Dict[str, Optional[str]]:
     }
 
 
-def postprocess(raw: Dict[str, Any], attest: Optional[Any] = None) -> Dict[str, Any]:
+def postprocess(raw: Dict[str, Any], attest: Optional[Any] = None,
+                vidyut_data_dir: Optional[str] = None) -> Dict[str, Any]:
     """Condense raw engine output into the readable padaccheda/padas form.
 
     Args:
         raw: Raw multi-engine analysis output (multi-engine-analysis.json content)
         attest: optional dictionary lookup mapping a surface form to its kosha lemma stems, used to rank word
             readings (`collect_sp_morphology`); None keeps the previous ranking
+        vidyut_data_dir: data directory to record in 'meta'; resolved from the environment when omitted
 
     Returns:
-        Processed dict with input, padaccheda and padas; plus engine_errors when an
+        Processed dict with meta, input, padaccheda and padas; plus engine_errors when an
         engine reported a failure instead of results. The raw document's 'mode' key is
-        ignored — it is a command-line choice, not part of the reading.
+        ignored — it is a command-line choice, not part of the reading. 'meta' describes this pass, not the
+        engines that wrote the raw document; when the two disagree a note says so on stderr.
 
     Raises:
         ValueError: When the raw output has no usable 'input.iast' string.
@@ -626,6 +705,9 @@ def postprocess(raw: Dict[str, Any], attest: Optional[Any] = None) -> Dict[str, 
     input_iast = inp.get("iast") if isinstance(inp, dict) else None
     if not isinstance(input_iast, str) or not input_iast.strip():
         raise ValueError("raw output has no usable 'input.iast' string")
+
+    writer = meta(vidyut_data_dir or resolve_vidyut_data_dir())
+    note_provenance_difference(raw, writer)
 
     engines = raw.get("engine_outputs") or {}
     sp_output = engines.get("sanskrit_parser") or {}
@@ -671,6 +753,7 @@ def postprocess(raw: Dict[str, Any], attest: Optional[Any] = None) -> Dict[str, 
     )
 
     processed: Dict[str, Any] = {
+        "meta": writer,
         "input": inp,
         "padaccheda": build_padaccheda(padas),
         "padas": padas,
