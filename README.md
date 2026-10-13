@@ -1,7 +1,7 @@
 # samskrta-multiparser
 
-Analyse a Sanskrit verse with three independent engines — **Dharmamitrā** (HTTP API),
-**sanskrit_parser** and **vidyut** (both local) — and write two JSON documents under one base name:
+Analyse a Sanskrit verse with three independent engines — [Dharmamitra](https://dharmamitra.org) (HTTP API),
+[sanskrit_parser](https://github.com/kmadathil/sanskrit_parser) and [vidyut](https://github.com/ambuda-org/vidyut) (both local) — and write two JSON documents under one base name:
 `<base>.raw.json`, the untouched engine output, and `<base>.result.json`, a pada-by-pada reading that lines their
 answers up side by side. Nothing is merged into a consensus: where the engines disagree, the document says so.
 
@@ -36,9 +36,6 @@ uv run samskrta shloka                           # → ./results/raghuvamsha-1.1
 uv run samskrta shloka -i input/raghuvamsha-1.1.txt
 ```
 
-```
-```
-```
 
 `samskrta` and `samskrta-postprocess` are the console entry points declared in `pyproject.toml`; they wrap `app.py`
 and `postprocess_analysis.py`, so `uv run python app.py …` keeps working. One śloka takes ~2–3 s, dominated by the
