@@ -210,7 +210,7 @@ EXPECTED = {
             "| saṅghān | brahmāṇam | īśam | kamalāsana | stham | ṛṣīn | ca | sarvān "
             "| uragān | ca | divyān"
         ),
-        # deva + dehe becomes devām | stava. The gate's attestation tie now cuts the karmadhāraya at the wrong
+        # deva + dehe becomes devām | stava. The gate's attestation tie cuts the karmadhāraya at the wrong
         # joint — kamalā | āsanastham instead of Dharmamitrā's kamalāsana | stham, still counted as a miss.
         "sanskrit_parser_padaccheda": (
             "paśyāmi | devām | stava | deva | dehe | sarvān | tathā | bhūta | viśeṣa "
@@ -425,9 +425,8 @@ def test_raghuvamsha_one_dot_one_keeps_both_readings_of_the_compound():
 def test_raghuvamsha_one_dot_two_keeps_every_word_on_its_own_pada():
     """मोहादुडुपेन: both engines read mohāt | uḍupena | asmi.
 
-    The greedy aligner this corpus used to pin spent Dharmamitrā's tokens on earlier padas and left
-    this pada null; the coverage DP keeps every token inside a word it can rebuild, so five of the
-    nine padas differ instead of most of them."""
+    The coverage DP keeps every token inside a word it can rebuild, so this pada carries its three
+    words and exactly five of the nine padas differ between the two engines."""
     result = load_golden("raghuvamsha-1.2", ".result.json")
     pada = next(p for p in result["padas"] if p["pada"] == "mohāduḍupenāsmi")
     assert pada["dharmamitra"]["padaccheda"] == ["mohāt", "uḍupena", "asmi"]
@@ -447,11 +446,11 @@ def test_abhijnaana_shakuntala_keeps_odd_length_padas_whole():
 
 
 def test_bhagavad_gita_eighty_sixty_six_pins_the_harder_split():
-    """मामेकं and मोक्षयिष्यामि: one split the offline ranker now gets right, one it does not.
+    """मामेकं and मोक्षयिष्यामि: one split the offline ranker gets right, one it does not.
 
     Dharmamitrā's 'mām' is filed on its own pada, where the published padaccheda puts it (mām | ekam).
     The finite verb survives whole because every candidate that cut it lost on dictionary attestation;
-    the fused `mām + ekam` is still mis-cut by sanskrit_parser, which the accuracy floor in
+    the fused `mām + ekam` remains mis-cut by sanskrit_parser, which the accuracy floor in
     ``tests/test_sandhi_accuracy.py`` counts as a miss rather than hiding.
     """
     result = load_golden("bhagavad_gita-18.66", ".result.json")
@@ -472,8 +471,9 @@ def test_bhagavad_gita_eighty_sixty_six_pins_the_harder_split():
 def test_raghuvamsha_one_dot_three_keeps_each_token_on_the_word_it_rebuilds():
     """गमिष्याम्युपहास्यताम्: Dharmamitrā invents a 'tām'; the offline ranker keeps one word.
 
-    Its 'prāṃśu' belongs to the following pada and now stays there, so the streams no longer drift
-    across padas; the invented 'tām' is still shown here because it does rebuild part of this word."""
+    Each token is filed on a word it can rebuild, so its 'prāṃśu' stays on the following pada and the
+    two streams never drift across padas; the invented 'tām' appears here because it does rebuild part of
+    this word."""
     result = load_golden("raghuvamsha-1.3", ".result.json")
     pada = next(p for p in result["padas"] if p["pada"] == "gamiṣyāmyupahāsyatām")
     assert pada["dharmamitra"]["padaccheda"] == ["gamiṣyāmi", "upahāsya", "tām"]
@@ -620,8 +620,8 @@ def test_live_run_reproduces_the_golden_pair(stem, tmp_path, capsys):
     sp = generated_raw["engine_outputs"]["sanskrit_parser"]
     assert sp["sandhi_splits"], "the splitter must still produce line-level candidates"
 
-    # Candidates are produced one pada-line at a time, and vakya (sentence) parsing is gone:
-    # every entry names exactly one input line and carries no sentence-graph payload.
+    # Candidates are produced one pada-line at a time — there is no vakya (sentence) mode: every entry
+    # names exactly one input line and carries no sentence-graph payload.
     assert {k for e in sp["sandhi_splits"] for k in e} == {
         "line_index",
         "split_index",
@@ -641,7 +641,7 @@ def test_live_run_reproduces_the_golden_pair(stem, tmp_path, capsys):
     assert all(parts for parts in sp["word_decompositions"].values())
 
     lines = capsys.readouterr().out.splitlines(keepends=True)
-    # Warnings share stdout with the JSON now (§7). The summary object starts at the first line that opens it — warning
+    # Warnings share stdout with the JSON (§7). The summary object starts at the first line that opens it — warning
     # text may contain braces, so scanning for '{' anywhere would stop inside a warning. Everything before that line has
     # to be the libraries' own warnings: on stdout, not hidden on stderr.
     first_json = next((i for i, line in enumerate(lines) if line.startswith("{")), None)

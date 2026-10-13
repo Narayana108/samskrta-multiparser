@@ -4,7 +4,7 @@ The reading set for every word is already committed: each `tests/data/results/<s
 published primary fields plus every rejected reading under `alternates`, which is exactly what
 `postprocess_analysis._morph_rank` ordered. So a new rule can be evaluated by re-ordering those readings —
 fifteen curated forms used by `tests/test_morphology_accuracy.py` say whether it helps or hurts. Because the
-result documents are what the shipped ranking produced, re-running a rule that has already landed must move
+result documents are what the shipped ranking produced, re-scoring them with that same rule must move
 nothing — that is this lab's regression check.
 
 Rules implemented:

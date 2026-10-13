@@ -622,9 +622,9 @@ def test_a_missing_default_input_names_the_directory_and_i(tmp_path, monkeypatch
     assert "no input file: put a .txt in input/ or pass -i FILE" in capsys.readouterr().err
 
 
-def test_the_removed_root_level_default_files_are_ignored(tmp_path, monkeypatch, capsys):
-    # These names used to be picked up by mode; re-adding that fallback would silently analyze the
-    # wrong file whenever input/ is empty.
+def test_root_level_input_file_names_are_ignored(tmp_path, monkeypatch, capsys):
+    # No root-level file is ever read implicitly: only `input/` is. A mode-specific fallback to
+    # these names would silently analyze the wrong file whenever input/ is empty.
     for name in ("input.txt", "shloka_input.txt", "pada_input.txt"):
         (tmp_path / name).write_text("agnim īḷe", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
@@ -820,8 +820,8 @@ def test_run_exits_1_on_an_unreadable_input_and_3_when_output_cannot_be_written(
 
 
 # ---------------------------------------------------------------------------
-# Concurrency: the Dharmamitra wait overlaps the local engines, and its two
-# attempts share one bounded budget instead of a timeout each plus a sleep
+# Concurrency: the Dharmamitra wait overlaps the local engines, and its two attempts share one
+# bounded budget — a timeout per attempt plus a blind sleep would overrun it several times over
 # ---------------------------------------------------------------------------
 
 def test_dharmamitra_wait_overlaps_the_local_engines(cli):
@@ -881,8 +881,9 @@ def test_dharmamitra_retries_share_one_deadline(monkeypatch):
 
 def test_an_http_error_body_is_never_parsed_as_an_answer(monkeypatch):
     # A gateway error page that happens to be JSON in the answer shape must not become a reading.
-    # The old retry loop kept the failed response object alive, so an HTTP 5xx on attempt 1 plus a
-    # timeout on attempt 2 fell through to parsing that error body as if it were the API's answer.
+    # Each attempt drops its response object on failure, because an HTTP 5xx on attempt 1 plus a
+    # timeout on attempt 2 would otherwise fall through to parsing that error body as if it were
+    # the API's answer.
     class HttpError(Exception):
         pass
 
@@ -975,9 +976,10 @@ def test_a_streamed_body_past_the_cap_is_dropped(monkeypatch):
 
 
 def test_the_body_reader_runs_on_a_real_requests_response():
-    # The fakes above only implement the methods this client happens to call, so they cannot catch a
-    # method name that does not exist on `requests.Response` at all — an `iter_bytes` reader passed every
-    # fake-based test and then failed all sixteen live golden runs. This builds the real object.
+    # The fakes above only implement the methods this client happens to call, so they cannot
+    # catch a method name that does not exist on `requests.Response` at all — an `iter_bytes`
+    # reader would pass every fake-based test and then fail all sixteen live golden runs.
+    # This builds the real object.
     import io
 
     import requests
@@ -1029,8 +1031,8 @@ def test_a_body_that_dies_mid_stream_becomes_an_engine_error(monkeypatch):
 
 
 def test_a_word_request_that_faults_mid_body_keeps_the_run_alive(monkeypatch, capsys):
-    # The per-pada follow-up loop has no try of its own: an escaping body fault used to abort main()
-    # after the local engines had already run, so neither output document was written.
+    # The per-pada follow-up loop has no try of its own: an escaping fault here would abort main()
+    # after the local engines ran, leaving no output document; this test pins that.
     import requests
 
     class StallingResponse:
@@ -1089,8 +1091,8 @@ def test_malformed_numeric_env_overrides_warn_and_default(monkeypatch, capsys):
 
 
 def test_word_requests_get_an_absolute_deadline(monkeypatch):
-    # The follow-up loop hands the request helper an absolute time.monotonic() deadline. Handing it a
-    # duration instead made every word request fail instantly with 'never completed'.
+    # The follow-up loop hands the request helper an absolute time.monotonic() deadline; a duration
+    # passed for it would make every word request fail instantly with 'never completed'.
     seen = []
 
     def fake_request(text, deadline):

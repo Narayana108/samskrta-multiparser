@@ -257,11 +257,11 @@ def test_collect_morphology_covers_words_only_found_in_word_morphology():
 def test_collect_morphology_keeps_every_case_reading_with_the_best_one_first():
     """An ambiguous form is never collapsed to a single guess.
 
-    sanskrit_parser lists vāsāṃsi as nominative, accusative and vocative plural at once. The old
-    alphabetical tie-break published only 'saṃbodhana' — 103 golden padas showed the vocative alone
-    while their raw output also offered prathamā/dvitīyā — so the reading document looked like a
-    parser that misreads every neuter plural. Case order now decides the primary field, and the
-    alternatives stay visible as `alternates`.
+    sanskrit_parser lists vāsāṃsi as nominative, accusative and vocative plural at once. Case order
+    decides which reading is published as the primary field; an alphabetical tie-break would publish
+    only 'saṃbodhana' — 103 golden padas measured with that rule showed the vocative alone while
+    their raw output also offered prathamā/dvitīyā, making the document look like a parser that
+    misreads every neuter plural. The other readings stay visible as `alternates`.
     """
     sp_output = {"word_morphology": [{
         "pada": "vāsāṃsi",
@@ -283,11 +283,11 @@ def test_collect_morphology_keeps_every_case_reading_with_the_best_one_first():
 def test_collect_morphology_demotes_a_root_the_dictionary_does_not_record():
     """A reading built on a stem the kosha never lists for that form loses to one it does.
 
-    This is the ranking rule measured over the sixteen pinned verses: 8 of 273 published primaries move,
-    and 6 of them become what the printed editions read — 'asti' becomes √as "is" instead of an invented
-    vocative *asta*, and with it 'hi', 'yathāvidhi', 'prakṛti', 'sanni' and 'yāti' in saṃyāti. The
-    unattested reading here is the *fuller* one (case, number and gender), so completeness alone used to
-    win; the `#1` homophony marker must not hide an attested root either.
+    This ranking rule is measured over the sixteen pinned verses: kosha attestation moves 8 of 273
+    published primaries, and 6 of them become what the printed editions read — 'asti' becomes √as "is"
+    instead of an invented vocative *asta*, and with it 'hi', 'yathāvidhi', 'prakṛti', 'sanni' and
+    'yāti' in saṃyāti. The unattested reading here is the *fuller* one (case, number and gender), so
+    completeness alone would win; the `#1` homophony marker must not hide an attested root either.
     """
     sp_output = {"word_morphology": [{
         "pada": "asti",
@@ -305,8 +305,8 @@ def test_collect_morphology_demotes_a_root_the_dictionary_does_not_record():
     assert [r.get("root") for r in readings] == ["as#1", "asta"]  # demoted, never dropped
 
 
-def test_collect_morphology_without_a_dictionary_is_byte_for_byte_the_old_ranking():
-    """Forms the kosha says nothing about keep exactly the order they had."""
+def test_collect_morphology_without_a_dictionary_changes_nothing_byte_for_byte():
+    """An empty attestation set leaves every form in the order morphology alone ranks it."""
     sp_output = {"word_morphology": [{
         "pada": "vastā",
         "morphological_tags": [
@@ -322,15 +322,15 @@ def test_collect_morphology_without_a_dictionary_is_byte_for_byte_the_old_rankin
 def test_attestation_is_exact_membership_never_a_prefix():
     """vidyut records short homographs, so a prefix of a stem proves nothing.
 
-    The kosha lists 'ah' and 'aha' for the form अहम्; matching those as prefixes would have blessed the
-    truncations that made the rule misfire ('vas' standing in for the instrumental plural *vasu*, 'vand'
-    for *vandā*). Homophony markers are stripped before the comparison.
+    The kosha lists 'ah' and 'aha' for the form अहम्; matching them as prefixes would bless truncations
+    — 'vas' standing in for the instrumental plural *vasu*, 'vand' for *vandā*. Homophony markers are
+    stripped before the comparison.
     """
     assert postprocess_analysis._root_attested({"root": "vandā"}, {"vand"}) is False
     assert postprocess_analysis._root_attested({"root": "vandā"}, {"vandA"}) is True
     assert postprocess_analysis._root_attested({"root": "as#1"}, {"as"}) is True
     assert postprocess_analysis._root_attested({"root": None}, {"as"}) is False
-    assert postprocess_analysis.kosha_attest(None) is None  # no kosha data: no lookup, old ranking
+    assert postprocess_analysis.kosha_attest(None) is None  # no kosha data: no lookup, morphology-only ranking
 
 # ---------------------------------------------------------------------------
 # collect_sp_decompositions
@@ -404,8 +404,9 @@ def test_collect_dm_tokens_missing_or_empty_tokens(dm_output):
 
 
 def test_group_dm_tokens_keeps_each_token_on_the_word_it_rebuilds():
-    # The greedy first-letter walk this replaces gave 'grīvābhaṅgābhirāmaṃ' the following pada's
-    # tokens because the word contains an 'm', and left that pada empty.
+    # A token joins a word only by rebuilding part of it: first-letter matching would hand
+    # 'grīvābhaṅgābhirāmaṃ' the following pada's tokens (the word contains an 'm') and leave that
+    # pada empty.
     words = ["grīvābhaṅgābhirāmaṃ", "muhuranupatati"]
     tokens = [
         {"form": "grīvā"}, {"form": "bhaṅga"}, {"form": "abhirāmam"},
@@ -740,7 +741,7 @@ def test_postprocess_clean_fixture_end_to_end():
                 ],
             },
             {
-                # DM produced no token for 'īḷe' although it had tokens overall:
+                # DM yields no token for 'īḷe' although it has tokens overall:
                 # a real disagreement, so the null-side difference shows up.
                 "pada": "īḷe",
                 "dharmamitra": None,

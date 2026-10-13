@@ -69,7 +69,7 @@ def test_morphology_lab_shows_the_shipped_rule_as_a_no_op_and_keeps_the_rejected
     out = run_tool("morphology_lab.py")
     assert "corpus: 278 published word readings over 16 verses" in out
     assert "rule current: curated forms with the right reading published first: 10/15" in out
-    assert "primaries moved: 0 of 278" in out, f"the lab no longer matches what postprocess publishes:\n{out}"
+    assert "primaries moved: 0 of 278" in out, f"the lab disagrees with what postprocess publishes:\n{out}"
     assert "rule attested-then-longest-root: curated forms with the right reading published first: 9/15" in out
     assert "primaries moved: 36 of 278" in out
 
@@ -88,7 +88,7 @@ def test_sandhi_ceiling_splits_the_misses_by_fault(tmp_path):
 
     # The cached-pool path is how a ranking idea gets measured against an identical search space: dump the pools and
     # their ranking features once, then re-rank them through app._rank_with_kosha without calling the splitter again.
-    # If reuse stops reproducing the figures of the process that dumped the pools, the cache no longer matches the space.
+    # If reuse stops reproducing the figures of the process that dumped the pools, the cache does not describe the space.
     pools = tmp_path / "pools.json"
     dumped = run_tool("sandhi_ceiling.py", "--examples", "0", "--pools", str(pools))
     assert pools.exists() and "candidate pools" in dumped, dumped
@@ -96,7 +96,7 @@ def test_sandhi_ceiling_splits_the_misses_by_fault(tmp_path):
     cached = dict(re.findall(r"(picked|ceiling) (\d+)/147", reused))
     source = dict(re.findall(r"(picked|ceiling) (\d+)/147", dumped))
     # The pools being re-ranked were written by that same process, so reuse must reproduce its figures exactly — any
-    # difference means the cache no longer represents what our ranking chooses from. Two separate live passes need not
+    # difference means the cached pools do not represent what our ranking chooses from. Two separate live passes need not
     # agree with each other: sanskrit_parser's candidate pool is unspecified across processes (§3), and consecutive runs
     # today give ceilings of 126 to 128 over the same sixteen verses.
     for figure in ("picked", "ceiling"):
@@ -104,13 +104,13 @@ def test_sandhi_ceiling_splits_the_misses_by_fault(tmp_path):
     assert "ranking-limited" in reused, reused
 
     # `tools/sandhi_lab.py` re-ranks those identical pools, so its baseline row must match what the ceiling tool
-    # measured from those same pools; if it drifts, the lab is no longer judging what the app would publish. Rules the
-    # lab documents as measured-and-rejected must still lose to that baseline.
+    # measured from those same pools; a drift there means the lab is judging something other than what the app publishes.
+    # Rules the lab documents as measured-and-rejected must still lose to that baseline.
     lab = run_tool("sandhi_lab.py", "--pools", str(pools))
     scores = dict(re.findall(r"rule (\S+): picked (\d+)/147", lab))
     assert abs(int(scores["current"]) - int(source["picked"])) <= 1, lab
     for rejected in ("deep-gate-min-len-3", "attestation-before-count"):
-        assert int(scores[rejected]) < int(scores["current"]), f"{rejected} is no longer a rejection:\n{lab}"
+        assert int(scores[rejected]) < int(scores["current"]), f"{rejected} now beats its baseline:\n{lab}"
     assert "old-gate-strictly-better" in scores, lab
 
     # The legality veto is rejected on coverage, not on a score gap: vidyut's own sandhi table refuses to call most of the

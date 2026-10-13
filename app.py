@@ -310,10 +310,9 @@ def default_input() -> tuple:
     """Choose the input file when `-i` is absent.
 
     The only place an implicit input may live is `input/`, which ships empty and is gitignored, so a
-    verse typed there can never be committed by accident and its stem names both output documents.
-    The old root-level fallbacks (`input.txt`, `shloka_input.txt`, `pada_input.txt`) are gone: they sat
-    outside that directory, their names matched nothing else in the project, and a mode-specific name
-    decided by `sys.argv` rather than by what the user actually put on disk.
+    verse typed there can never be committed by accident and its stem names both output documents. No
+    root-level file is ever read implicitly: the directory is the single source, one name for every mode,
+    chosen by what the user actually put on disk rather than by `sys.argv`.
 
     Returns:
         (path, None) when exactly one `.txt` file sits in `input/`, else (None, error message).
@@ -480,7 +479,7 @@ _KOSHA_LOCK = threading.Lock()
 def load_kosha() -> Optional[Any]:
     """Load vidyut's kosha once per process, caching the result.
 
-    The lock matters because the Dharmamitra request now runs on its own thread: two
+    The lock matters because the Dharmamitra request runs on its own thread: two
     callers must never build the same ~200 MB index twice.
 
     Returns:
@@ -2129,8 +2128,8 @@ def main() -> int:
 
     # Dharmamitra is a network call, so it runs on its own thread and overlaps the two local
     # engines. Only I/O truly overlaps — vidyut's Rust bindings never release the GIL and
-    # sanskrit_parser is pure Python — but an unreachable API used to add up to a minute of
-    # purely serial waiting here. It stays a logged warning, not a failed run.
+    # sanskrit_parser is pure Python, so only the network call's waiting overlaps. An unreachable API costs wall time out
+    # there instead of blocking the local engines, and it stays a logged warning rather than a failed run.
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as dharmamitra_pool:
         dharmamitra_future = dharmamitra_pool.submit(
             run_dharmamitra, iast_text, iast_lines
@@ -2185,7 +2184,7 @@ def main() -> int:
     # Word readings are ranked with the vidyut dictionary in the loop: a reading built on a stem the kosha does
     # not record for that form loses to one it does record. Measured over the sixteen pinned verses this moves
     # 8 of 273 published primaries, 6 of them onto the reading the printed editions give (see ACCURACY §6).
-    # It is None when the dictionary data is absent, which keeps the previous ranking.
+    # It is None when the dictionary data is absent; readings are then ranked without attestation.
     attest = postprocess_analysis.kosha_attest(load_kosha())
 
     try:

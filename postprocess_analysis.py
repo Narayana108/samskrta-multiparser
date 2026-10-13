@@ -702,7 +702,7 @@ def postprocess(raw: Dict[str, Any], attest: Optional[Any] = None,
     Args:
         raw: Raw multi-engine analysis output (multi-engine-analysis.json content)
         attest: optional dictionary lookup mapping a surface form to its kosha lemma stems, used to rank word
-            readings (`collect_sp_morphology`); None keeps the previous ranking
+            readings (`collect_sp_morphology`); None ranks them without attestation
         vidyut_data_dir: data directory used for this pass; compared against the raw document's 'meta' and reported on
             stderr when they differ (the result document itself records no provenance)
 

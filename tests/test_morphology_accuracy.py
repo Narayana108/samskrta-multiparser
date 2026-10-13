@@ -15,7 +15,7 @@ Measured on 2026-10-09 against the committed result documents:
   on its own and offers every reading the grammar allows — for śucas it offered twenty-seven. No
   ordering of context-free readings can settle them.
 
-Two ranking rules were tried against this fixture and rejected on the numbers, so that nobody re-tries
+Two ranking rules are measured against this fixture and rejected on the numbers, so that nobody re-tries
 them blind: putting finite-verb readings first changes the primary of 20 words across the sixteen
 verses (about 8 improvements — vande, vraja, asti, yāti — and about 12 regressions such as navāni read
 as √nu and deva as an imperative of √dev); preferring readings whose stem is exactly attested in the
@@ -111,8 +111,8 @@ def test_context_dependent_reading_stays_visible(key):
     primary, alternates = _published_readings(row["verse"], row["form"])
     if any(_matches(primary, want) for want in row["expected"]):
         pytest.fail(
-            f"{key}: the context-dependent reading is now primary; re-measure whether a ranking rule "
-            f"can be pinned here instead of warned about"
+            f"{key}: a per-pada ranking is choosing the context-dependent reading as primary; re-measure "
+            f"whether that rule belongs in this file instead of a warning"
         )
     warnings.warn(
         f"{key}: verse reads {row['expected']} ({row['source']}); we publish primary={primary} and keep "
@@ -133,5 +133,5 @@ def test_accuracy_summary(capsys):
     print(f"reference forms: {len(BY_ID)}  offered by sanskrit_parser: {offered}  chosen by our ranking: {correct}")
     assert offered == len(BY_ID), "the engine stopped offering a reference reading"
     assert correct >= len(CONTEXT_FREE_OK), (
-        f"our ranking lost one of the {len(CONTEXT_FREE_OK)} forms it used to choose correctly"
+        f"one of the {len(CONTEXT_FREE_OK)} forms our context-free ranking must choose is not its primary"
     )

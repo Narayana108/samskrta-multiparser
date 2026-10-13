@@ -10,16 +10,16 @@ is judged on exactly what the app would publish, and one run costs ~2 s instead 
 Only padas inside the pool ceiling can move: misses outside it (⚠️ in the ceiling tool) are upstream splitting faults
 and no ordering can fix them.
 
-Rules implemented, with what each one scored on 2026-10-10 (the shipped rule scores 104/147; before it landed the corpus was 103/147):
+Rules implemented, with what each one scores over today's pools (the shipped rule: 104/147):
 
-    current                 what `_rank_with_kosha` publishes today — re-scoring it must reproduce the live score,
-                            which is this lab's regression check. It now includes the gate clause below, so `current`
-                            itself scores 104/147 and every rejected rule is measured against that.
+    current                 what `_rank_with_kosha` publishes — re-scoring it must reproduce the live score, which is
+                            this lab's regression check. The gate clause below is part of it, so `current` itself scores
+                            104/147 and every rejected rule is measured against that.
 
     old-gate-strictly-better
-                            the gate as it shipped until 2026-10-10: a compound split could beat the whole pada only if
-                            its scarcest part was *strictly better* attested than the whole word. Scores 103/147 — kept
-                            so the landed change stays measurable.
+                            a variant kept for comparison: the gate where a compound split could beat the whole pada only
+                            if its scarcest part was *strictly better* attested than the whole word. Scores 103/147 — one
+                            below `current`, which is what keeps that difference measurable.
 
     gate-at-least-whole     `>=` instead of `>`: a split whose scarcest part is merely as well attested as the whole
                             pada may be cut. SHIPPED: 104/147, fixes exactly one pada — `paścārdhena` → paścā | ardhena,
