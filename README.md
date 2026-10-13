@@ -29,9 +29,15 @@ Measured on sixteen pinned verses against published padaccheda and metre tables;
 
 ```bash
 uv sync                                          # runtime deps + pytest; vidyut ships abi3 wheels, no Rust needed
-echo "अग्निमीले पर्वतशयनस्य नित्यं" > input/agne.txt
-uv run samskrta shloka                           # → results/agne.raw.json  and  results/agne.result.json
-uv run samskrta-postprocess -o results/agne      # re-derive the reading document, offline, no network
+cp ./tests/data/raghuvamsha-1.1.txt ./input/     # insert your own shloka here or copy one from our tests.
+uv run samskrta shloka                           # → ./results/raghuvamsha-1.1.raw.json and ./results/raghuvamsha-1.1.result.json
+
+# or use if ./input has multiple files
+uv run samskrta shloka -i input/raghuvamsha-1.1.txt
+```
+
+```
+```
 ```
 
 `samskrta` and `samskrta-postprocess` are the console entry points declared in `pyproject.toml`; they wrap `app.py`
